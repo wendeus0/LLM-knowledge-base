@@ -3,6 +3,7 @@
 from pathlib import Path
 from kb.client import chat
 from kb.config import RAW_DIR, WIKI_DIR, TOPICS
+from kb.git import commit
 
 
 SYSTEM = """Você é um compilador de knowledge base. Dado um documento bruto, você:
@@ -66,6 +67,7 @@ def compile_file(raw_path: Path) -> Path:
 
     out = _wiki_path(topic, title)
     out.write_text(response, encoding="utf-8")
+    commit(f"feat(wiki): compile {raw_path.name} → {out.name}", [out])
     return out
 
 
@@ -85,3 +87,4 @@ def update_index() -> None:
         + "\n",
         encoding="utf-8",
     )
+    commit("chore(wiki): update _index.md", [index])
