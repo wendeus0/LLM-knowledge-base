@@ -4,4 +4,4 @@ title: Index
 
 # Knowledge Base Index
 
-_Vazio. Use `kb compile` para popular a wiki._
+- [[xss-(cross-site-scripting)]] (`cybersecurity/xss-(cross-site-scripting).md`)
