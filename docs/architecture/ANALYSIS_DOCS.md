@@ -77,10 +77,10 @@ Decisões que merecem ADR formal:
    - CONTRIBUTING.md
    - ARTIFACT_POLICY.md
    - DATA_POLICY.md
-   - ALBION_EVALUATION.md
    - DEPLOYMENT.md
    - CHANGELOG.md
-   - ADR-0002 a 0005
+   - SECURITY.md
+   - ADR-0001 a 0005
 
 🔄 PENDENTE:
 Fase 1: SECURITY.md
@@ -100,15 +100,49 @@ Fase 2: Estrutura features/ (opcional)
 - [x] SPEC_FORMAT.md (template de features)
 - [x] ARTIFACT_POLICY.md (política de artefatos)
 - [x] DATA_POLICY.md (política de dados)
-- [x] ALBION_EVALUATION.md (análise comparativa)
 - [x] DEPLOYMENT.md (guia de deploy)
 - [x] CHANGELOG.md (histórico versionado)
-- [x] ADR-0001 (book import/LLM opcional)
-- [x] ADR-0002 (escolha de Typer)
-- [x] ADR-0003 (Git como versioning)
-- [x] ADR-0004 (estratégia de busca)
-- [x] ADR-0005 (stochastic heal)
+- [x] SECURITY.md (política de segurança)
+- [x] ADR-0001 a 0005 (decisões arquiteturais)
 
 ### 🔄 Pendentes
 
-- [ ] SECURITY.md (política de segurança)
+- [ ] Estrutura features/ (diretório por feature — opcional)
+
+---
+
+## Análise Comparativa (Referência Externa)
+
+Esta seção documenta a análise comparativa com o projeto `albion-market-insights` para identificação de padrões de documentação aplicáveis ao kb.
+
+### Resumo Executivo
+
+| Aspecto                   | kb (antes)  | albion-market-insights          | Ação tomada                                    |
+| ------------------------- | ----------- | ------------------------------- | ---------------------------------------------- |
+| **Estrutura docs/**       | Minimalista | Completa, madura                | ✅ Expandida com políticas                     |
+| **Políticas específicas** | Ausentes    | STORAGE_POLICY, ARTIFACT_POLICY | ✅ Criados ARTIFACT_POLICY.md e DATA_POLICY.md |
+| **Features como unidade** | Implícito   | Explícito (features/)           | ⚠️ Definido em SPEC_FORMAT.md                  |
+| **ADRs**                  | 1 apenas    | Múltiplos                       | ✅ Expandido para 5 ADRs                       |
+
+### Padrões Adotados
+
+1. **Política de artefatos** → `ARTIFACT_POLICY.md` (Python/cache)
+2. **Política de dados** → `DATA_POLICY.md` (persistência em disco)
+3. **Guia de deploy** → `DEPLOYMENT.md`
+4. **Múltiplos ADRs** → 0001-0005
+
+### Padrões Não Aplicáveis (contexto diferente)
+
+| Padrão albion                 | Motivo de não aplicação |
+| ----------------------------- | ----------------------- |
+| STORAGE_POLICY (localStorage) | kb é CLI, não navegador |
+| NODE24_PROMOTION_RUNBOOK      | kb é Python, não Node   |
+| Browser-specific policies     | kb não tem frontend web |
+
+### Fortalezas do kb Preservadas
+
+- AGENTS.md enxuto (foco em domínio)
+- SPEC_FORMAT.md claro
+- TDD.md completo
+- Memória distribuída em `memory/`
+- Documentação em português

@@ -156,9 +156,9 @@ cat .env
 export KB_API_KEY=sua-api-key
 ```
 
-### Erro: `Permission denied` no Git
+### Erro: `Author identity unknown` no Git
 
-**Causa:** Usuário não tem permissão para fazer commits.
+**Causa:** Git não possui identidade configurada para commits.
 
 **Solução:**
 
@@ -166,6 +166,23 @@ export KB_API_KEY=sua-api-key
 # Configure git
 git config user.email "seu@email.com"
 git config user.name "Seu Nome"
+```
+
+### Erro: `Permission denied` no Git
+
+**Causa:** Problemas de permissão no sistema de arquivos ou autenticação SSH/HTTPS.
+
+**Solução:**
+
+```bash
+# Verifique permissões do diretório
+ls -la .git
+
+# Para SSH: teste a conexão
+ssh -T git@github.com
+
+# Para HTTPS: verifique se o token está atualizado
+git remote -v
 ```
 
 ### Erro: Python version
