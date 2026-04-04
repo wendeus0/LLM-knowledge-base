@@ -23,8 +23,11 @@
 # Instalar dependências
 pip install -e .
 
-# Rodar testes
-python -m pytest
+# Instalar features LLM (compile/qa/heal/lint)
+pip install -e .[llm]
+
+# Rodar testes (requer .venv ativo)
+source .venv/bin/activate && python -m pytest
 
 # Lint
 ruff check kb

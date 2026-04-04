@@ -1,5 +1,7 @@
 """Health checks LLM sobre a wiki."""
 
+import re
+
 from kb.client import chat
 from kb.config import WIKI_DIR
 
@@ -26,7 +28,6 @@ def lint_wiki() -> str:
     broken: list[str] = []
     for md in articles:
         text = md.read_text(encoding="utf-8", errors="replace")
-        import re
         for link in re.findall(r"\[\[([^\]]+)\]\]", text):
             slug = link.lower().replace(" ", "-")
             if slug not in existing_names and link.lower() not in existing_names:
