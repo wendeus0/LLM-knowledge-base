@@ -20,12 +20,9 @@
 
 ### 2. ⚠️ Documentos Pendentes (Backlog)
 
-| Gap                     | Prioridade | Justificativa                                                  |
-| ----------------------- | ---------- | -------------------------------------------------------------- |
-| **DEPLOYMENT.md**       | P2         | Guia de deploy/install em diferentes ambientes                 |
-| **CHANGELOG.md**        | P2         | Histórico de mudanças versionado                               |
-| **SECURITY.md**         | P2         | Política de segurança, reporte de vulnerabilidades             |
-| **docs/adr/0002-\*.md** | P3         | ADRs pendentes: escolha de Typer vs Click, estratégia de busca |
+| Gap             | Prioridade | Justificativa                                      |
+| --------------- | ---------- | -------------------------------------------------- |
+| **SECURITY.md** | P2         | Política de segurança, reporte de vulnerabilidades |
 
 ## Análise Detalhada
 
@@ -81,12 +78,13 @@ Decisões que merecem ADR formal:
    - ARTIFACT_POLICY.md
    - DATA_POLICY.md
    - ALBION_EVALUATION.md
+   - DEPLOYMENT.md
+   - CHANGELOG.md
+   - ADR-0002 a 0005
 
 🔄 PENDENTE:
-Fase 1: CHANGELOG.md + DEPLOYMENT.md
-Fase 2: SECURITY.md
-Fase 3: ADRs pendentes (0002-0005)
-Fase 4: Estrutura features/ (opcional)
+Fase 1: SECURITY.md
+Fase 2: Estrutura features/ (opcional)
 ```
 
 ## Checklist de Documentação
@@ -103,11 +101,14 @@ Fase 4: Estrutura features/ (opcional)
 - [x] ARTIFACT_POLICY.md (política de artefatos)
 - [x] DATA_POLICY.md (política de dados)
 - [x] ALBION_EVALUATION.md (análise comparativa)
+- [x] DEPLOYMENT.md (guia de deploy)
+- [x] CHANGELOG.md (histórico versionado)
 - [x] ADR-0001 (book import/LLM opcional)
+- [x] ADR-0002 (escolha de Typer)
+- [x] ADR-0003 (Git como versioning)
+- [x] ADR-0004 (estratégia de busca)
+- [x] ADR-0005 (stochastic heal)
 
 ### 🔄 Pendentes
 
-- [ ] DEPLOYMENT.md (guia de deploy)
-- [ ] CHANGELOG.md (histórico versionado)
 - [ ] SECURITY.md (política de segurança)
-- [ ] ADR-0002 a 0005 (decisões arquiteturais)
