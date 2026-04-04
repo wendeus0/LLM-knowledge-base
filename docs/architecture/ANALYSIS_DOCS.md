@@ -83,8 +83,7 @@ Decisões que merecem ADR formal:
    - ADR-0001 a 0005
 
 🔄 PENDENTE:
-Fase 1: SECURITY.md
-Fase 2: Estrutura features/ (opcional)
+Fase 1: Estrutura features/ (diretório por feature — opcional)
 ```
 
 ## Checklist de Documentação

@@ -15,7 +15,7 @@ Apenas a branch principal (`main`) recebe atualizações de segurança.
 
 **Não abra issues públicas** para vulnerabilidades de segurança.
 
-Envie um email para o mantenedor do projeto com:
+Envie um email para **security@kb-project.dev** ou abra uma [GitHub Security Advisory](https://github.com/wendeus0/LLM-knowledge-base/security/advisories/new) com:
 
 - Descrição da vulnerabilidade
 - Passos para reproduzir (PoC se possível)
@@ -70,8 +70,8 @@ Todos os caminhos de arquivo são sanitizados antes de uso:
 ## Dependências Auditáveis
 
 ```
-defusedxml>=0.7.1     # XML parsing seguro
-typer>=0.9.0          # CLI framework
+defusedxml>=0.7       # XML parsing seguro
+typer>=0.12           # CLI framework
 rich>=13.0.0          # Terminal UI
 python-dotenv>=1.0.0  # Env file loading
 openai>=1.0.0         # LLM client (opcional)
