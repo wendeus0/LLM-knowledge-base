@@ -26,6 +26,11 @@ def validate_provider_model_compatibility(base_url: str, model: str) -> None:
 
 
 def get_client():
+    if not API_KEY:
+        raise RuntimeError(
+            "KB_API_KEY não está definida. Configure-a em .env ou como variável de ambiente."
+        )
+
     try:
         from openai import OpenAI
     except ImportError as exc:
