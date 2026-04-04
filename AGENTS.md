@@ -38,17 +38,23 @@ pip install -e .
 # Dev/CLI
 kb ingest <arquivo>      # Adicionar documento a raw/
 kb import-book <arquivo> # Importar EPUB/PDF textual para raw/books/
-kb compile               # Compilar raw/ (recursivo, incluindo raw/books/) → wiki/
-kb qa "pergunta"         # Perguntar contra a wiki
+kb compile               # Compilar raw/ (recursivo, incluindo raw/books/) → wiki/ + summaries + knowledge
+kb compile --no-commit   # Compilar sem commit git automático
+kb compile --allow-sensitive # Autorizar processamento sensível explicitamente
+kb qa "pergunta"         # Perguntar com routing por fonte nativa
 kb qa "pergunta" -f      # Perguntar e arquivar resposta (file-back)
+kb qa "pergunta" -f --no-commit # File-back sem commit automático
 kb search "termo"        # Buscar na wiki
 kb heal --n 10          # Stochastic heal: N arquivos aleatórios
+kb heal --allow-sensitive --no-commit # Healing sensível/experimental
 kb lint                 # Health checks (audit)
+kb jobs list            # Listar jobs agendáveis
+kb jobs run <job>       # Executar job canônico
 ```
 
 ## Convenções de código
 
-- Módulos em `kb/` por função: `client.py` (LLM), `compile.py` (raw→wiki), `book_import.py`/`book_import_core.py` (importação de livros), `qa.py` (Q&A), `search.py`, `heal.py`, `lint.py`, `config.py`, `git.py`
+- Módulos em `kb/` por função: `client.py` (LLM), `compile.py` (raw→wiki), `router.py` (routing por fonte), `state.py` (knowledge/learnings/manifest), `guardrails.py` (conteúdo sensível), `jobs.py` (jobs canônicos), `book_import.py`/`book_import_core.py` (importação de livros), `qa.py` (Q&A), `search.py`, `heal.py`, `lint.py`, `config.py`, `git.py`
 - Nomes: snake_case para funções/variáveis, PascalCase para classes
 - Sem type hints explícitos a menos que seja crítico (config, cliente)
 - Docstrings em português para funções públicas
@@ -63,6 +69,9 @@ kb lint                 # Health checks (audit)
 ## Regras específicas do domínio
 
 - Todo write na wiki (compile, heal, qa --file-back) faz commit git automático
+- Chamadas ao provider externo passam por guardrails de conteúdo sensível e podem exigir confirmação
+- `--allow-sensitive` faz opt-in explícito para processar conteúdo sinalizado
+- `--no-commit` preserva writes locais, mas suprime o commit automático do fluxo atual
 - Conflitos git são raros porque o LLM apenas append/atualiza seções, nunca reescreve (estratégia Pawel Huryn)
 - Stochastic heal processa N arquivos aleatórios por execução (scale para vaults grandes)
 - O LLM nunca escreve a wiki manualmente — tudo é automatizado
@@ -82,8 +91,12 @@ kb/
 │   └── typescript/
 ├── kb/               ← pacote Python
 │   ├── client.py     ← wrapper OpenAI SDK
-│   ├── compile.py    ← raw/ → wiki/ (LLM)
+│   ├── compile.py    ← raw/ → wiki/ (LLM + summary compilado)
 │   ├── qa.py         ← Q&A + file-back
+│   ├── router.py     ← roteamento entre wiki/raw/knowledge/learnings
+│   ├── state.py      ← manifesto + stores knowledge/learnings
+│   ├── guardrails.py ← política de sensibilidade em runtime
+│   ├── jobs.py       ← catálogo de jobs canônicos
 │   ├── search.py     ← contagem simples de palavras-chave
 │   ├── heal.py       ← stochastic heal
 │   ├── lint.py       ← health checks (LLM)

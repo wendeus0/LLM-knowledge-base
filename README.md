@@ -14,11 +14,12 @@ Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas 
 | --------------- | ------------------------------------------------------ | -------------------------- |
 | **Ingest**      | Adicionar documentos brutos à fila de processamento    | `kb ingest <arquivo>`      |
 | **Book Import** | Importar EPUB/PDF textual em capítulos markdown        | `kb import-book <arquivo>` |
-| **Compile**     | Transformar documentos raw em wiki estruturada via LLM | `kb compile`               |
-| **Q&A**         | Perguntar contra a wiki com contexto inteligente       | `kb qa "pergunta"`         |
+| **Compile**     | Transformar documentos raw em wiki estruturada via LLM + summary compilado | `kb compile`               |
+| **Q&A**         | Perguntar com routing por fonte nativa (`wiki`, `raw`, `knowledge`, `learnings`) | `kb qa "pergunta"`         |
 | **Search**      | Busca simples por palavras-chave na wiki               | `kb search "termo"`        |
 | **Heal**        | Correção estocástica: links, stubs, timestamps         | `kb heal --n 10`           |
 | **Lint**        | Health checks e auditoria da wiki                      | `kb lint`                  |
+| **Jobs**        | Catálogo de rotinas agendáveis de manutenção           | `kb jobs list` / `kb jobs run compile` |
 
 ## Instalação
 
@@ -62,6 +63,13 @@ kb qa "O que é XSS e como prevenir?"
 # 4. Arquivar resposta na wiki
 kb qa "Explique CSRF" -f
 
+# 5. Executar sem commit automático (cenários sensíveis/experimentos)
+kb compile --no-commit
+kb qa "Explique CSRF" -f --no-commit
+
+# 6. Permitir explicitamente conteúdo sensível quando necessário
+kb compile --allow-sensitive
+
 # 5. Health check
 kb heal --n 5
 kb lint
@@ -82,8 +90,12 @@ kb/
 ├── kb/               ← pacote Python
 │   ├── cli.py        ← interface Typer
 │   ├── client.py     ← wrapper OpenAI SDK
-│   ├── compile.py    ← raw → wiki (LLM)
-│   ├── qa.py         ← Q&A + file-back
+│   ├── compile.py    ← raw → wiki (LLM + summary compilado)
+│   ├── qa.py         ← Q&A + file-back com routing por fonte
+│   ├── router.py     ← roteamento entre wiki/raw/knowledge/learnings
+│   ├── state.py      ← stores de knowledge, learnings e manifesto
+│   ├── guardrails.py ← detecção de conteúdo sensível
+│   ├── jobs.py       ← catálogo de jobs canônicos
 │   ├── search.py     ← busca por keywords
 │   ├── heal.py       ← stochastic healing
 │   ├── lint.py       ← health checks
@@ -97,8 +109,9 @@ kb/
 
 - **Topics:** `cybersecurity`, `ai`, `python`, `typescript`
 - **Frontmatter YAML:** Cada artigo da wiki inclui `title`, `topic`, `tags`, `source`, `reviewed_at`
-- **Git:** Todo write na wiki gera commit automático
+- **Git:** Todo write na wiki gera commit automático, exceto quando `--no-commit` é usado explicitamente
 - **LLM:** O LLM nunca escreve a wiki manualmente — tudo é via CLI
+- **Sensibilidade:** operações com provider externo aceitam `--allow-sensitive` para bypass explícito da confirmação interativa
 
 ## Testes
 
@@ -135,9 +148,10 @@ ruff check kb
 - [x] Q&A com file-back
 - [x] Stochastic healing
 - [x] Suite de testes completa
+- [ ] Multi-agent specialization (futuro)
 - [ ] Integração com Obsidian como frontend
-- [ ] Expansão de cobertura de testes
-- [ ] Suporte a mais formatos de entrada
+- [ ] Embeddings + RAG híbrido (futuro)
+- [ ] Modo no-commit para cenários sensíveis (futuro)
 
 ## License
 
