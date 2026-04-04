@@ -1,7 +1,4 @@
 import pytest
-from pathlib import Path
-import tempfile
-import os
 
 
 @pytest.fixture
@@ -19,7 +16,6 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     # Monkeypatch das variáveis globais
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
     monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
-    monkeypatch.setattr("kb.compile.RAW_DIR", raw)
     monkeypatch.setattr("kb.compile.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.search.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.qa.WIKI_DIR", wiki)
@@ -30,12 +26,19 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def tmp_wiki(tmp_path):
-    """Setup wiki/ com estrutura de tópicos"""
+def tmp_wiki(tmp_path, monkeypatch):
+    """Setup wiki/ com estrutura de tópicos e monkeypatch de WIKI_DIR"""
     wiki = tmp_path / "wiki"
     wiki.mkdir()
     for topic in ["cybersecurity", "ai", "python", "typescript"]:
         (wiki / topic).mkdir()
+
+    # Monkeypatch WIKI_DIR para funções que o usam diretamente
+    monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.heal.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.lint.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.search.WIKI_DIR", wiki)
+
     return wiki
 
 

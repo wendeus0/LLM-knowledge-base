@@ -60,7 +60,7 @@ type: project
 
 **Why:** Manter o projeto lean e portável. Sem FAISS, redis, elasticsearch — só o que é necessário.
 
-**Allowed:** openai, typer, rich, scikit-learn (leve)
+**Allowed:** openai, typer, rich, pytest, ruff (dev only)
 
 **How to apply:** Qualquer sugestão de dependência nova precisa de aprovação.
 

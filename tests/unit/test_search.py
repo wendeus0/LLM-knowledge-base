@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 from kb.search import find_relevant, search
 
@@ -76,7 +75,7 @@ class TestSearch:
         """
         Dado uma busca bem-sucedida,
         Quando search() retorna,
-        Então cada resultado deve ter estrutura dict com file, title, score
+        Então cada resultado deve ter estrutura dict com path, score, snippet
         """
         raw, wiki = tmp_raw_wiki
 
@@ -86,7 +85,9 @@ class TestSearch:
         results = search("neural")
         assert isinstance(results, list)
         if len(results) > 0:
-            assert "file" in results[0] or isinstance(results[0], dict)
+            assert "path" in results[0]
+            assert "score" in results[0]
+            assert "snippet" in results[0]
 
     def test_should_format_results(self, tmp_raw_wiki):
         """

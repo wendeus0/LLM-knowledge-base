@@ -34,7 +34,7 @@ type: project
    - Verificar wiki/ cresce com qualidade
 
 5. **[P2]** Usar Obsidian
-   - Abrir `/home/g0dsssp33d/work/kb` como vault em Obsidian
+   - Abrir raiz do projeto como vault em Obsidian
    - Navegar wiki/ com wikilinks
    - (Opcional) instalar Obsidian Web Clipper para ingest direto da web
 

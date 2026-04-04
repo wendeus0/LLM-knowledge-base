@@ -1,8 +1,5 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 from kb.heal import heal
-from kb.compile import compile_file
 
 
 class TestHealWorkflow:
@@ -77,7 +74,7 @@ topic: ai
 
 # Machine Learning
 
-Conteúdo.
+Machine Learning é um subcampo da inteligência artificial que permite aos sistemas aprender e melhorar a partir da experiência sem serem programados explicitamente.
 """)
 
         with patch("kb.heal.chat") as mock_chat, patch(
@@ -86,10 +83,12 @@ Conteúdo.
             mock_chat.return_value = "Processado."
             mock_sample.return_value = [article]
 
-            heal(n=1)
+            result = heal(n=1)
 
             # RED: falha se reviewed_at não é atualizado
-            # (verificado internamente por _stamp_reviewed)
+            # Verificar que o arquivo foi processado e timestamp foi adicionado
+            assert len(result) > 0
+            assert result[0]["action"] in ["healed", "reviewed_no_changes"]
 
     def test_should_not_delete_valuable_stubs(self, tmp_raw_wiki):
         """

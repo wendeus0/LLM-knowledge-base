@@ -160,7 +160,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
-      - run: pip install -e .
+      - run: pip install -e ".[dev]"
       - run: pytest --cov=kb
 ```
 

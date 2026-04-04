@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 from kb.compile import compile_file, update_index
 
@@ -189,4 +187,5 @@ class TestUpdateIndex:
         with patch("kb.compile.commit"):
             update_index()
         # RED: falha se _index.md lista a si mesmo
-        # (verificável pela recursão ou self-reference)
+        index_content = (wiki / "_index.md").read_text()
+        assert "[[_index]]" not in index_content

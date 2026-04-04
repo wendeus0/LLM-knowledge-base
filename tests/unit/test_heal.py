@@ -1,5 +1,3 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 from kb.heal import heal, _is_stub, _stamp_reviewed
 
@@ -89,7 +87,7 @@ reviewed_at: 2026-01-01
         # RED: falha se não atualiza timestamp
         result = _stamp_reviewed(article)
         assert "reviewed_at:" in result
-        assert "2026-01-01" not in result or "reviewed_at:" in result
+        assert "2026-01-01" not in result
 
 
 class TestHeal:

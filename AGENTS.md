@@ -79,7 +79,7 @@ kb/
 │   ├── client.py     ← wrapper OpenAI SDK
 │   ├── compile.py    ← raw/ → wiki/ (LLM)
 │   ├── qa.py         ← Q&A + file-back
-│   ├── search.py     ← TF-IDF simples
+│   ├── search.py     ← contagem simples de palavras-chave
 │   ├── heal.py       ← stochastic heal
 │   ├── lint.py       ← health checks (LLM)
 │   ├── git.py        ← commit automático

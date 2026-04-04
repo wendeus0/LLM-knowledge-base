@@ -1,9 +1,6 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 from kb.compile import compile_file
 from kb.qa import answer
-from kb.search import find_relevant
 
 
 class TestIngestCompileQAWorkflow:
@@ -139,7 +136,6 @@ Informação sobre XSS.
 """)
 
         # Answer com file-back
-        answer_text = "XSS Refletido é diferente de Armazenado porque..."
         new_article_response = """---
 title: XSS Refletido vs Armazenado
 topic: cybersecurity
@@ -154,8 +150,9 @@ Diferenças...
             "kb.qa.find_relevant"
         ) as mock_search, patch("kb.qa.commit") as mock_commit:
             mock_search.return_value = []
-            # Primeira chamada para answer(), segunda para file-back article creation
-            mock_qa.side_effect = [answer_text, new_article_response]
+            # Quando find_relevant é vazio, answer() retorna early sem chamar chat
+            # Então apenas 1 chamada para file-back article creation
+            mock_qa.return_value = new_article_response
 
             from kb.qa import answer_and_file
 

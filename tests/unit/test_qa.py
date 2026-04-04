@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 from unittest.mock import patch
 from kb.qa import answer, answer_and_file
@@ -88,8 +87,8 @@ class TestAnswerAndFile:
             "kb.qa.chat"
         ) as mock_chat, patch("kb.qa.commit") as mock_commit:
             mock_search.return_value = []
-            # Primeira chamada para answer(), segunda para gerar artigo
-            answer_response = "Machine learning é..."
+            # Quando find_relevant é vazio, answer() retorna early sem chamar chat
+            # Então apenas 1 chamada para file-back article creation
             article_response = """---
 title: Machine Learning
 topic: ai
@@ -99,7 +98,7 @@ topic: ai
 
 Machine learning é um campo da IA.
 """
-            mock_chat.side_effect = [answer_response, article_response]
+            mock_chat.return_value = article_response
 
             result = answer_and_file("O que é machine learning?")
 

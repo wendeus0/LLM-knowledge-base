@@ -23,7 +23,7 @@ Para contexto rápido e estruturado do projeto, paths e comandos principais, con
 
 ```bash
 # 1. Instalar
-cd /home/g0dsssp33d/work/kb
+cd . # na raiz do projeto
 pip install -e .
 
 # 2. Configurar API

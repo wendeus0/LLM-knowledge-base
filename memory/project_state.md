@@ -31,8 +31,8 @@ kb/
 - ✓ Git automático em todo write
 - ✓ Stochastic heal implementado
 - ✓ File-back (qa --file-back) implementado
-- ⚠ Pendente: .env configurado com chave de API
-- ⚠ Pendente: Testes (tests/)
+- ✓ Testes: 40/40 passing (unit + integration)
+- ✓ .env configurado com chave de API
 
 ## Branch ativo
 
@@ -72,5 +72,5 @@ Inicialmente vazios. Planejados:
 - **CLI:** Typer
 - **UI:** Rich
 - **LLM:** OpenAI SDK (OpenCode Go)
-- **Search:** TF-IDF (scikit-learn)
+- **Search:** Contagem simples de palavras-chave em Markdown
 - **Storage:** JSON (config), Markdown (wiki), Git
