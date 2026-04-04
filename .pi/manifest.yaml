@@ -1,0 +1,62 @@
+version: 1
+kind: pi-project-manifest
+
+project:
+  name: kb
+  description: LLM-powered personal knowledge base
+  primary_language: python
+  runtime: python>=3.11
+  purpose: >-
+    Sistema de knowledge base pessoal mantido por LLM para ingestão,
+    compilação em wiki markdown, busca, Q&A e healing.
+
+paths:
+  package: kb/
+  tests: tests/
+  raw: raw/
+  wiki: wiki/
+  pi: .pi/
+  agent_context:
+    - AGENTS.md
+    - CLAUDE.md
+
+commands:
+  setup:
+    - pip install -e .
+    - pip install -e .[dev]
+  test: pytest -q
+  test_unit: pytest -q tests/unit
+  lint: ruff check kb
+  run_compile: kb compile
+  run_qa: kb qa "<pergunta>"
+  run_file_back: kb qa "<pergunta>" --file-back
+  run_search: kb search "<termo>"
+  run_heal: kb heal --n 10
+
+conventions:
+  wiki_writes: "Não editar wiki/ manualmente; preferir CLI/LLM do projeto."
+  file_back: "Respostas arquivadas voltam para wiki/ e podem gerar commit automático."
+  testing: "Priorizar testes offline/mocados quando houver dependência externa."
+  source_of_truth: "Manifesto para estrutura curta; AGENTS.md e CLAUDE.md para contexto narrativo."
+
+agent_context:
+  primary_files:
+    - AGENTS.md
+    - CLAUDE.md
+  usage:
+    - Ler este manifesto para visão rápida do projeto.
+    - Ler AGENTS.md para domínio, arquitetura e convenções.
+    - Ler CLAUDE.md para onboarding e fluxo operacional.
+
+future_integrations:
+  opencode:
+    status: planned
+    note: >-
+      O esquema deve permanecer simples para futura comparação e adaptação
+      ao OpenCode, evitando chaves acopladas a uma ferramenta específica.
+
+validation:
+  success_criteria:
+    - Novo membro do time consegue localizar contexto, comandos e diretórios importantes em poucos minutos.
+    - O manifesto permanece curto e complementar a AGENTS.md/CLAUDE.md.
+    - O conteúdo é facilmente serializável/mapeável para outro formato no futuro.

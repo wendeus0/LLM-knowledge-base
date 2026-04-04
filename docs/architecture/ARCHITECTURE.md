@@ -153,8 +153,8 @@
                         │                                      │      │
                         ▼                                      ▼      ▼
                 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-                │   stub?     │────▶│   delete    │     │   healty?   │
-                │  (vazio)    │no   │   arquivo   │yes  │  (process)  │
+                │   stub?     │────▶│   delete    │     │  healthy?   │
+                │  (vazio)    │yes  │   arquivo   │no   │  (process)  │
                 └─────────────┘     └─────────────┘     └──────┬──────┘
                                                                │
                                                                ▼
@@ -809,7 +809,7 @@ def _extract_chapters_from_format(source: Path, ...) -> tuple[list[dict], dict]:
     pass
 ```
 
-### Integração Observidian
+### Integração Obsidian
 
 - wiki/ é compatível com vault Obsidian
 - Wikilinks nativos (`[[...]]`)

@@ -4,19 +4,19 @@
 
 ### 1. ✅ Presentes e Adequados
 
-| Documento                           | Status      | Avaliação                                                                    |
-| ----------------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| `AGENTS.md`                         | ✅ Completo | Documentação principal com domínio, stack, comandos, convenções, arquitetura |
-| `README.md`                         | ✅ Completo | Documentação pública para usuários                                           |
-| `docs/architecture/ARCHITECTURE.md` | ✅ Completo | Visão técnica C4 Model, fluxos, componentes                                  |
-| `docs/architecture/API.md`          | ✅ Completo | Referência completa CLI e API Python                                         |
-| `CONTRIBUTING.md`                   | ✅ Completo | Guia de contribuição com workflow e convenções                               |
-| `docs/architecture/TDD.md`          | ✅ Completo | Convenções de teste, estrutura, fixtures, cobertura                          |
-| `docs/architecture/SPEC_FORMAT.md`  | ✅ Completo | Template para especificação de features                                      |
-| `docs/architecture/ARTIFACT_POLICY` | ✅ Completo | Política de artefatos Python                                                 |
-| `docs/architecture/DATA_POLICY.md`  | ✅ Completo | Política de persistência de dados                                            |
-| `docs/adr/0001-*.md`                | ✅ Completo | ADR sobre book import e LLM opcional                                         |
-| `CLAUDE.md`                         | ✅ Presente | Configurações específicas para Claude Code                                   |
+| Documento                              | Status      | Avaliação                                                                    |
+| -------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
+| `AGENTS.md`                            | ✅ Completo | Documentação principal com domínio, stack, comandos, convenções, arquitetura |
+| `README.md`                            | ✅ Completo | Documentação pública para usuários                                           |
+| `docs/architecture/ARCHITECTURE.md`    | ✅ Completo | Visão técnica C4 Model, fluxos, componentes                                  |
+| `docs/architecture/API.md`             | ✅ Completo | Referência completa CLI e API Python                                         |
+| `CONTRIBUTING.md`                      | ✅ Completo | Guia de contribuição com workflow e convenções                               |
+| `docs/architecture/TDD.md`             | ✅ Completo | Convenções de teste, estrutura, fixtures, cobertura                          |
+| `docs/architecture/SPEC_FORMAT.md`     | ✅ Completo | Template para especificação de features                                      |
+| `docs/architecture/ARTIFACT_POLICY.md` | ✅ Completo | Política de artefatos Python                                                 |
+| `docs/architecture/DATA_POLICY.md`     | ✅ Completo | Política de persistência de dados                                            |
+| `docs/adr/0001-*.md`                   | ✅ Completo | ADR sobre book import e LLM opcional                                         |
+| `CLAUDE.md`                            | ✅ Presente | Configurações específicas para Claude Code                                   |
 
 ### 2. ⚠️ Documentos Pendentes (Backlog)
 

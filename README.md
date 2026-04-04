@@ -44,7 +44,7 @@ Crie um arquivo `.env` na raiz do projeto:
 ```bash
 KB_API_KEY=sua_api_key_aqui
 KB_BASE_URL=https://opencode.ai/zen/go/v1  # opcional
-KB_MODEL=opencode-go/kimi-k2.5              # opcional
+KB_MODEL=kimi-k2.5                          # opcional
 ```
 
 ## Uso Rápido

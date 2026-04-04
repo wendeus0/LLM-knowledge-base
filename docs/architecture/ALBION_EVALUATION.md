@@ -41,13 +41,13 @@ docs/
 ```
 docs/
 ├── adr/
-│   └── 0001-kb-source-of-truth-for-book-import.md
+│   └── 0001-kb-source-of-truth-for-book-import-and-optional-llm.md
 ├── architecture/
 │   ├── SPEC_FORMAT.md
 │   ├── TDD.md
 │   ├── ARCHITECTURE.md
-│   ├── API.md
 │   └── ANALYSIS_DOCS.md
+├── API.md
 ```
 
 ### Gap Identificado
@@ -141,8 +141,8 @@ features/
 
 ### Fase 1: Políticas (P2)
 
-- [ ] Criar `docs/architecture/ARTIFACT_POLICY.md`
-- [ ] Criar `docs/architecture/DATA_POLICY.md`
+- [x] Criar `docs/architecture/ARTIFACT_POLICY.md`
+- [x] Criar `docs/architecture/DATA_POLICY.md`
 - [ ] Atualizar `.gitignore` se necessário
 
 ### Fase 2: Estrutura de Features (P2)
