@@ -4,6 +4,7 @@ import re
 
 from kb.client import chat
 from kb.config import WIKI_DIR
+from kb.guardrails import assert_safe_for_provider
 
 
 SYSTEM = """Você é um auditor de knowledge base. Analise os artigos fornecidos e identifique:
@@ -17,7 +18,7 @@ Formato de saída em markdown com seções para cada categoria.
 """
 
 
-def lint_wiki() -> str:
+def lint_wiki(allow_sensitive: bool = False) -> str:
     articles = list(WIKI_DIR.rglob("*.md"))
     if not articles:
         return "Wiki vazia. Use `kb compile` para adicionar artigos."
@@ -36,6 +37,8 @@ def lint_wiki() -> str:
     context = "\n\n---\n\n".join(
         f"# {p.stem}\n{p.read_text(encoding='utf-8')}" for p in articles[:20]
     )
+
+    assert_safe_for_provider(context, source="lint:wiki", allow_sensitive=allow_sensitive)
 
     response = chat(
         messages=[

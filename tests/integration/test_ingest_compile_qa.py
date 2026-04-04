@@ -146,17 +146,12 @@ topic: cybersecurity
 Diferenças...
 """
 
-        with patch("kb.qa.chat") as mock_qa, patch(
-            "kb.qa.find_relevant"
-        ) as mock_search, patch("kb.qa.commit"):
-            mock_search.return_value = []
-            # Quando find_relevant é vazio, answer() retorna early sem chamar chat
-            # Então apenas 1 chamada para file-back article creation
-            mock_qa.return_value = new_article_response
+        with patch("kb.qa.chat") as mock_qa, patch("kb.qa.commit"):
+            mock_qa.side_effect = ["Resposta breve sobre XSS.", new_article_response]
 
             from kb.qa import answer_and_file
 
-            result = answer_and_file("Qual diferença XSS?")
+            result = answer_and_file("Qual diferença XSS?", allow_sensitive=True)
 
             # RED: falha se resposta e path não são retornados
             assert isinstance(result, tuple)

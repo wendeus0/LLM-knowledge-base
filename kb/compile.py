@@ -4,6 +4,8 @@ from pathlib import Path
 from kb.client import chat
 from kb.config import RAW_DIR, WIKI_DIR, TOPICS
 from kb.git import commit
+from kb.guardrails import assert_safe_for_provider
+from kb.state import extract_summary, mark_compiled, upsert_knowledge
 
 
 SYSTEM = """Você é um compilador de knowledge base. Dado um documento bruto, você:
@@ -60,8 +62,34 @@ def _wiki_path(topic: str, title: str) -> Path:
     return folder / f"{slug}.md"
 
 
-def compile_file(raw_path: Path) -> Path:
+def _summary_path(article_path: Path) -> Path:
+    summaries_dir = WIKI_DIR / "summaries"
+    summaries_dir.mkdir(parents=True, exist_ok=True)
+    return summaries_dir / article_path.name
+
+
+def _write_summary(article_path: Path, topic: str, title: str, source_name: str, compiled_markdown: str) -> Path:
+    summary_path = _summary_path(article_path)
+    summary_text = extract_summary(compiled_markdown)
+    summary_path.write_text(
+        (
+            f"---\n"
+            f"title: Summary — {title}\n"
+            f"topic: {topic}\n"
+            f"source: {source_name}\n"
+            f"article: {article_path.relative_to(WIKI_DIR)}\n"
+            f"---\n\n"
+            f"# Summary — {title}\n\n"
+            f"{summary_text}\n"
+        ),
+        encoding="utf-8",
+    )
+    return summary_path
+
+
+def compile_file(raw_path: Path, allow_sensitive: bool = False, no_commit: bool = False) -> Path:
     content = _read_raw(raw_path)
+    assert_safe_for_provider(content, source=f"compile:{raw_path.name}", allow_sensitive=allow_sensitive)
     prompt = f"Documento: {raw_path.name}\n\n{content}"
 
     response = chat(
@@ -84,15 +112,30 @@ def compile_file(raw_path: Path) -> Path:
 
     out = _wiki_path(topic, title)
     out.write_text(response, encoding="utf-8")
-    commit(f"feat(wiki): compile {raw_path.name} → {out.name}", [out])
+    summary_path = _write_summary(out, topic, title, raw_path.name, response)
+
+    mark_compiled(raw_path, out, summary_path, topic, title)
+    upsert_knowledge(
+        {
+            "title": title,
+            "topic": topic,
+            "source": str(raw_path),
+            "article": str(out),
+            "summary": str(summary_path),
+            "summary_text": extract_summary(response),
+        }
+    )
+
+    if not no_commit:
+        commit(f"feat(wiki): compile {raw_path.name} → {out.name}", [out, summary_path])
     return out
 
 
-def update_index() -> None:
+def update_index(no_commit: bool = False) -> None:
     """Regenera _index.md listando todos os artigos da wiki."""
     articles: list[str] = []
     for md in sorted(WIKI_DIR.rglob("*.md")):
-        if md.name == "_index.md":
+        if md.name == "_index.md" or "summaries" in md.parts:
             continue
         rel = md.relative_to(WIKI_DIR)
         articles.append(f"- [[{md.stem}]] (`{rel}`)")
@@ -104,4 +147,5 @@ def update_index() -> None:
         + "\n",
         encoding="utf-8",
     )
-    commit("chore(wiki): update _index.md", [index])
+    if not no_commit:
+        commit("chore(wiki): update _index.md", [index])

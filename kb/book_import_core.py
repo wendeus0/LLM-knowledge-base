@@ -8,8 +8,14 @@ from html.parser import HTMLParser
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
-from defusedxml import ElementTree as SafeET
-from defusedxml.common import DefusedXmlException
+try:
+    from defusedxml import ElementTree as SafeET
+    from defusedxml.common import DefusedXmlException
+except ImportError:  # pragma: no cover - fallback para ambientes mínimos de teste
+    from xml.etree import ElementTree as SafeET
+
+    class DefusedXmlException(Exception):
+        pass
 
 
 class BookConversionError(ValueError):
@@ -130,6 +136,9 @@ def _local_name(tag: str) -> str:
 
 
 def _safe_xml_fromstring(xml_bytes: bytes, error_cls: type[Exception], *, context: str) -> SafeET.Element:
+    lowered = xml_bytes.lower()
+    if b"<!doctype" in lowered or b"<!entity" in lowered:
+        raise error_cls(f"EPUB inválido: XML inseguro ou malformado em {context}")
     try:
         return SafeET.fromstring(xml_bytes)
     except (DefusedXmlException, SafeET.ParseError) as exc:

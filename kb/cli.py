@@ -6,6 +6,8 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 app = typer.Typer(help="LLM-powered personal knowledge base")
+jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
+app.add_typer(jobs_app, name="jobs")
 console = Console()
 
 
@@ -13,9 +15,12 @@ console = Console()
 def ingest(path: Path = typer.Argument(..., help="Arquivo para adicionar a raw/")):
     """Copia um arquivo para raw/."""
     from kb.config import RAW_DIR
+    from kb.state import record_ingest
+
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     dest = RAW_DIR / path.name
     dest.write_bytes(path.read_bytes())
+    record_ingest(dest)
     console.print(f"[green]Adicionado:[/] {dest}")
 
 
@@ -24,6 +29,8 @@ def import_book(
     path: Path = typer.Argument(..., help="Arquivo EPUB ou PDF textual para importar em capítulos Markdown"),
     output: Path = typer.Option(None, "--output", help="Diretório de saída (padrão: raw/books/<livro>)"),
     compile_imported: bool = typer.Option(False, "--compile", help="Compilar os capítulos importados para wiki/ após a importação"),
+    allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
+    no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git"),
 ):
     """Importa um livro EPUB ou PDF textual para raw/books/ em arquivos Markdown por capítulo."""
     from kb.book_import import BookImportError, default_output_dir, import_epub
@@ -43,8 +50,8 @@ def import_book(
 
         compiled_outputs = []
         for chapter_path in written_files:
-            compiled_outputs.append(compile_file(chapter_path))
-        do_update_index()
+            compiled_outputs.append(compile_file(chapter_path, allow_sensitive=allow_sensitive, no_commit=no_commit))
+        do_update_index(no_commit=no_commit)
         typer.echo(f"{len(compiled_outputs)} capítulos compilados para wiki/")
 
 
@@ -52,9 +59,12 @@ def import_book(
 def compile(
     file: Path = typer.Argument(None, help="Arquivo específico em raw/ (padrão: todos)"),
     update_index: bool = typer.Option(True, help="Atualizar _index.md após compilar"),
+    allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
+    no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git"),
 ):
     """Compila raw/ → wiki/ usando LLM."""
     from kb.compile import compile_file, discover_compile_targets, update_index as do_update_index
+    from kb.guardrails import SensitiveContentError, summarize_findings
 
     targets = discover_compile_targets(file)
 
@@ -64,12 +74,19 @@ def compile(
 
     for t in targets:
         console.print(f"Compilando [bold]{t.name}[/]...")
-        out = compile_file(t)
+        try:
+            out = compile_file(t, allow_sensitive=allow_sensitive, no_commit=no_commit)
+        except SensitiveContentError as exc:
+            console.print(f"[yellow]{summarize_findings(exc)}[/]")
+            if allow_sensitive or typer.confirm("Continuar mesmo assim e enviar ao provider externo?", default=False):
+                out = compile_file(t, allow_sensitive=True, no_commit=no_commit)
+            else:
+                raise typer.Exit(code=1)
         rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
         console.print(f"  → [green]{rel}[/]")
 
     if update_index:
-        do_update_index()
+        do_update_index(no_commit=no_commit)
         console.print("[dim]Índice atualizado.[/]")
 
 
@@ -77,19 +94,37 @@ def compile(
 def qa(
     question: str = typer.Argument(..., help="Pergunta para a knowledge base"),
     file_back: bool = typer.Option(False, "--file-back", "-f", help="Arquiva a resposta de volta na wiki"),
+    allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
+    no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git quando houver file-back"),
 ):
-    """Responde uma pergunta consultando a wiki."""
-    console.print("[dim]Pesquisando na wiki...[/]\n")
+    """Responde uma pergunta consultando as fontes do kb."""
+    from kb.guardrails import SensitiveContentError, summarize_findings
 
-    if file_back:
-        from kb.qa import answer_and_file
-        response, saved = answer_and_file(question)
-        console.print(Markdown(response))
-        if saved:
-            console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
-    else:
-        from kb.qa import answer
-        console.print(Markdown(answer(question)))
+    console.print("[dim]Pesquisando nas fontes do kb...[/]\n")
+
+    try:
+        if file_back:
+            from kb.qa import answer_and_file
+            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive, no_commit=no_commit)
+            console.print(Markdown(response))
+            if saved:
+                console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
+        else:
+            from kb.qa import answer
+            console.print(Markdown(answer(question, allow_sensitive=allow_sensitive)))
+    except SensitiveContentError as exc:
+        console.print(f"[yellow]{summarize_findings(exc)}[/]")
+        if not (allow_sensitive or typer.confirm("Continuar mesmo assim e enviar ao provider externo?", default=False)):
+            raise typer.Exit(code=1)
+        if file_back:
+            from kb.qa import answer_and_file
+            response, saved = answer_and_file(question, allow_sensitive=True, no_commit=no_commit)
+            console.print(Markdown(response))
+            if saved:
+                console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
+        else:
+            from kb.qa import answer
+            console.print(Markdown(answer(question, allow_sensitive=True)))
 
 
 @app.command()
@@ -108,21 +143,41 @@ def search(query: str = typer.Argument(..., help="Termos de busca")):
 
 
 @app.command()
-def lint():
+def lint(
+    allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
+):
     """Executa health checks LLM sobre a wiki (relatório apenas)."""
+    from kb.guardrails import SensitiveContentError, summarize_findings
     from kb.lint import lint_wiki
+
     console.print("[dim]Auditando wiki...[/]\n")
-    console.print(Markdown(lint_wiki()))
+    try:
+        console.print(Markdown(lint_wiki(allow_sensitive=allow_sensitive)))
+    except SensitiveContentError as exc:
+        console.print(f"[yellow]{summarize_findings(exc)}[/]")
+        if not (allow_sensitive or typer.confirm("Continuar mesmo assim e enviar ao provider externo?", default=False)):
+            raise typer.Exit(code=1)
+        console.print(Markdown(lint_wiki(allow_sensitive=True)))
 
 
 @app.command()
 def heal(
     n: int = typer.Option(10, "--n", "-n", help="Número de arquivos aleatórios a processar"),
+    allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
+    no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git"),
 ):
     """Heal estocástico: pega N artigos aleatórios, corrige links, remove stubs, stampa reviewed."""
+    from kb.guardrails import SensitiveContentError, summarize_findings
     from kb.heal import heal as do_heal
+
     console.print(f"[dim]Healing {n} arquivos aleatórios...[/]\n")
-    log = do_heal(n)
+    try:
+        log = do_heal(n, allow_sensitive=allow_sensitive, no_commit=no_commit)
+    except SensitiveContentError as exc:
+        console.print(f"[yellow]{summarize_findings(exc)}[/]")
+        if not (allow_sensitive or typer.confirm("Continuar mesmo assim e enviar ao provider externo?", default=False)):
+            raise typer.Exit(code=1)
+        log = do_heal(n, allow_sensitive=True, no_commit=no_commit)
     if not log:
         console.print("[yellow]Wiki vazia.[/]")
         raise typer.Exit()
@@ -131,3 +186,20 @@ def heal(
             entry["action"], "?"
         )
         console.print(f"  {icon} {entry['file']} [dim]({entry['action']})[/]")
+
+
+@jobs_app.command("list")
+def jobs_list():
+    """Lista jobs canônicos e seus cron hints."""
+    from kb.jobs import list_jobs
+
+    for job in list_jobs():
+        console.print(f"[bold]{job.name}[/] [dim]({job.schedule})[/] — {job.description}")
+
+
+@jobs_app.command("run")
+def jobs_run(name: str = typer.Argument(..., help="Nome do job a executar")):
+    """Executa um job canônico por nome."""
+    from kb.jobs import run_job
+
+    console.print(run_job(name))
