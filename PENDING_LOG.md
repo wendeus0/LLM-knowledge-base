@@ -24,6 +24,15 @@ Pendências e decisões abertas.
 - Gateway: 70%+ coverage atingido
 - Todos tests passando 100%
 
+✓ **RESOLVIDO: Code cleanup & documentation (P1+P2+P3)**
+- 16 issues corrigidas em 2 commits (a62de8c, c4498df)
+- Conftest monkeypatch fixes, mock alignment, assertions corrigidas
+- Hardcoded paths removidos, terminologia normalizada
+- Todos 40 testes ainda passando, linting clean (F841 local vars aceitáveis)
+- python-dotenv adicionada à lista de dependências permitidas
+
+**Status:** Feature branch `feat/kb-test-suite` pronta para merge em main
+
 ## P2 (Nice-to-have)
 
 **Obsidian integration**
