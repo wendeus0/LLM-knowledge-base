@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import re
-import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
+
+from defusedxml import ElementTree as SafeET
+from defusedxml.common import DefusedXmlException
 
 
 class BookConversionError(ValueError):
@@ -127,12 +129,19 @@ def _local_name(tag: str) -> str:
     return tag.split("}", 1)[-1]
 
 
+def _safe_xml_fromstring(xml_bytes: bytes, error_cls: type[Exception], *, context: str) -> SafeET.Element:
+    try:
+        return SafeET.fromstring(xml_bytes)
+    except (DefusedXmlException, SafeET.ParseError) as exc:
+        raise error_cls(f"EPUB inválido: XML inseguro ou malformado em {context}") from exc
+
+
 def _find_rootfile_path(archive: ZipFile, error_cls: type[Exception]) -> str:
     try:
         container_xml = archive.read("META-INF/container.xml")
     except KeyError as exc:
         raise error_cls("EPUB inválido: container.xml ausente") from exc
-    root = ET.fromstring(container_xml)
+    root = _safe_xml_fromstring(container_xml, error_cls, context="META-INF/container.xml")
     for element in root.iter():
         if _local_name(element.tag) == "rootfile":
             full_path = element.attrib.get("full-path")
@@ -145,13 +154,13 @@ def _resolve_href(base_path: str, href: str) -> str:
     return str((Path(base_path).parent / href).as_posix())
 
 
-def _parse_package_document(archive: ZipFile, error_cls: type[Exception]) -> tuple[str, ET.Element]:
+def _parse_package_document(archive: ZipFile, error_cls: type[Exception]) -> tuple[str, SafeET.Element]:
     rootfile_path = _find_rootfile_path(archive, error_cls)
-    package_root = ET.fromstring(archive.read(rootfile_path))
+    package_root = _safe_xml_fromstring(archive.read(rootfile_path), error_cls, context=rootfile_path)
     return rootfile_path, package_root
 
 
-def _extract_metadata_from_package_root(package_root: ET.Element, fallback_title: str) -> dict:
+def _extract_metadata_from_package_root(package_root: SafeET.Element, fallback_title: str) -> dict:
     metadata = {"title": None, "author": None, "language": None}
     mapping = {"title": "title", "creator": "author", "language": "language"}
     for element in package_root.iter():
@@ -180,8 +189,8 @@ def _normalize_book_path(path: str) -> str:
 
 def _parse_ncx_toc(archive: ZipFile, href: str) -> dict[str, str]:
     try:
-        root = ET.fromstring(archive.read(href))
-    except Exception:
+        root = SafeET.fromstring(archive.read(href))
+    except (DefusedXmlException, SafeET.ParseError):
         return {}
     toc: dict[str, str] = {}
     for nav_point in root.iter():
@@ -252,7 +261,7 @@ def _parse_nav_document_toc(archive: ZipFile, href: str) -> dict[str, str]:
     return toc
 
 
-def _build_toc_map(archive: ZipFile, rootfile_path: str, package_root: ET.Element) -> dict[str, str]:
+def _build_toc_map(archive: ZipFile, rootfile_path: str, package_root: SafeET.Element) -> dict[str, str]:
     manifest: dict[str, dict[str, str]] = {}
     toc_id: str | None = package_root.attrib.get("toc")
     for element in package_root.iter():

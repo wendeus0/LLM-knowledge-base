@@ -1,6 +1,8 @@
 import json
 from zipfile import ZIP_DEFLATED, ZipFile
 
+import pytest
+
 
 def _create_sample_epub(path):
     with ZipFile(path, "w", compression=ZIP_DEFLATED) as archive:
@@ -86,6 +88,40 @@ def test_should_raise_clear_error_when_epub_is_invalid(tmp_path):
         assert "epub" in str(exc).lower()
     else:
         raise AssertionError("Esperava ValueError para EPUB inválido")
+
+
+def test_should_reject_epub_with_unsafe_xml_entities(tmp_path):
+    from kb.book_import import import_epub
+
+    source = tmp_path / "malicioso.epub"
+    output_dir = tmp_path / "raw" / "books" / "malicioso"
+
+    with ZipFile(source, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "META-INF/container.xml",
+            """<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE container [
+  <!ENTITY xxe SYSTEM 'file:///etc/passwd'>
+]>
+<container version='1.0' xmlns='urn:oasis:names:tc:opendocument:xmlns:container'>
+  <rootfiles>
+    <rootfile full-path='OEBPS/content.opf' media-type='application/oebps-package+xml'/>
+  </rootfiles>
+</container>
+""",
+        )
+        archive.writestr(
+            "OEBPS/content.opf",
+            """<?xml version='1.0' encoding='utf-8'?>
+<package version='3.0' xmlns='http://www.idpf.org/2007/opf'></package>
+""",
+        )
+
+    with pytest.raises(ValueError) as exc:
+        import_epub(source, output_dir)
+
+    assert "xml inseguro" in str(exc.value).lower() or "xml" in str(exc.value).lower()
 
 
 def test_should_use_complex_toc_label_when_epub_chapter_has_no_h1(tmp_path):
