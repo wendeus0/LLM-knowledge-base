@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from kb.compile import compile_file, update_index
+from kb.compile import compile_file, discover_compile_targets, update_index
 
 
 class TestCompileFile:
@@ -31,7 +31,7 @@ Conteúdo compilado.
 """
         with patch("kb.compile.chat") as mock_chat, patch(
             "kb.compile.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = mock_response
 
             result = compile_file(raw_file)
@@ -62,7 +62,7 @@ topic: cybersecurity
 """
         with patch("kb.compile.chat") as mock_chat, patch(
             "kb.compile.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = mock_response
 
             result = compile_file(raw_file)
@@ -94,7 +94,7 @@ reviewed_at: 2026-04-03
 """
         with patch("kb.compile.chat") as mock_chat, patch(
             "kb.compile.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = mock_response
 
             result = compile_file(raw_file)
@@ -130,10 +130,30 @@ source: article.md
         ) as mock_commit:
             mock_chat.return_value = mock_response
 
-            result = compile_file(raw_file)
+            compile_file(raw_file)
 
             # RED: falha se commit não foi chamado
             mock_commit.assert_called()
+
+
+class TestDiscoverCompileTargets:
+    """Testes unitários para discovery de arquivos em raw/."""
+
+    def test_should_discover_markdown_files_recursively_and_skip_metadata(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        (raw / "top.md").write_text("# Top")
+        nested = raw / "books" / "livro"
+        nested.mkdir(parents=True)
+        (nested / "01-capitulo.md").write_text("# Capítulo 1")
+        (nested / "metadata.json").write_text("{}")
+        (nested / "cover.jpg").write_bytes(b"jpg")
+
+        targets = discover_compile_targets(raw)
+
+        assert raw / "top.md" in targets
+        assert nested / "01-capitulo.md" in targets
+        assert nested / "metadata.json" not in targets
+        assert nested / "cover.jpg" not in targets
 
 
 class TestUpdateIndex:

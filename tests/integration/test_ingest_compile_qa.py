@@ -51,7 +51,7 @@ XSS é uma vulnerabilidade web que permite injetar scripts.
 """
         with patch("kb.compile.chat") as mock_chat, patch(
             "kb.compile.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = mock_response
 
             compiled = compile_file(raw_file)
@@ -107,7 +107,7 @@ Cross-Site Request Forgery attack.
 
         with patch("kb.compile.chat") as mock_chat, patch(
             "kb.compile.commit"
-        ) as mock_commit:
+        ):
             # Mock diferentes respostas para diferentes documentos
             mock_chat.side_effect = [mock_response_1, mock_response_2]
 
@@ -148,7 +148,7 @@ Diferenças...
 
         with patch("kb.qa.chat") as mock_qa, patch(
             "kb.qa.find_relevant"
-        ) as mock_search, patch("kb.qa.commit") as mock_commit:
+        ) as mock_search, patch("kb.qa.commit"):
             mock_search.return_value = []
             # Quando find_relevant é vazio, answer() retorna early sem chamar chat
             # Então apenas 1 chamada para file-back article creation
@@ -185,7 +185,7 @@ topic: ai
 
         with patch("kb.compile.chat") as mock_chat, patch(
             "kb.compile.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = mock_response
 
             compiled = compile_file(doc)
