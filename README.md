@@ -70,7 +70,7 @@ kb qa "Explique CSRF" -f --no-commit
 # 6. Permitir explicitamente conteúdo sensível quando necessário
 kb compile --allow-sensitive
 
-# 5. Health check
+# 7. Health check
 kb heal --n 5
 kb lint
 ```
@@ -151,7 +151,7 @@ ruff check kb
 - [ ] Multi-agent specialization (futuro)
 - [ ] Integração com Obsidian como frontend
 - [ ] Embeddings + RAG híbrido (futuro)
-- [ ] Modo no-commit para cenários sensíveis (futuro)
+- [x] Modo no-commit para cenários sensíveis
 
 ## License
 

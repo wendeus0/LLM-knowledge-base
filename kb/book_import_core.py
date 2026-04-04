@@ -198,8 +198,8 @@ def _normalize_book_path(path: str) -> str:
 
 def _parse_ncx_toc(archive: ZipFile, href: str) -> dict[str, str]:
     try:
-        root = SafeET.fromstring(archive.read(href))
-    except (KeyError, DefusedXmlException, SafeET.ParseError):
+        root = _safe_xml_fromstring(archive.read(href), BookConversionError, context=href)
+    except (KeyError, BookConversionError):
         return {}
     toc: dict[str, str] = {}
     for nav_point in root.iter():

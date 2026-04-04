@@ -21,7 +21,10 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
         assert mock_compile.call_count == 0
         assert mock_update_index.called
 
-        assert run_job("lint") == "Job lint executado."
+        mock_lint.return_value = "## Report\n- ok"
+        lint_result = run_job("lint")
+        assert "Job lint executado." in lint_result
+        assert "## Report" in lint_result
         assert mock_lint.called
 
         assert "review" in run_job("review")

@@ -38,8 +38,8 @@ def run_job(name: str) -> str:
     if normalized == "lint":
         from kb.lint import lint_wiki
 
-        lint_wiki()
-        return "Job lint executado."
+        report = lint_wiki()
+        return f"Job lint executado.\n\n{report}"
 
     if normalized == "review":
         from kb.heal import heal

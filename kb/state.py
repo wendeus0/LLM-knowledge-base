@@ -77,6 +77,12 @@ def save_knowledge(entries: list[dict]) -> None:
 def upsert_knowledge(entry: dict) -> dict:
     entries = load_knowledge()
     key = entry.get("article") or entry.get("source") or entry.get("title")
+
+    if key is None:
+        entries.append(entry)
+        save_knowledge(entries)
+        return entry
+
     filtered = []
     for item in entries:
         item_key = item.get("article") or item.get("source") or item.get("title")

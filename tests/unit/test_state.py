@@ -34,11 +34,19 @@ def test_should_mark_compiled_entry(tmp_raw_wiki):
     source.write_text("# Doc")
     article = wiki / "ai" / "doc.md"
     article.write_text("# Compiled")
-    summary = wiki / "summaries" / "doc.md"
-    summary.parent.mkdir(exist_ok=True)
+    summary = wiki / "summaries" / "ai" / "doc.md"
+    summary.parent.mkdir(parents=True, exist_ok=True)
     summary.write_text("# Summary")
 
     entry = mark_compiled(source, article, summary, "ai", "Doc")
 
     assert entry["status"] == "compiled"
     assert entry["article"].endswith("doc.md")
+
+
+def test_should_not_drop_entries_without_dedup_key(tmp_raw_wiki):
+    upsert_knowledge({"summary_text": "Entry 1"})
+    upsert_knowledge({"summary_text": "Entry 2"})
+
+    entries = load_knowledge()
+    assert len(entries) == 2

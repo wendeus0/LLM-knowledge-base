@@ -146,8 +146,12 @@ topic: cybersecurity
 Diferenças...
 """
 
-        with patch("kb.qa.chat") as mock_qa, patch("kb.qa.commit"):
+        with patch("kb.qa.chat") as mock_qa, patch("kb.qa.commit"), patch("kb.qa.build_context") as mock_build_context:
             mock_qa.side_effect = ["Resposta breve sobre XSS.", new_article_response]
+            mock_build_context.return_value = (
+                type("Decision", (), {"route": "wiki", "reason": "teste"})(),
+                ["# xss\nInformação sobre XSS."],
+            )
 
             from kb.qa import answer_and_file
 
@@ -156,6 +160,7 @@ Diferenças...
             # RED: falha se resposta e path não são retornados
             assert isinstance(result, tuple)
             assert len(result) == 2
+            assert mock_qa.call_count == 2
 
     def test_should_maintain_topic_hierarchy_through_compile_flow(
         self, tmp_raw_wiki

@@ -47,10 +47,18 @@ def import_book(
 
     if compile_imported:
         from kb.compile import compile_file, update_index as do_update_index
+        from kb.guardrails import SensitiveContentError, summarize_findings
 
         compiled_outputs = []
         for chapter_path in written_files:
-            compiled_outputs.append(compile_file(chapter_path, allow_sensitive=allow_sensitive, no_commit=no_commit))
+            try:
+                compiled_outputs.append(compile_file(chapter_path, allow_sensitive=allow_sensitive, no_commit=no_commit))
+            except SensitiveContentError as exc:
+                typer.echo(summarize_findings(exc))
+                if allow_sensitive or typer.confirm("Continuar mesmo assim e enviar ao provider externo?", default=False):
+                    compiled_outputs.append(compile_file(chapter_path, allow_sensitive=True, no_commit=no_commit))
+                else:
+                    raise typer.Exit(code=1)
         do_update_index(no_commit=no_commit)
         typer.echo(f"{len(compiled_outputs)} capítulos compilados para wiki/")
 
@@ -102,29 +110,27 @@ def qa(
 
     console.print("[dim]Pesquisando nas fontes do kb...[/]\n")
 
-    try:
+    def _run_qa(allow_sensitive_flag: bool) -> None:
         if file_back:
             from kb.qa import answer_and_file
-            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive, no_commit=no_commit)
+
+            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit)
             console.print(Markdown(response))
             if saved:
                 console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
-        else:
-            from kb.qa import answer
-            console.print(Markdown(answer(question, allow_sensitive=allow_sensitive)))
+            return
+
+        from kb.qa import answer
+
+        console.print(Markdown(answer(question, allow_sensitive=allow_sensitive_flag)))
+
+    try:
+        _run_qa(allow_sensitive)
     except SensitiveContentError as exc:
         console.print(f"[yellow]{summarize_findings(exc)}[/]")
         if not (allow_sensitive or typer.confirm("Continuar mesmo assim e enviar ao provider externo?", default=False)):
             raise typer.Exit(code=1)
-        if file_back:
-            from kb.qa import answer_and_file
-            response, saved = answer_and_file(question, allow_sensitive=True, no_commit=no_commit)
-            console.print(Markdown(response))
-            if saved:
-                console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
-        else:
-            from kb.qa import answer
-            console.print(Markdown(answer(question, allow_sensitive=True)))
+        _run_qa(True)
 
 
 @app.command()

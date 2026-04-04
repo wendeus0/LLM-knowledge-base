@@ -27,7 +27,7 @@ XSS é uma vulnerabilidade web que permite injetar scripts em páginas.
         mock_chat.return_value = mock_response
         article = compile_file(raw_file)
 
-    summary = wiki / "summaries" / article.name
+    summary = wiki / "summaries" / "cybersecurity" / article.name
     assert article.exists()
     assert summary.exists()
     assert "Summary — XSS" in summary.read_text(encoding="utf-8")

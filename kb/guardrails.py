@@ -29,11 +29,19 @@ class SensitiveContentError(RuntimeError):
         super().__init__(f"Conteúdo potencialmente sensível detectado em {source}: {labels}")
 
 
+def _redact_match(value: str) -> str:
+    clipped = value[:80]
+    if len(clipped) <= 8:
+        return "[redacted]"
+    return f"{clipped[:4]}…{clipped[-4:]}"
+
+
+
 def detect_sensitive_content(text: str) -> list[SensitiveFinding]:
     findings: list[SensitiveFinding] = []
     for label, pattern in SENSITIVE_PATTERNS.items():
         for match in pattern.finditer(text):
-            findings.append(SensitiveFinding(label=label, sample=match.group(0)[:80]))
+            findings.append(SensitiveFinding(label=label, sample=_redact_match(match.group(0))))
     return findings
 
 

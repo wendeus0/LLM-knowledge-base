@@ -43,3 +43,28 @@ def test_heal_cli_should_support_no_commit_and_allow_sensitive():
     assert result.exit_code == 0
     assert mock_heal.call_args.kwargs["allow_sensitive"] is True
     assert mock_heal.call_args.kwargs["no_commit"] is True
+
+
+def test_import_book_cli_should_handle_sensitive_compile_with_confirmation(tmp_path):
+    source = tmp_path / "book.epub"
+    source.write_text("stub")
+    output_dir = tmp_path / "raw" / "books" / "book"
+    chapter = output_dir / "01-intro.md"
+
+    with patch("kb.cli.typer.confirm", return_value=True), patch("kb.book_import.import_epub") as mock_import, patch(
+        "kb.compile.compile_file"
+    ) as mock_compile, patch("kb.compile.update_index") as mock_update_index:
+        mock_import.return_value = ([chapter], output_dir / "metadata.json")
+        from kb.guardrails import SensitiveContentError, SensitiveFinding
+
+        mock_compile.side_effect = [
+            SensitiveContentError([SensitiveFinding(label="secret", sample="[redacted]")], "compile:01-intro.md"),
+            tmp_path / "wiki" / "intro.md",
+        ]
+
+        result = runner.invoke(app, ["import-book", str(source), "--output", str(output_dir), "--compile"])
+
+    assert result.exit_code == 0
+    assert mock_compile.call_count == 2
+    assert mock_compile.call_args.kwargs["allow_sensitive"] is True
+    assert mock_update_index.called

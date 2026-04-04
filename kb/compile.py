@@ -64,8 +64,10 @@ def _wiki_path(topic: str, title: str) -> Path:
 
 def _summary_path(article_path: Path) -> Path:
     summaries_dir = WIKI_DIR / "summaries"
-    summaries_dir.mkdir(parents=True, exist_ok=True)
-    return summaries_dir / article_path.name
+    relative_parent = article_path.parent.relative_to(WIKI_DIR)
+    target_dir = summaries_dir / relative_parent
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir / article_path.name
 
 
 def _write_summary(article_path: Path, topic: str, title: str, source_name: str, compiled_markdown: str) -> Path:

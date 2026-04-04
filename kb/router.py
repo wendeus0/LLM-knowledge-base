@@ -38,16 +38,16 @@ def _build_wiki_context(question: str, top_k: int) -> list[str]:
 
 def _build_raw_context(question: str, top_k: int) -> list[str]:
     terms = set(question.lower().split())
-    scored: list[tuple[int, Path]] = []
+    scored: list[tuple[int, Path, str]] = []
 
     for path in discover_raw_sources(RAW_DIR):
         text = path.read_text(encoding="utf-8", errors="replace")
         score = sum(text.lower().count(term) for term in terms)
         if score > 0:
-            scored.append((score, path))
+            scored.append((score, path, text))
 
     scored.sort(key=lambda item: item[0], reverse=True)
-    return [f"# {path.name}\n{path.read_text(encoding='utf-8', errors='replace')}" for _, path in scored[:top_k]]
+    return [f"# {path.name}\n{text}" for _, path, text in scored[:top_k]]
 
 
 def _build_structured_context(route: str, question: str, top_k: int) -> list[str]:
