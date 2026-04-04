@@ -19,17 +19,44 @@ def ingest(path: Path = typer.Argument(..., help="Arquivo para adicionar a raw/"
     console.print(f"[green]Adicionado:[/] {dest}")
 
 
+@app.command("import-book")
+def import_book(
+    path: Path = typer.Argument(..., help="Arquivo EPUB ou PDF textual para importar em capítulos Markdown"),
+    output: Path = typer.Option(None, "--output", help="Diretório de saída (padrão: raw/books/<livro>)"),
+    compile_imported: bool = typer.Option(False, "--compile", help="Compilar os capítulos importados para wiki/ após a importação"),
+):
+    """Importa um livro EPUB ou PDF textual para raw/books/ em arquivos Markdown por capítulo."""
+    from kb.book_import import BookImportError, default_output_dir, import_epub
+
+    target_dir = output or default_output_dir(path)
+
+    try:
+        written_files, metadata_path = import_epub(path, target_dir)
+    except (BookImportError, PermissionError) as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1)
+
+    typer.echo(f"{len(written_files)} capítulos importados em {target_dir} (metadata: {metadata_path.name})")
+
+    if compile_imported:
+        from kb.compile import compile_file, update_index as do_update_index
+
+        compiled_outputs = []
+        for chapter_path in written_files:
+            compiled_outputs.append(compile_file(chapter_path))
+        do_update_index()
+        typer.echo(f"{len(compiled_outputs)} capítulos compilados para wiki/")
+
+
 @app.command()
 def compile(
     file: Path = typer.Argument(None, help="Arquivo específico em raw/ (padrão: todos)"),
     update_index: bool = typer.Option(True, help="Atualizar _index.md após compilar"),
 ):
     """Compila raw/ → wiki/ usando LLM."""
-    from kb.config import RAW_DIR
-    from kb.compile import compile_file, update_index as do_update_index
+    from kb.compile import compile_file, discover_compile_targets, update_index as do_update_index
 
-    targets = [file] if file else list(RAW_DIR.iterdir())
-    targets = [t for t in targets if t.is_file()]
+    targets = discover_compile_targets(file)
 
     if not targets:
         console.print("[yellow]Nenhum arquivo em raw/[/]")
@@ -38,7 +65,8 @@ def compile(
     for t in targets:
         console.print(f"Compilando [bold]{t.name}[/]...")
         out = compile_file(t)
-        console.print(f"  → [green]{out.relative_to(Path.cwd())}[/]")
+        rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
+        console.print(f"  → [green]{rel}[/]")
 
     if update_index:
         do_update_index()

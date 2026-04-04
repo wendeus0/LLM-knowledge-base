@@ -6,43 +6,65 @@ type: project
 
 ## Frentes ativas
 
-### F1: Book Import (feat/book-import)
+### F1: Validação operacional com provider real
 
-**Status:** Código existe, sem SPEC formal
+**Status:** Em progresso
 
-**O que tem:**
-- `kb/book_import.py` — facade
-- `kb/book_import_core.py` — parser EPUB/PDF, HTML→Markdown, extração de capítulos
-- `kb/cli.py` — comando `kb import-book`
-- Testes unitários e de integração
+**Objetivo:** Confirmar que a configuração atual com OpenCode Go funciona ponta a ponta em uso real, não apenas com mocks.
 
 **O que falta:**
-- SPEC formal (regra: sem código de feature nova sem SPEC)
-- Code review
-- Decisão D7 (dependências): book_import_core usa apenas stdlib (OK)
+- [ ] Rodar `kb import-book <arquivo> --compile` com um EPUB real
+- [ ] Rodar `kb qa`, `kb heal` e `kb lint` usando a chave já configurada
+- [ ] Validar ergonomia de erro quando o extra `.[llm]` não está instalado
 
-**Next action:** Criar SPEC retroativa ou aceitar como feature informal
+**Risco principal:** comportamento real do provider pode divergir do ambiente de teste mockado.
 
 ---
+
+### F2: Segurança operacional do conteúdo
+
+**Status:** Em aberto
+
+**Objetivo:** Definir guardrails para evitar envio/commit acidental de conteúdo sensível.
+
+**O que falta:**
+- [ ] Documentar o que pode ou não ser enviado ao provider externo
+- [ ] Avaliar necessidade de modo sem commit automático para alguns fluxos
+- [ ] Transformar recomendações do `SECURITY_AUDIT_REPORT.md` em política operacional
+
+---
+
+### F3: Empacotamento definitivo da relação `book2md` → `kb`
+
+**Status:** Em aberto
+
+**Objetivo:** Reduzir o acoplamento por path usado hoje no laboratório.
+
+**Opções:**
+1. Tornar `kb` dependência explícita de `book2md`
+2. Extrair pacote compartilhado mínimo
+3. Manter compat layer atual enquanto o laboratório seguir no mesmo mono-workspace
+
+**Recomendação atual:** adiar até o próximo ciclo, porque a solução corrente está funcional e coberta por testes.
 
 ## Decisões abertas
 
-### Q1: Obsidian — quando?
+### Q1: O fluxo de livro importado deve sempre passar por `compile`?
 
-Wiki já é Obsidian-compatible. Plugin é futuro (P2).
-Usuário pode abrir `wiki/` como vault agora.
+**Trade-off:**
+- Sim: maximiza consistência com a wiki assistida por LLM
+- Não: preserva capítulos markdown como saída final legível sem custo de provider
 
-### Q2: Escalabilidade — quando migrar para embeddings?
+**Estado:** parcialmente resolvido com `--compile` opcional; ainda falta decidir o padrão operacional recomendado.
 
-Limiar: >500 artigos. Atual: ~5 artigos. Sem urgência.
+### Q2: Commit automático deve ser sempre obrigatório em writes da wiki?
 
----
+**Trade-off:**
+- Sim: rastreabilidade total
+- Não: melhor controle para conteúdo sensível/experimentos
 
-## Riscos
+**Estado:** decisão ainda em aberto; sem mudança implementada neste sprint.
 
-| Risco | Probabilidade | Impacto | Mitigação |
-|-------|---------------|--------|-----------|
-| LLM gera conflitos git | Baixa | Médio | Estratégia append/update |
-| API key exposta | Média | Alto | .env (gitignored) |
-| Wiki grande demais | Baixa | Médio | Planejar embeddings |
-| Wikilinks quebrados | Média | Baixo | Lint + heal |
+### Q3: Quando promover o pacote/laboratório para distribuição formal?
+
+**Limiar sugerido:** quando o fluxo de livro estiver estabilizado e for necessário consumir `book2md` fora do workspace atual.

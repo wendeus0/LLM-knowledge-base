@@ -100,7 +100,7 @@ Machine learning é um campo da IA.
 """
             mock_chat.return_value = article_response
 
-            result = answer_and_file("O que é machine learning?")
+            answer_and_file("O que é machine learning?")
 
             # RED: falha se não escreve arquivo
             assert mock_commit.called
@@ -118,7 +118,7 @@ Machine learning é um campo da IA.
 
         with patch("kb.qa.chat") as mock_chat, patch(
             "kb.qa.commit"
-        ) as mock_commit:
+        ):
             answer_response = "Resposta breve."
             article_response = """---
 title: Question Answer

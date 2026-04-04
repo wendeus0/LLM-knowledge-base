@@ -4,42 +4,40 @@ Pendências e decisões abertas.
 
 | Prioridade | Item | Status | Data |
 |------------|------|--------|------|
-| P0 | Configurar API key + modelo | ✓ RESOLVIDO | 2026-04-03 |
-| P1 | Implementar testes (tests/) | ✓ RESOLVIDO (40/40 passing) | 2026-04-03 |
+| P1 | Validar fluxo end-to-end com OpenCode Go real (`import-book --compile`, `qa`, `heal`, `lint`) | Pendente | 2026-04-03 |
+| P1 | Decidir política final para conteúdo sensível enviado ao provider externo e para commits automáticos de conteúdo compilado | Pendente | 2026-04-03 |
+| P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | Pendente | 2026-04-03 |
 | P2 | Integração Obsidian | Pendente | 2026-04-03 |
 | P2 | Embeddings + RAG | Pendente (futuro) | 2026-04-03 |
 
 ## P0 (Bloqueadores)
 
-✓ **RESOLVIDO: Modelo LLM (kimi-k2.5)**
-- Solução: usar nome do modelo sem prefixo: `kimi-k2.5` (não `opencode-go/kimi-k2.5`)
-- Modelo suportado: Kimi K2.5, Minimax 2.7, GLM-5
-- Status: Pipeline completo testado e funcionando
+- Nenhum bloqueador aberto no fechamento deste sprint.
 
 ## P1 (Importante)
 
-✓ **RESOLVIDO: Testes (tests/)**
-- 40 testes implementados (25 unit + 8+ integration)
-- Cobertura: 73% global, 88-100% em módulos críticos
-- Gateway: 70%+ coverage atingido
-- Todos tests passando 100%
+**Validação real com provider**
+- Rodar smoke test com a configuração atual do `.env`
+- Exercitar `kb import-book arquivo.epub --compile`
+- Exercitar `kb qa`, `kb heal` e `kb lint` contra o endpoint OpenCode Go
+- Confirmar mensagens de erro e ergonomia para ambientes sem extra `.[llm]`
 
-✓ **RESOLVIDO: Code cleanup & documentation (P1+P2+P3)**
-- 16 issues corrigidas em 2 commits (a62de8c, c4498df)
-- Conftest monkeypatch fixes, mock alignment, assertions corrigidas
-- Hardcoded paths removidos, terminologia normalizada
-- Todos 40 testes ainda passando, linting clean (F841 local vars aceitáveis)
-- python-dotenv adicionada à lista de dependências permitidas
-
-**Status:** Feature branch `feat/kb-test-suite` pronta para merge em main
+**Política de segurança operacional**
+- Definir regra explícita sobre documentos que podem ser enviados ao provider externo
+- Avaliar se `compile`/`qa --file-back`/`heal` devem oferecer modo sem commit automático em cenários sensíveis
+- Registrar orientação operacional derivada do `SECURITY_AUDIT_REPORT.md`
 
 ## P2 (Nice-to-have)
+
+**Integração estrutural com book2md**
+- Hoje `book2md` funciona como compat layer/lab
+- Próximo passo opcional: empacotar dependência de forma explícita e remover fallback por path
 
 **Obsidian integration**
 - Wiki já é Obsidian-compatible (markdown + wikilinks)
 - Futuro: plugin Obsidian que chama `kb` via CLI
 
 **Embeddings + RAG**
-- Atual: TF-IDF simples funciona até ~100 artigos
-- Quando escalar: adicionar embeddings + FAISS ou similar
-- Não bloqueia — milestone futuro
+- Atual: busca lexical simples funciona para a escala atual
+- Quando escalar: adicionar embeddings + índice vetorial
+- Não bloqueia a baseline atual

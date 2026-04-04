@@ -4,41 +4,49 @@ description: Próximos passos recomendados (atualizado a cada sessão)
 type: project
 ---
 
-## Imediato
+## Imediato (próxima sessão)
 
-1. **[P1] Decidir sobre feat/book-import**
-   - Código existe na branch `feat/book-import`
-   - Opção A: criar SPEC retroativa → validar → merge
-   - Opção B: aceitar como feature informal e mergear
-   - Opção C: manter na branch até precisar
+1. **[P1] Rodar smoke test real com OpenCode Go**
+   - `pip install -e .[llm]`
+   - `kb import-book <arquivo.epub> --compile`
+   - `kb qa "pergunta de verificação"`
+   - `kb heal --n 3`
+   - `kb lint`
 
-2. **[P1] Alimentar a wiki**
-   - Adicionar mais documentos via `kb ingest`
-   - Compilar e testar qualidade do output
-   - Testar heal com mais conteúdo
+2. **[P1] Consolidar política de segurança operacional**
+   - Ler `SECURITY_AUDIT_REPORT.md`
+   - Definir regra explícita para conteúdo sensível
+   - Decidir se algum fluxo deve ganhar modo sem commit automático
 
----
+3. **[P1] Limpeza de artefatos do workspace antes de commit/release**
+   - Revisar `raw/` e `wiki/` gerados durante experimentos
+   - Garantir que apenas artefatos intencionais sejam versionados
 
-## Curto prazo
+## Curto prazo (próximas 2 sessões)
 
-3. **[P2] Obsidian como frontend**
-   - Abrir `wiki/` como vault em Obsidian
-   - Testar navegação com wikilinks
+4. **[P2] Formalizar distribuição entre `book2md` e `kb`**
+   - Escolher entre dependência explícita ou pacote compartilhado
+   - Remover fallback por path se a distribuição formal for adotada
 
-4. **[P2] Expandir cobertura de testes**
-   - Adicionar testes para edge cases
-   - Testar heal com wiki maior
+5. **[P2] Melhorar heurísticas de PDF textual**
+   - Detectar prefácio/introdução/apêndice
+   - Refinar separação de capítulos em layouts menos limpos
 
----
+6. **[P2] Documentação operacional de uso**
+   - Explicar claramente quando usar `ingest`
+   - Explicar quando usar `import-book`
+   - Explicar quando usar `--compile`
 
-## Longo prazo
+## Médio prazo
 
-5. **[P2] Embeddings + RAG** — quando wiki > 500 artigos
-6. **[P2] Obsidian plugin** — CLI hook nativo
-7. **[P2] Finetuning** — modelo local no corpus
+7. **[P2] Obsidian integration**
+   - Abrir wiki como vault
+   - Avaliar plugin/automação leve se o uso crescer
 
----
+8. **[P2] Embeddings + RAG**
+   - Reavaliar quando a wiki ultrapassar a escala confortável da busca lexical
 
 ## Bloqueadores atuais
 
-Nenhum. Baseline verde, API configurada, testes passando.
+- Nenhum bloqueador técnico aberto
+- Dependências LLM são opcionais, mas o smoke test real ainda está pendente
