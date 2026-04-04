@@ -1,6 +1,5 @@
 """Health checks LLM sobre a wiki."""
 
-from pathlib import Path
 from kb.client import chat
 from kb.config import WIKI_DIR
 

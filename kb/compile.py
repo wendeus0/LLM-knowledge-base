@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from kb.client import chat
-from kb.config import RAW_DIR, WIKI_DIR, TOPICS
+from kb.config import WIKI_DIR, TOPICS
 from kb.git import commit
 
 
