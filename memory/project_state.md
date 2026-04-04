@@ -16,6 +16,7 @@ kb/
 │   ├── cybersecurity/, ai/, python/, typescript/
 ├── kb/               ← pacote Python
 │   ├── client.py, compile.py, qa.py, search.py, heal.py, lint.py, git.py, cli.py, config.py
+├── .pi/              ← manifesto Pi (manifest.yaml)
 ├── pyproject.toml
 ├── .env.example
 ├── CLAUDE.md, AGENTS.md, ERROR_LOG.md, PENDING_LOG.md
@@ -25,52 +26,24 @@ kb/
 
 ## Status
 
-**Iniciativa:** Fase 1 — estrutura base
-- ✓ Arquivos Python criados (client, compile, qa, search, heal, lint, git, cli)
-- ✓ Comandos CLI funcionando (kb ingest, compile, qa, search, heal, lint)
+**Fase 1 — base funcional: COMPLETA**
+- ✓ Módulos Python (client, compile, qa, search, heal, lint, git, cli)
+- ✓ CLI funcionando (kb ingest, compile, qa, search, heal, lint)
 - ✓ Git automático em todo write
-- ✓ Stochastic heal implementado
-- ✓ File-back (qa --file-back) implementado
-- ✓ Testes: 40/40 passing (unit + integration)
-- ✓ .env configurado com chave de API
+- ✓ Stochastic heal + file-back
+- ✓ Testes: 40/40 passing, 73% cobertura
+- ✓ .env configurado (kimi-k2.5)
+- ✓ Pipeline testado end-to-end (ingest → compile → qa → file-back)
 
-## Branch ativo
+## Branches
 
-`main` — projeto solo, sem branches de feature
+- `main` — estável, baseline verde
+- `feat/book-import` — importação de EPUB/PDF para capítulos Markdown (WIP, sem SPEC)
 
-## Sprint
+## Marcos
 
-N/A — projeto novo
-
-## Marcos (Milestones)
-
-1. **Setup completo** (em progresso)
-   - [ ] Instalar `pip install -e .`
-   - [ ] Configurar .env
-   - [ ] Teste end-to-end: ingest → compile → qa → heal
-
-2. **Testes** (futuro)
-   - [ ] Unit tests (compile, qa, search)
-   - [ ] Integration tests (raw → wiki → qa)
-   - [ ] 70%+ coverage
-
-3. **Obsidian** (futuro)
-   - [ ] Integração nativa (plugin ou CLI hook)
-   - [ ] Visualização de wiki/ em tempo real
-
-## Tópicos de pesquisa (wiki/)
-
-Inicialmente vazios. Planejados:
-- cybersecurity
-- ai
-- python
-- typescript
-
-## Tecnologias
-
-- **Language:** Python 3.11+
-- **CLI:** Typer
-- **UI:** Rich
-- **LLM:** OpenAI SDK (OpenCode Go)
-- **Search:** Contagem simples de palavras-chave em Markdown
-- **Storage:** JSON (config), Markdown (wiki), Git
+1. **Setup completo** — ✓ DONE
+2. **Testes** — ✓ DONE (40/40, 73% coverage)
+3. **Book import** — WIP (branch feat/book-import, precisa SPEC)
+4. **Obsidian** — futuro (P2)
+5. **Embeddings + RAG** — futuro (P2)
