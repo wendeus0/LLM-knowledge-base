@@ -41,11 +41,11 @@ kb/
 - ✓ Suite `book2md`: 17 testes passando
 - ✓ Ruff limpo em ambos os repositórios
 
-## Branch ativo
+## Branches
 
 `main` — projeto solo, sem branches de feature no momento
 
-## Sprint
+## Marcos
 
 Sprint fechado em 2026-04-03
 
