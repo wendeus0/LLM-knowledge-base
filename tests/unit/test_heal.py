@@ -113,7 +113,7 @@ Content.
 
         with patch("kb.heal.chat") as mock_chat, patch(
             "kb.heal.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = "Healed."
 
             # RED: falha se heal não processa
@@ -162,7 +162,7 @@ Conteúdo substantivo sobre teste.
 
         with patch("kb.heal.chat") as mock_chat, patch(
             "kb.heal.commit"
-        ) as mock_commit:
+        ):
             mock_chat.return_value = "OK"
 
             # RED: falha se não retorna list[dict]

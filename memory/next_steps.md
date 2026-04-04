@@ -4,89 +4,49 @@ description: Próximos passos recomendados (atualizado a cada sessão)
 type: project
 ---
 
-## Imediato (sessão próxima)
+## Imediato (próxima sessão)
 
-1. **[P0 Bloqueador]** Configurar .env com API key
-   - `cp .env.example .env`
-   - Preencher `KB_API_KEY` (OpenCode Go ou Ollama)
-   - Testar: `python -c "from kb.config import API_KEY; print('OK')" `
+1. **[P1] Rodar smoke test real com OpenCode Go**
+   - `pip install -e .[llm]`
+   - `kb import-book <arquivo.epub> --compile`
+   - `kb qa "pergunta de verificação"`
+   - `kb heal --n 3`
+   - `kb lint`
 
-2. **[P0]** Instalar pacote
-   - `python -m venv .venv && source .venv/bin/activate` (Linux/Mac)
-   - `pip install -e .`
-   - Testar: `kb --help`
+2. **[P1] Consolidar política de segurança operacional**
+   - Ler `SECURITY_AUDIT_REPORT.md`
+   - Definir regra explícita para conteúdo sensível
+   - Decidir se algum fluxo deve ganhar modo sem commit automático
 
-3. **[P0]** Primeiro teste end-to-end
-   - Criar um documento `exemplo.md` com 200-500 palavras sobre um tópico (ex: "O que é XSS?")
-   - `kb ingest exemplo.md`
-   - `kb compile`
-   - Verificar se foi criado em `wiki/` (ex: wiki/cybersecurity/xss.md)
-   - `kb qa "O que é XSS?" -f` (pergunta + file-back)
-   - Verificar se criou novo artigo com a resposta
-
----
+3. **[P1] Limpeza de artefatos do workspace antes de commit/release**
+   - Revisar `raw/` e `wiki/` gerados durante experimentos
+   - Garantir que apenas artefatos intencionais sejam versionados
 
 ## Curto prazo (próximas 2 sessões)
 
-4. **[P1]** Adicionar mais documentos
-   - Pesquisar/coletar 5-10 artigos sobre os 4 tópicos
-   - Compilar todos
-   - Verificar wiki/ cresce com qualidade
+4. **[P2] Formalizar distribuição entre `book2md` e `kb`**
+   - Escolher entre dependência explícita ou pacote compartilhado
+   - Remover fallback por path se a distribuição formal for adotada
 
-5. **[P2]** Usar Obsidian
-   - Abrir raiz do projeto como vault em Obsidian
-   - Navegar wiki/ com wikilinks
-   - (Opcional) instalar Obsidian Web Clipper para ingest direto da web
+5. **[P2] Melhorar heurísticas de PDF textual**
+   - Detectar prefácio/introdução/apêndice
+   - Refinar separação de capítulos em layouts menos limpos
 
-6. **[P1]** Testar stochastic heal
-   - `kb heal --n 5` (pequeno teste)
-   - Verificar logs de ações (deleted_stub, healed, reviewed_no_changes)
-   - Checar git commits criados
+6. **[P2] Documentação operacional de uso**
+   - Explicar claramente quando usar `ingest`
+   - Explicar quando usar `import-book`
+   - Explicar quando usar `--compile`
 
----
+## Médio prazo
 
-## Médio prazo (próximo mês)
+7. **[P2] Obsidian integration**
+   - Abrir wiki como vault
+   - Avaliar plugin/automação leve se o uso crescer
 
-7. **[P2]** Implementar testes (tests/)
-   - Unit: compile, qa, search, heal
-   - Integration: raw → wiki → qa
-   - Target: 70%+ coverage
-
-8. **[P2]** Adicionar linting básico
-   - `ruff check kb`
-   - Integrar em CI/pre-commit (futuro)
-
-9. **[P2]** Documentação do projeto
-   - README.md (como usar)
-   - Architecture.md (design decisions)
-   - CLI.md (referência de comandos)
-
----
-
-## Longo prazo (futuro)
-
-10. **[P2]** Obsidian plugin
-    - Plugin nativo que chama `kb` via CLI
-    - Renderizar outputs em Obsidian diretamente
-
-11. **[P2]** Embeddings + RAG
-    - Quando wiki > 500 artigos
-    - Adicionar `sentence-transformers`, FAISS
-    - Hybrid search (TF-IDF + semantic)
-
-12. **[P2]** Finetuning
-    - Treinar modelo local no corpus da wiki
-    - Usar com Ollama
-    - Full offline capabilities
-
----
+8. **[P2] Embeddings + RAG**
+   - Reavaliar quando a wiki ultrapassar a escala confortável da busca lexical
 
 ## Bloqueadores atuais
 
-- ❌ KB_API_KEY não configurada → bloqueia tudo
-- ✓ Estrutura de código OK
-- ✓ CLI OK
-- ✓ Git automático OK
-
-**UNBLOCK:** Preencher .env
-
+- Nenhum bloqueador técnico aberto
+- Dependências LLM são opcionais, mas o smoke test real ainda está pendente

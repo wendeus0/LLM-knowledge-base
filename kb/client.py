@@ -1,15 +1,48 @@
-from openai import OpenAI
 from kb.config import API_KEY, BASE_URL, MODEL
 
+OPENCODE_GO_BASE_URL_FRAGMENT = "opencode.ai/zen/go"
+OPENCODE_GO_ALLOWED_MODELS = {"kimi-k2.5", "minimax-2.7", "glm-5"}
 
-def get_client() -> OpenAI:
+
+def validate_provider_model_compatibility(base_url: str, model: str) -> None:
+    normalized_base_url = base_url.strip().lower()
+    normalized_model = model.strip().lower()
+
+    if OPENCODE_GO_BASE_URL_FRAGMENT not in normalized_base_url:
+        return
+
+    if "/" in normalized_model:
+        raise ValueError(
+            "Modelo incompatível com OpenCode Go: use o nome simples do modelo, sem prefixos. "
+            f"Exemplo válido: `kimi-k2.5`. Valor recebido: `{model}`"
+        )
+
+    if normalized_model not in OPENCODE_GO_ALLOWED_MODELS:
+        allowed = ", ".join(sorted(OPENCODE_GO_ALLOWED_MODELS))
+        raise ValueError(
+            "Modelo não reconhecido para OpenCode Go. "
+            f"Modelos validados neste projeto: {allowed}. Valor recebido: `{model}`"
+        )
+
+
+def get_client():
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError(
+            "Dependência opcional ausente: instale `openai` para usar compile/qa/heal/lint."
+        ) from exc
+
     return OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
 
-def chat(messages: list[dict], model: str = MODEL, **kwargs) -> str:
+def chat(messages: list[dict], model: str | None = None, **kwargs) -> str:
+    resolved_model = model or MODEL
+    validate_provider_model_compatibility(BASE_URL, resolved_model)
+
     client = get_client()
     response = client.chat.completions.create(
-        model=model,
+        model=resolved_model,
         messages=messages,
         **kwargs,
     )
