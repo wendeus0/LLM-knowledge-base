@@ -22,7 +22,7 @@ Se não houver nada a corrigir, responda exatamente: NO_CHANGES
 
 def _is_stub(text: str) -> bool:
     """Artigo vazio ou só com frontmatter."""
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
     # Remove frontmatter
     content_lines = []
     in_front = False
@@ -32,7 +32,7 @@ def _is_stub(text: str) -> bool:
             continue
         if not in_front:
             content_lines.append(line)
-    meaningful = [l for l in content_lines if not l.startswith("#") and len(l) > 10]
+    meaningful = [line for line in content_lines if not line.startswith("#") and len(line) > 10]
     return len(meaningful) == 0
 
 

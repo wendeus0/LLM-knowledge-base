@@ -1,1 +1,1 @@
-from kb.cli import app
+from kb.cli import app as app
