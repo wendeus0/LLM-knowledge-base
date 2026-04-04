@@ -4,22 +4,22 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
-## Sessão de onboarding — 2026-04-03
+## Sessão de triagem — 2026-04-03
 
 **O que foi feito:**
-- Estrutura do projeto criada (AGENTS.md, CLAUDE.md, logs, memoria)
-- Código Python (client, compile, qa, search, heal, lint, git, cli) implementado
-- Git workflow automático em todos os writes
-- Stochastic heal com arquivos aleatórios
-- File-back (qa --file-back) para enriquecer wiki
+- Triagem técnica: 4 problemas detectados e resolvidos
+- Deletado arquivo acidental na raiz
+- Trabalho de book_import movido de `main` para branch `feat/book-import` (2 commits)
+- `.coverage` removido, adicionado ao `.gitignore`
+- Memória atualizada (project_state, active_fronts, next_steps, handoff)
 
-**O que falta:**
-- Configurar `.env` com API key (P0 bloqueador)
-- Instalar `pip install -e .`
-- Primeiro teste end-to-end (ingest → compile → qa)
+**Estado de `main`:**
+- Limpa de código não commitado
+- Untracked legítimos: `.pi/`, `raw/`, wiki content files
+- `.gitignore` atualizado (pendente commit)
 
-**Próximo:** Ver `memory/next_steps.md` para roadmap
+**Estado de `feat/book-import`:**
+- 2 commits: core + CLI registration
+- Sem SPEC — decisão pendente
 
----
-
-(Esta sessão será atualizada ao final com resumo de trabalho)
+**Próximo:** Ver `memory/next_steps.md`

@@ -4,89 +4,41 @@ description: Próximos passos recomendados (atualizado a cada sessão)
 type: project
 ---
 
-## Imediato (sessão próxima)
+## Imediato
 
-1. **[P0 Bloqueador]** Configurar .env com API key
-   - `cp .env.example .env`
-   - Preencher `KB_API_KEY` (OpenCode Go ou Ollama)
-   - Testar: `python -c "from kb.config import API_KEY; print('OK')" `
+1. **[P1] Decidir sobre feat/book-import**
+   - Código existe na branch `feat/book-import`
+   - Opção A: criar SPEC retroativa → validar → merge
+   - Opção B: aceitar como feature informal e mergear
+   - Opção C: manter na branch até precisar
 
-2. **[P0]** Instalar pacote
-   - `python -m venv .venv && source .venv/bin/activate` (Linux/Mac)
-   - `pip install -e .`
-   - Testar: `kb --help`
-
-3. **[P0]** Primeiro teste end-to-end
-   - Criar um documento `exemplo.md` com 200-500 palavras sobre um tópico (ex: "O que é XSS?")
-   - `kb ingest exemplo.md`
-   - `kb compile`
-   - Verificar se foi criado em `wiki/` (ex: wiki/cybersecurity/xss.md)
-   - `kb qa "O que é XSS?" -f` (pergunta + file-back)
-   - Verificar se criou novo artigo com a resposta
+2. **[P1] Alimentar a wiki**
+   - Adicionar mais documentos via `kb ingest`
+   - Compilar e testar qualidade do output
+   - Testar heal com mais conteúdo
 
 ---
 
-## Curto prazo (próximas 2 sessões)
+## Curto prazo
 
-4. **[P1]** Adicionar mais documentos
-   - Pesquisar/coletar 5-10 artigos sobre os 4 tópicos
-   - Compilar todos
-   - Verificar wiki/ cresce com qualidade
+3. **[P2] Obsidian como frontend**
+   - Abrir `wiki/` como vault em Obsidian
+   - Testar navegação com wikilinks
 
-5. **[P2]** Usar Obsidian
-   - Abrir raiz do projeto como vault em Obsidian
-   - Navegar wiki/ com wikilinks
-   - (Opcional) instalar Obsidian Web Clipper para ingest direto da web
-
-6. **[P1]** Testar stochastic heal
-   - `kb heal --n 5` (pequeno teste)
-   - Verificar logs de ações (deleted_stub, healed, reviewed_no_changes)
-   - Checar git commits criados
+4. **[P2] Expandir cobertura de testes**
+   - Adicionar testes para edge cases
+   - Testar heal com wiki maior
 
 ---
 
-## Médio prazo (próximo mês)
+## Longo prazo
 
-7. **[P2]** Implementar testes (tests/)
-   - Unit: compile, qa, search, heal
-   - Integration: raw → wiki → qa
-   - Target: 70%+ coverage
-
-8. **[P2]** Adicionar linting básico
-   - `ruff check kb`
-   - Integrar em CI/pre-commit (futuro)
-
-9. **[P2]** Documentação do projeto
-   - README.md (como usar)
-   - Architecture.md (design decisions)
-   - CLI.md (referência de comandos)
-
----
-
-## Longo prazo (futuro)
-
-10. **[P2]** Obsidian plugin
-    - Plugin nativo que chama `kb` via CLI
-    - Renderizar outputs em Obsidian diretamente
-
-11. **[P2]** Embeddings + RAG
-    - Quando wiki > 500 artigos
-    - Adicionar `sentence-transformers`, FAISS
-    - Hybrid search (TF-IDF + semantic)
-
-12. **[P2]** Finetuning
-    - Treinar modelo local no corpus da wiki
-    - Usar com Ollama
-    - Full offline capabilities
+5. **[P2] Embeddings + RAG** — quando wiki > 500 artigos
+6. **[P2] Obsidian plugin** — CLI hook nativo
+7. **[P2] Finetuning** — modelo local no corpus
 
 ---
 
 ## Bloqueadores atuais
 
-- ❌ KB_API_KEY não configurada → bloqueia tudo
-- ✓ Estrutura de código OK
-- ✓ CLI OK
-- ✓ Git automático OK
-
-**UNBLOCK:** Preencher .env
-
+Nenhum. Baseline verde, API configurada, testes passando.
