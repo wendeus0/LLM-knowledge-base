@@ -1,6 +1,20 @@
 import pytest
 
-from kb.client import validate_provider_model_compatibility
+from kb.client import validate_provider_model_compatibility, get_client
+
+
+class TestGetClient:
+    def test_should_raise_when_api_key_is_missing(self, monkeypatch):
+        monkeypatch.setattr("kb.client.API_KEY", None)
+
+        with pytest.raises(RuntimeError, match="KB_API_KEY"):
+            get_client()
+
+    def test_should_raise_when_api_key_is_empty_string(self, monkeypatch):
+        monkeypatch.setattr("kb.client.API_KEY", "")
+
+        with pytest.raises(RuntimeError, match="KB_API_KEY"):
+            get_client()
 
 
 class TestValidateProviderModelCompatibility:
