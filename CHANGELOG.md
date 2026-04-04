@@ -60,9 +60,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec
 
 ## Legenda
 
-- `Added` - Novas funcionalidades
-- `Changed` - Mudanças em funcionalidades existentes
-- `Deprecated` - Funcionalidades que serão removidas em breve
-- `Removed` - Funcionalidades removidas
-- `Fixed` - Correções de bugs
-- `Security` - Correções de vulnerabilidades de segurança
+- `Adicionado` - Novas funcionalidades
+- `Modificado` - Mudanças em funcionalidades existentes
+- `Descontinuado` - Funcionalidades que serão removidas em breve
+- `Removido` - Funcionalidades removidas
+- `Corrigido` - Correções de bugs
+- `Segurança` - Correções de vulnerabilidades de segurança
