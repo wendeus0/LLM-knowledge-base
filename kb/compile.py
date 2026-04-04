@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from kb.client import chat
-from kb.config import WIKI_DIR, TOPICS
+from kb.config import RAW_DIR, WIKI_DIR, TOPICS
 from kb.git import commit
 
 
@@ -32,8 +32,25 @@ source: <nome do arquivo original>
 """
 
 
+TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
+IGNORED_RAW_FILENAMES = {"metadata.json"}
+
+
 def _read_raw(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _is_compile_target(path: Path) -> bool:
+    return path.is_file() and path.suffix.lower() in TEXT_SOURCE_EXTENSIONS and path.name not in IGNORED_RAW_FILENAMES
+
+
+def discover_compile_targets(base: Path | None = None) -> list[Path]:
+    root = base or RAW_DIR
+    if root.is_file():
+        return [root] if _is_compile_target(root) else []
+    if not root.exists():
+        return []
+    return sorted(path for path in root.rglob("*") if _is_compile_target(path))
 
 
 def _wiki_path(topic: str, title: str) -> Path:

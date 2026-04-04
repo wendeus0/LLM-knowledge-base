@@ -23,7 +23,7 @@ title: Empty Article
 
         with patch("kb.heal.chat") as mock_chat, patch(
             "kb.heal.commit"
-        ) as mock_commit, patch("random.sample") as mock_sample:
+        ), patch("random.sample") as mock_sample:
             mock_chat.return_value = "NO_CHANGES"
             mock_sample.return_value = [stub]
 
@@ -51,7 +51,7 @@ Ver [[XSS]] para outro tópico.
 
         with patch("kb.heal.chat") as mock_chat, patch(
             "kb.heal.commit"
-        ) as mock_commit, patch("random.sample") as mock_sample:
+        ), patch("random.sample") as mock_sample:
             mock_chat.return_value = "Wikilink [[NonExistent]] não existe. Sugestão: remover ou criar artigo."
             mock_sample.return_value = [article]
 
@@ -79,7 +79,7 @@ Machine Learning é um subcampo da inteligência artificial que permite aos sist
 
         with patch("kb.heal.chat") as mock_chat, patch(
             "kb.heal.commit"
-        ) as mock_commit, patch("random.sample") as mock_sample:
+        ), patch("random.sample") as mock_sample:
             mock_chat.return_value = "Processado."
             mock_sample.return_value = [article]
 
@@ -110,7 +110,7 @@ A ser completado em breve.
 
         with patch("kb.heal.chat") as mock_chat, patch(
             "kb.heal.commit"
-        ) as mock_commit, patch("random.sample") as mock_sample:
+        ), patch("random.sample") as mock_sample:
             mock_chat.return_value = "Revisado."
             mock_sample.return_value = [stub]
 

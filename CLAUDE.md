@@ -25,6 +25,7 @@ Para contexto rápido e estruturado do projeto, paths e comandos principais, con
 # 1. Instalar
 cd . # na raiz do projeto
 pip install -e .
+pip install -e .[llm]   # necessário para compile/qa/heal/lint
 
 # 2. Configurar API
 cp .env.example .env
@@ -33,19 +34,22 @@ cp .env.example .env
 # 3. Adicionar um documento
 kb ingest ~/Downloads/artigo.md
 
-# 4. Compilar para wiki
+# 4. Importar um livro em capítulos (opcional)
+kb import-book ~/Downloads/livro.epub --compile
+
+# 5. Compilar para wiki
 kb compile
 
-# 5. Fazer uma pergunta
+# 6. Fazer uma pergunta
 kb qa "O que é XSS?"
 
-# 6. Arquivar a resposta de volta
+# 7. Arquivar a resposta de volta
 kb qa "O que é SQL injection?" -f
 
-# 7. Auditoria (health checks)
+# 8. Auditoria (health checks)
 kb lint
 
-# 8. Healing estocástico (10 arquivos aleatórios)
+# 9. Healing estocástico (10 arquivos aleatórios)
 kb heal --n 10
 ```
 
@@ -58,7 +62,8 @@ kb heal --n 10
 
 ## Stack técnico
 
-- Python 3.11+, Typer, Rich, OpenAI SDK
+- Python 3.11+, Typer, Rich
+- OpenAI SDK opcional para recursos LLM
 - OpenCode Go API (OpenAI-compatible)
 - Git automático em todo write
 - Busca lexical simples em Markdown
@@ -69,8 +74,10 @@ kb heal --n 10
 ```
 KB_API_KEY=<sua-api-key>
 KB_BASE_URL=https://opencode.ai/zen/go/v1
-KB_MODEL=opencode-go/kimi-k2.5
+KB_MODEL=kimi-k2.5
 ```
+
+Validação explícita: quando `KB_BASE_URL` aponta para OpenCode Go, o projeto aceita apenas nomes de modelo compatíveis e sem prefixo (ex.: `kimi-k2.5`, `minimax-2.7`, `glm-5`). Exemplo inválido: `opencode-go/kimi-k2.5`.
 
 Para modelos locais (Ollama):
 ```
@@ -86,10 +93,11 @@ KB_MODEL=qwen2.5-coder:7b
 ## Pontos-chave
 
 1. **Loop de composição** — cada `qa` com `--file-back` adiciona à wiki
-2. **Stochastic heal** — `kb heal` processa N arquivos aleatórios, corrige links, deleta stubs
-3. **Git automático** — todo write é commit (estratégia Pawel Huryn: append/update, nunca rewrite)
-4. **Sem RAG sofisticado** — TF-IDF simples + busca de palavra-chave funciona bem até ~100 artigos/400K palavras
-5. **Obsidian-ready** — wiki/ é um vault pronto para Obsidian (wikilinks, markdown)
+2. **Importação de livros integrada** — `kb import-book` quebra EPUB/PDF textual em capítulos markdown dentro de `raw/books/` e pode compilar tudo com `--compile`
+3. **Stochastic heal** — `kb heal` processa N arquivos aleatórios, corrige links, deleta stubs
+4. **Git automático** — todo write é commit (estratégia Pawel Huryn: append/update, nunca rewrite)
+5. **Sem RAG sofisticado** — TF-IDF simples + busca de palavra-chave funciona bem até ~100 artigos/400K palavras
+6. **Obsidian-ready** — wiki/ é um vault pronto para Obsidian (wikilinks, markdown)
 
 ## Próximos passos
 

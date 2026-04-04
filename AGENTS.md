@@ -20,8 +20,11 @@
 ## Comandos do projeto
 
 ```bash
-# Instalar dependências
+# Instalar dependências base
 pip install -e .
+
+# Instalar features LLM (compile/qa/heal/lint)
+pip install -e .[llm]
 
 # Rodar testes
 python -m pytest
@@ -34,7 +37,8 @@ pip install -e .
 
 # Dev/CLI
 kb ingest <arquivo>      # Adicionar documento a raw/
-kb compile               # Compilar raw/ → wiki/
+kb import-book <arquivo> # Importar EPUB/PDF textual para raw/books/
+kb compile               # Compilar raw/ (recursivo, incluindo raw/books/) → wiki/
 kb qa "pergunta"         # Perguntar contra a wiki
 kb qa "pergunta" -f      # Perguntar e arquivar resposta (file-back)
 kb search "termo"        # Buscar na wiki
@@ -44,7 +48,7 @@ kb lint                 # Health checks (audit)
 
 ## Convenções de código
 
-- Módulos em `kb/` por função: `client.py` (LLM), `compile.py` (raw→wiki), `qa.py` (Q&A), `search.py`, `heal.py`, `lint.py`, `config.py`, `git.py`
+- Módulos em `kb/` por função: `client.py` (LLM), `compile.py` (raw→wiki), `book_import.py`/`book_import_core.py` (importação de livros), `qa.py` (Q&A), `search.py`, `heal.py`, `lint.py`, `config.py`, `git.py`
 - Nomes: snake_case para funções/variáveis, PascalCase para classes
 - Sem type hints explícitos a menos que seja crítico (config, cliente)
 - Docstrings em português para funções públicas
@@ -69,6 +73,7 @@ kb lint                 # Health checks (audit)
 ```
 kb/
 ├── raw/              ← documentos fonte (não processados)
+│   └── books/        ← livros importados em capítulos markdown + metadata.json
 ├── wiki/             ← markdown compilado, versionado
 │   ├── _index.md     ← índice atualizado automaticamente
 │   ├── cybersecurity/
@@ -119,8 +124,10 @@ Para visão rápida e estruturada de comandos, paths e convenções estáveis, c
 
 ## Próximos passos
 
-- [ ] Instalar: `pip install -e .`
+- [ ] Instalar base: `pip install -e .`
+- [ ] Instalar LLM opcional: `pip install -e .[llm]`
 - [ ] Configurar `.env` com KB_API_KEY
 - [ ] Testar: `kb ingest docs/test.md && kb compile`
+- [ ] Testar: `kb import-book livro.epub --compile`
 - [ ] Integrar Obsidian como frontend
 - [ ] Expandir cobertura de testes em `tests/`

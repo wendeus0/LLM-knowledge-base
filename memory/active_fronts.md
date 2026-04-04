@@ -6,93 +6,65 @@ type: project
 
 ## Frentes ativas
 
-### F1: Setup completo
+### F1: Validação operacional com provider real
 
-**Status:** Em progresso (bloqueador P0)
+**Status:** Em progresso
+
+**Objetivo:** Confirmar que a configuração atual com OpenCode Go funciona ponta a ponta em uso real, não apenas com mocks.
 
 **O que falta:**
-- [ ] `pip install -e .` — instalar pacote
-- [ ] Configurar `.env` com `KB_API_KEY` real
-- [ ] Teste end-to-end: `kb ingest exemplo.md && kb compile && kb qa "teste?"`
+- [ ] Rodar `kb import-book <arquivo> --compile` com um EPUB real
+- [ ] Rodar `kb qa`, `kb heal` e `kb lint` usando a chave já configurada
+- [ ] Validar ergonomia de erro quando o extra `.[llm]` não está instalado
 
-**Bloqueador:** Sem API key válida, nada funciona.
-
-**Next action:** Pedir ao usuário para:
-1. Fazer signin em https://opencode.ai/ (ou usar Ollama local)
-2. Copiar chave de API
-3. `cp .env.example .env && nano .env` (preencher KB_API_KEY)
-4. `pip install -e .`
+**Risco principal:** comportamento real do provider pode divergir do ambiente de teste mockado.
 
 ---
 
-### F2: Primeiro documento de teste
+### F2: Segurança operacional do conteúdo
 
-**Status:** Pendente
+**Status:** Em aberto
 
-**Objetivo:** Validar fluxo: raw → compile → wiki → qa → file-back
+**Objetivo:** Definir guardrails para evitar envio/commit acidental de conteúdo sensível.
 
-**Documento sugerido:** Um artigo sobre um dos tópicos (cybersecurity, ai, python, typescript)
-
-**Passos:**
-1. `kb ingest docs/test.md`
-2. `kb compile`
-3. Verificar wiki/cybersecurity/ (ou outro topic)
-4. `kb qa "O que foi mencionado no artigo?"`
-5. `kb qa "Pergunta nova" -f` (file-back)
-6. Verificar novo artigo foi criado
+**O que falta:**
+- [ ] Documentar o que pode ou não ser enviado ao provider externo
+- [ ] Avaliar necessidade de modo sem commit automático para alguns fluxos
+- [ ] Transformar recomendações do `SECURITY_AUDIT_REPORT.md` em política operacional
 
 ---
+
+### F3: Empacotamento definitivo da relação `book2md` → `kb`
+
+**Status:** Em aberto
+
+**Objetivo:** Reduzir o acoplamento por path usado hoje no laboratório.
+
+**Opções:**
+1. Tornar `kb` dependência explícita de `book2md`
+2. Extrair pacote compartilhado mínimo
+3. Manter compat layer atual enquanto o laboratório seguir no mesmo mono-workspace
+
+**Recomendação atual:** adiar até o próximo ciclo, porque a solução corrente está funcional e coberta por testes.
 
 ## Decisões abertas
 
-### Q1: Testes — quando implementar?
+### Q1: O fluxo de livro importado deve sempre passar por `compile`?
 
-**Opção A:** Implementar agora (tests/)
-- Cobertura: compile, qa, search, heal, lint
-- Benefício: segurança ao refatorar
-- Custo: tempo upfront
+**Trade-off:**
+- Sim: maximiza consistência com a wiki assistida por LLM
+- Não: preserva capítulos markdown como saída final legível sem custo de provider
 
-**Opção B:** Adiar para milestone 2
-- Benefício: ir rápido
-- Risco: bugs descobe cedo no uso real
+**Estado:** parcialmente resolvido com `--compile` opcional; ainda falta decidir o padrão operacional recomendado.
 
-**Recomendação:** Opção B — ir rápido com testes manuais (ingest → compile → qa). Adicionar testes quando crescer.
+### Q2: Commit automático deve ser sempre obrigatório em writes da wiki?
 
----
+**Trade-off:**
+- Sim: rastreabilidade total
+- Não: melhor controle para conteúdo sensível/experimentos
 
-### Q2: Obsidian — quando?
+**Estado:** decisão ainda em aberto; sem mudança implementada neste sprint.
 
-**Opção A:** Integração nativa (plugin Obsidian)
-- Futura, pós-milestone 1
+### Q3: Quando promover o pacote/laboratório para distribuição formal?
 
-**Opção B:** Manual (usuário abre wiki/ no Obsidian diretamente)
-- Disponível agora
-- Wikilinks `[[]]` já funcionam em Obsidian
-
-**Recomendação:** Opção B — usuário pode abrir vault agora. Plugin é futuro.
-
----
-
-### Q3: Escalabilidade — quando migrar para embeddings?
-
-**Limiar sugerido:** >500 artigos ou >1M palavras
-
-**Quando chegar lá:**
-1. Adicionar dependência: `sentence-transformers` ou similar
-2. Calcular embeddings no compile + heal
-3. Atualizar search com hybrid (TF-IDF + semantic)
-4. Manter TF-IDF como fallback
-
-**Prioridade:** P2 (futuro)
-
----
-
-## Riscos
-
-| Risco | Probabilidade | Impacto | Mitigação |
-|-------|---------------|--------|-----------|
-| LLM gera conflitos git ao file-back | Baixa | Médio | Estratégia Pawel Huryn (append/update, no rewrite) |
-| API key exposta em código | Média | Alto | Sempre em .env (gitignored) |
-| Wiki fica grande demais (>1M palavras) | Baixa | Médio | Planejar embeddings + RAG para futuro |
-| Wikilinks quebrados se deletar artigos | Média | Baixo | Lint detecta, heal remove |
-
+**Limiar sugerido:** quando o fluxo de livro estiver estabilizado e for necessário consumir `book2md` fora do workspace atual.
