@@ -121,7 +121,52 @@ def test_should_reject_epub_with_unsafe_xml_entities(tmp_path):
     with pytest.raises(ValueError) as exc:
         import_epub(source, output_dir)
 
-    assert "xml inseguro" in str(exc.value).lower() or "xml" in str(exc.value).lower()
+    message = str(exc.value).lower()
+    assert "xml inseguro" in message or "entit" in message
+
+
+def test_should_fallback_to_empty_toc_when_ncx_manifest_entry_is_missing(tmp_path):
+    from kb.book_import import import_epub
+
+    source = tmp_path / "ncx-ausente.epub"
+    output_dir = tmp_path / "raw" / "books" / "ncx-ausente"
+
+    with ZipFile(source, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "META-INF/container.xml",
+            """<?xml version='1.0' encoding='utf-8'?>
+<container version='1.0' xmlns='urn:oasis:names:tc:opendocument:xmlns:container'>
+  <rootfiles>
+    <rootfile full-path='OEBPS/content.opf' media-type='application/oebps-package+xml'/>
+  </rootfiles>
+</container>
+""",
+        )
+        archive.writestr(
+            "OEBPS/content.opf",
+            """<?xml version='1.0' encoding='utf-8'?>
+<package version='2.0' xmlns='http://www.idpf.org/2007/opf' toc='ncx'>
+  <metadata><title>Livro NCX</title></metadata>
+  <manifest>
+    <item id='ncx' href='toc.ncx' media-type='application/x-dtbncx+xml'/>
+    <item id='chap1' href='chapter1.xhtml' media-type='application/xhtml+xml'/>
+  </manifest>
+  <spine toc='ncx'>
+    <itemref idref='chap1'/>
+  </spine>
+</package>
+""",
+        )
+        archive.writestr(
+            "OEBPS/chapter1.xhtml",
+            "<html><body><p>Conteúdo sem TOC disponível.</p></body></html>",
+        )
+
+    written_files, _ = import_epub(source, output_dir)
+
+    assert len(written_files) == 1
+    assert written_files[0].name == "01-chapter1.md"
 
 
 def test_should_use_complex_toc_label_when_epub_chapter_has_no_h1(tmp_path):
