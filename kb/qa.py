@@ -1,11 +1,13 @@
-"""Q&A contra a wiki. Com --file-back, a resposta é arquivada de volta na wiki."""
+"""Q&A contra fontes nativas. Com --file-back, a resposta é arquivada de volta na wiki."""
 
 import re
 from pathlib import Path
 from kb.client import chat
 from kb.config import WIKI_DIR, TOPICS
-from kb.search import find_relevant
 from kb.git import commit
+from kb.guardrails import assert_safe_for_provider
+from kb.router import build_context
+from kb.state import add_learning
 
 
 SYSTEM = """Você é um assistente de knowledge base. Responda perguntas com base nos artigos fornecidos.
@@ -32,27 +34,44 @@ source: qa
 """
 
 
-def answer(question: str, top_k: int = 5) -> str:
-    relevant = find_relevant(question, top_k=top_k)
+def answer(question: str, top_k: int = 5, allow_sensitive: bool = False) -> str:
+    decision, context_parts = build_context(question, top_k=top_k)
 
-    if not relevant:
-        return "Nenhum artigo relevante encontrado na wiki. Use `kb compile` para adicionar conteúdo."
+    if not context_parts:
+        return "Nenhum contexto relevante encontrado. Use `kb compile` para adicionar conteúdo ou registre learnings/knowledge."
 
-    context = "\n\n---\n\n".join(
-        f"# {p.stem}\n{p.read_text(encoding='utf-8')}" for p in relevant
-    )
-
-    return chat(
+    context = "\n\n---\n\n".join(context_parts)
+    assert_safe_for_provider(f"Pergunta: {question}\n\n{context}", source=f"qa:{decision.route}", allow_sensitive=allow_sensitive)
+    response = chat(
         messages=[
             {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": f"Artigos relevantes:\n\n{context}\n\nPergunta: {question}"},
+            {
+                "role": "user",
+                "content": (
+                    f"Fonte selecionada: {decision.route}\n"
+                    f"Motivo do roteamento: {decision.reason}\n\n"
+                    f"Contexto relevante:\n\n{context}\n\nPergunta: {question}"
+                ),
+            },
         ]
     )
+    add_learning("retrieval", f"Pergunta '{question}' roteada para {decision.route}", source="qa")
+    return response
 
 
-def answer_and_file(question: str, top_k: int = 5) -> tuple[str, Path | None]:
+def answer_and_file(
+    question: str,
+    top_k: int = 5,
+    allow_sensitive: bool = False,
+    no_commit: bool = False,
+) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta de volta na wiki."""
-    response = answer(question, top_k=top_k)
+    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive)
+    assert_safe_for_provider(
+        f"Pergunta: {question}\n\nResposta: {response}",
+        source="qa:file_back",
+        allow_sensitive=allow_sensitive,
+    )
 
     article = chat(
         messages=[
@@ -77,6 +96,7 @@ def answer_and_file(question: str, top_k: int = 5) -> tuple[str, Path | None]:
     folder.mkdir(parents=True, exist_ok=True)
     out = folder / f"{slug}.md"
     out.write_text(article, encoding="utf-8")
-    commit(f"feat(wiki): file back answer — {title[:50]}", [out])
+    if not no_commit:
+        commit(f"feat(wiki): file back answer — {title[:50]}", [out])
 
     return response, out

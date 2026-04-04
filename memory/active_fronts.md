@@ -21,16 +21,19 @@ type: project
 
 ---
 
-### F2: Segurança operacional do conteúdo
+### F2: Política operacional de sensibilidade
 
 **Status:** Em aberto
 
-**Objetivo:** Definir guardrails para evitar envio/commit acidental de conteúdo sensível.
+**Objetivo:** Consolidar regras de uso para `--allow-sensitive` e `--no-commit`.
 
 **O que falta:**
 - [ ] Documentar o que pode ou não ser enviado ao provider externo
-- [ ] Avaliar necessidade de modo sem commit automático para alguns fluxos
-- [ ] Transformar recomendações do `SECURITY_AUDIT_REPORT.md` em política operacional
+- [ ] Definir quando `--allow-sensitive` é aceitável
+- [ ] Definir quando `--no-commit` pode ser usado sem comprometer rastreabilidade
+- [ ] Avaliar políticas por diretório (`raw/private/`) como evolução futura
+
+**Risco principal:** uso inconsistente das novas flags por falta de política operacional fechada.
 
 ---
 
@@ -57,13 +60,13 @@ type: project
 
 **Estado:** parcialmente resolvido com `--compile` opcional; ainda falta decidir o padrão operacional recomendado.
 
-### Q2: Commit automático deve ser sempre obrigatório em writes da wiki?
+### Q2: `--no-commit` deve permanecer apenas por comando ou ganhar política configurável?
 
 **Trade-off:**
-- Sim: rastreabilidade total
-- Não: melhor controle para conteúdo sensível/experimentos
+- Por comando: mais explícito e seguro
+- Configurável: mais prático para certos ambientes, mas mais arriscado
 
-**Estado:** decisão ainda em aberto; sem mudança implementada neste sprint.
+**Estado:** mantido por comando nesta fase; sem estado global persistente.
 
 ### Q3: Quando promover o pacote/laboratório para distribuição formal?
 

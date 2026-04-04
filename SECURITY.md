@@ -95,6 +95,8 @@ safety check
 5. **Mantenha as dependências atualizadas**: `pip install -e . --upgrade`
 6. **Audite o código antes de rodar** — o projeto é pequeno e legível
 7. **Não ingestione arquivos de fontes não confiáveis** sem inspeção manual
+8. **Use `--allow-sensitive` apenas com consciência** — essa flag autoriza explicitamente o envio do conteúdo sinalizado ao provider externo
+9. **Use `--no-commit` em experimentos ou material sensível** quando quiser persistir localmente sem gravar histórico git imediato
 
 ---
 
@@ -105,6 +107,7 @@ safety check
 - O kb **não valida o conteúdo semântico** dos documentos processados
 - Documentos maliciosos em `raw/` podem conter payloads (mas o kb não os executa)
 - A sanitização foca em paths e XML — não em conteúdo markdown gerado
+- Flags como `--allow-sensitive` reduzem a proteção operacional por execução; devem ser usadas apenas quando o usuário entende o risco
 
 ### Dependências Externas
 

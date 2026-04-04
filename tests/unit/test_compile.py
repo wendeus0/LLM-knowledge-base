@@ -135,6 +135,26 @@ source: article.md
             # RED: falha se commit não foi chamado
             mock_commit.assert_called()
 
+    def test_should_store_summaries_with_topic_hierarchy(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "article.md"
+        raw_file.write_text("# Doc\nConteúdo")
+
+        mock_response = """---
+title: Same Slug
+topic: cybersecurity
+---
+
+# Same Slug
+
+Resumo compilado para security.
+"""
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
+            mock_chat.return_value = mock_response
+            compile_file(raw_file)
+
+        assert (wiki / "summaries" / "cybersecurity" / "same-slug.md").exists()
+
 
 class TestDiscoverCompileTargets:
     """Testes unitários para discovery de arquivos em raw/."""

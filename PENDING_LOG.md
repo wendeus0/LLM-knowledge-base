@@ -5,10 +5,12 @@ Pendências e decisões abertas.
 | Prioridade | Item | Status | Data |
 |------------|------|--------|------|
 | P1 | Validar fluxo end-to-end com OpenCode Go real (`import-book --compile`, `qa`, `heal`, `lint`) | Pendente | 2026-04-03 |
-| P1 | Decidir política final para conteúdo sensível enviado ao provider externo e para commits automáticos de conteúdo compilado | Pendente | 2026-04-03 |
+| P1 | Fechar política operacional para conteúdo sensível enviado ao provider externo | Pendente | 2026-04-03 |
+| P1 | Definir convenção operacional de uso de `--no-commit` e `--allow-sensitive` | Pendente | 2026-04-03 |
+| P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | Pendente | 2026-04-03 |
 | P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | Pendente | 2026-04-03 |
 | P2 | Integração Obsidian | Pendente | 2026-04-03 |
-| P2 | Embeddings + RAG | Pendente (futuro) | 2026-04-03 |
+| P2 | Embeddings + RAG híbrido | Pendente (futuro) | 2026-04-03 |
 
 ## P0 (Bloqueadores)
 
@@ -24,10 +26,15 @@ Pendências e decisões abertas.
 
 **Política de segurança operacional**
 - Definir regra explícita sobre documentos que podem ser enviados ao provider externo
-- Avaliar se `compile`/`qa --file-back`/`heal` devem oferecer modo sem commit automático em cenários sensíveis
-- Registrar orientação operacional derivada do `SECURITY_AUDIT_REPORT.md`
+- Especificar quando `--allow-sensitive` é aceitável e quando deve ser proibido
+- Definir quando `--no-commit` pode ser usado sem violar rastreabilidade desejada
+- Considerar políticas por diretório (`raw/private/`) em ciclo futuro
 
 ## P2 (Nice-to-have)
+
+**Cobertura e qualidade**
+- Instalar `pytest-cov` ou `coverage.py`
+- Passar a produzir relatório percentual de cobertura por sprint
 
 **Integração estrutural com book2md**
 - Hoje `book2md` funciona como compat layer/lab

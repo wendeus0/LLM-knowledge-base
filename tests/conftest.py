@@ -6,21 +6,37 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     """Setup raw/ e wiki/ temporários para testes com monkeypatch global"""
     raw = tmp_path / "raw"
     wiki = tmp_path / "wiki"
+    state_dir = tmp_path / "kb_state"
     raw.mkdir()
     wiki.mkdir()
+    state_dir.mkdir()
 
     # Criar subdiretórios de tópicos na wiki
     for topic in ["cybersecurity", "ai", "python", "typescript"]:
         (wiki / topic).mkdir()
 
+    knowledge_path = state_dir / "knowledge.json"
+    learnings_path = state_dir / "learnings.json"
+    manifest_path = state_dir / "manifest.json"
+
     # Monkeypatch das variáveis globais
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
     monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.config.STATE_DIR", state_dir)
+    monkeypatch.setattr("kb.config.KNOWLEDGE_PATH", knowledge_path)
+    monkeypatch.setattr("kb.config.LEARNINGS_PATH", learnings_path)
+    monkeypatch.setattr("kb.config.MANIFEST_PATH", manifest_path)
+    monkeypatch.setattr("kb.compile.RAW_DIR", raw)
     monkeypatch.setattr("kb.compile.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.search.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.qa.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.heal.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.lint.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.router.RAW_DIR", raw)
+    monkeypatch.setattr("kb.state.STATE_DIR", state_dir)
+    monkeypatch.setattr("kb.state.KNOWLEDGE_PATH", knowledge_path)
+    monkeypatch.setattr("kb.state.LEARNINGS_PATH", learnings_path)
+    monkeypatch.setattr("kb.state.MANIFEST_PATH", manifest_path)
 
     return raw, wiki
 

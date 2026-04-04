@@ -9,8 +9,10 @@ def _run(*args: str) -> None:
     subprocess.run(["git", "-C", str(ROOT), *args], check=True, capture_output=True)
 
 
-def commit(message: str, paths: list[Path]) -> None:
+def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
     """Stage os paths e commita. Silencioso se não há mudanças."""
+    if not enabled:
+        return
     try:
         rel = [str(p.relative_to(ROOT)) for p in paths]
         _run("add", *rel)
