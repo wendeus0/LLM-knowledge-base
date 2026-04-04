@@ -75,3 +75,19 @@ type: project
 **Why:** O provider rejeita formatos como `opencode-go/kimi-k2.5`.
 
 **How to apply:** Para `KB_BASE_URL=https://opencode.ai/zen/go/v1`, aceitar `kimi-k2.5`, `minimax-2.7` e `glm-5`; validar antes da chamada ao provider.
+
+---
+
+### D10: `qa` deve rotear por fonte nativa antes de responder
+
+**Why:** Nem toda pergunta deve depender só da wiki; o produto agora distingue `wiki`, `raw`, `knowledge` e `learnings`.
+
+**How to apply:** Evoluções do `qa` devem preservar roteamento explícito e auditável antes de considerar soluções mais complexas.
+
+---
+
+### D11: controles sensíveis e de commit são explícitos por comando
+
+**Why:** Segurança e rastreabilidade devem permanecer seguras por padrão, com escape hatch apenas consciente e local à execução.
+
+**How to apply:** `--allow-sensitive` e `--no-commit` são flags por comando; não introduzir configuração global persistente sem nova decisão arquitetural.

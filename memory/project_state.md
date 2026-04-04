@@ -14,12 +14,16 @@ kb/
 │   └── books/        ← livros importados em capítulos markdown + metadata.json
 ├── wiki/             ← markdown compilado
 │   ├── _index.md
+│   ├── summaries/
 │   ├── cybersecurity/, ai/, python/, typescript/
 ├── kb/               ← pacote Python
-│   ├── client.py, compile.py, book_import.py, book_import_core.py
-│   ├── qa.py, search.py, heal.py, lint.py, git.py, cli.py, config.py
+│   ├── client.py, compile.py, qa.py, search.py, heal.py, lint.py
+│   ├── router.py, state.py, guardrails.py, jobs.py, git.py, cli.py, config.py
+│   ├── book_import.py, book_import_core.py
+├── kb_state/         ← manifesto + stores knowledge/learnings
 ├── tests/            ← suíte unit + integration
 ├── docs/adr/         ← ADRs arquiteturais
+├── features/         ← SPECs de implementação
 ├── SECURITY_AUDIT_REPORT.md
 ├── pyproject.toml
 ├── .env.example
@@ -30,24 +34,19 @@ kb/
 
 ## Status
 
-**Iniciativa:** Sprint de integração book-import + endurecimento operacional
-- ✓ `kb` consolidado como implementação principal para importação de livros
-- ✓ `kb import-book` integrado ao produto
-- ✓ `kb import-book --compile` compila capítulos importados para `wiki/`
-- ✓ `kb compile` varre `raw/` recursivamente, incluindo `raw/books/`
-- ✓ Regras de compatibilidade OpenCode Go adicionadas (`kimi-k2.5`, `minimax-2.7`, `glm-5`)
-- ✓ OpenAI SDK movido para extra opcional `.[llm]`
-- ✓ Suite `kb`: 53 testes passando
-- ✓ Suite `book2md`: 17 testes passando
-- ✓ Ruff limpo em ambos os repositórios
+**Iniciativa:** Sprint de fundação inspirada em Pal + endurecimento operacional
+- ✓ routing por fonte nativa introduzido (`wiki`, `raw`, `knowledge`, `learnings`)
+- ✓ stores separados para `knowledge`, `learnings` e `manifest`
+- ✓ compile agora gera summary compilado e registra knowledge
+- ✓ jobs canônicos `list/run` adicionados
+- ✓ guardrails de conteúdo sensível aplicados em runtime
+- ✓ flags explícitas `--allow-sensitive` e `--no-commit` adicionadas aos fluxos principais
+- ✓ fallback seguro para `defusedxml` e bloqueio de XML inseguro mantidos
+- ✓ suíte `kb`: 85 testes passando
 
 ## Branches
 
-`main` — projeto solo, sem branches de feature no momento
-
-## Marcos
-
-Sprint fechado em 2026-04-03
+`feat/readme-arch-docs` — branch atual com mudanças de fundação e endurecimento operacional ainda não commitadas neste fechamento.
 
 ## Marcos (Milestones)
 
@@ -62,10 +61,22 @@ Sprint fechado em 2026-04-03
    - [x] Compilação recursiva de `raw/books/`
    - [x] Compat layer de `book2md`
 
-3. **Validação operacional real** (próximo)
+3. **Fundação inspirada em Pal** (concluído)
+   - [x] Routing por fonte nativa
+   - [x] Memória separada (`knowledge` vs `learnings`)
+   - [x] Summary compilado + manifesto
+   - [x] Jobs canônicos
+   - [x] Guardrails/evals automatizadas
+
+4. **Controles explícitos de execução sensível** (concluído)
+   - [x] `--allow-sensitive`
+   - [x] `--no-commit`
+   - [x] documentação operacional inicial
+
+5. **Validação operacional real** (próximo)
    - [ ] Smoke test com OpenCode Go real
-   - [ ] Política para conteúdo sensível + commits automáticos
-   - [ ] Refinar distribuição entre `book2md` e `kb`
+   - [ ] Política final para conteúdo sensível
+   - [ ] Convenção de uso de `--no-commit`
 
 ## Tecnologias
 
@@ -74,5 +85,5 @@ Sprint fechado em 2026-04-03
 - **UI:** Rich
 - **LLM client:** OpenAI SDK opcional (provider OpenAI-compatible)
 - **Provider default:** OpenCode Go
-- **Search:** contagem simples de palavras-chave em Markdown
+- **Search:** contagem simples de palavras-chave em Markdown + roteamento por fonte
 - **Storage:** Markdown, JSON, Git

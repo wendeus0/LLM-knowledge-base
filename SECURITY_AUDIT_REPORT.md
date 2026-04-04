@@ -1,79 +1,77 @@
 # SECURITY_AUDIT_REPORT.md
 
+## Sprint fechado em 2026-04-03
+
 ## 1. Superfície de ataque mapeada
 
-- CLI local exposta via comandos `ingest`, `import-book`, `compile`, `qa`, `heal`, `lint` e `search`
+- CLI local exposta via comandos `ingest`, `import-book`, `compile`, `qa`, `heal`, `lint`, `search` e `jobs`
 - Entradas principais:
   - arquivos locais em `raw/` e `raw/books/`
   - perguntas livres para `qa`
   - variáveis de ambiente `KB_API_KEY`, `KB_BASE_URL`, `KB_MODEL`
+  - flags operacionais `--allow-sensitive` e `--no-commit`
 - Integrações externas:
   - provider LLM OpenAI-compatible (default: OpenCode Go)
   - git local para commits automáticos da wiki
 - Saídas persistidas:
   - markdown em `wiki/`
+  - summaries em `wiki/summaries/`
+  - estado em `kb_state/`
   - capítulos importados em `raw/books/`
-  - `metadata.json`
 
 ## 2. Achados por severidade
 
 ### MEDIUM
 
-#### M1. Conteúdo enviado ao provider externo pode incluir material sensível
-- **Onde:** `kb compile`, `kb qa`, `kb heal`, `kb lint`
-- **Risco:** qualquer documento em `raw/` ou pergunta/resposta processada por esses comandos pode ser transmitido ao provider configurado em `KB_BASE_URL`
-- **Impacto:** vazamento operacional de conteúdo sensível se o usuário usar o sistema com documentos não sanitizados
-- **Recomendação:** documentar regra explícita de classificação de conteúdo e criar checklist operacional antes de usar recursos LLM em material sensível
+#### M1. Política de classificação de conteúdo sensível ainda não está fechada
+- **Onde:** `compile`, `qa`, `qa --file-back`, `heal`, `lint`
+- **Risco:** embora agora exista bloqueio/opt-in explícito, ainda falta regra operacional completa dizendo o que pode ou não pode ser enviado ao provider externo
+- **Impacto:** uso inconsistente das flags `--allow-sensitive` pode gerar exposição operacional indevida
+- **Mitigação aplicada neste sprint:** guardrails em runtime + `--allow-sensitive` explícito
+- **Próximo passo:** formalizar política por tipo de conteúdo e eventualmente por diretório
 
-#### M2. Commits automáticos podem persistir conteúdo sensível gerado pela automação
-- **Onde:** `compile`, `heal`, `qa --file-back`
-- **Risco:** a wiki recebe commits automáticos sem etapa intermediária de revisão humana
-- **Impacto:** dificuldade maior para evitar que conteúdo indevido entre no histórico do repositório
-- **Recomendação:** avaliar modo opcional sem commit automático ou procedimento operacional obrigatório de revisão antes de sincronizar repositório
+#### M2. `--no-commit` reduz rastreabilidade quando usado sem disciplina operacional
+- **Onde:** `compile`, `qa --file-back`, `heal`, `import-book --compile`
+- **Risco:** o conteúdo pode ser escrito localmente e permanecer fora do histórico git por mais tempo do que o desejável
+- **Impacto:** auditoria e recuperação ficam menos robustas se a flag virar hábito em vez de exceção
+- **Mitigação aplicada neste sprint:** comportamento continua opt-in e por execução
+- **Próximo passo:** documentar claramente quando usar a flag e considerar logging local de execuções sensíveis/fuga de commit
 
 ### LOW
 
-#### L1. Não há auditoria automatizada de dependências/CVEs no sprint fechado
-- **Onde:** baseline do projeto
-- **Risco:** vulnerabilidades em dependências Python podem passar despercebidas
-- **Recomendação:** adicionar `pip-audit`/processo equivalente em ciclo futuro ou rodar checagem periódica manual
+#### L1. Cobertura percentual formal ainda não é calculada no ambiente atual
+- **Onde:** processo de qualidade do repositório
+- **Risco:** regressões de cobertura podem passar despercebidas apesar da suíte funcional estar saudável
+- **Recomendação:** adicionar `pytest-cov`/`coverage.py` em ciclo futuro
 
-#### L2. Compat layer de `book2md` ainda depende de fallback por path
-- **Onde:** repositório `projects/book2md`
-- **Risco:** acoplamento operacional pode levar a carregamento inesperado em layouts alternativos
-- **Recomendação:** formalizar dependência explícita ou pacote compartilhado quando a distribuição externa passar a importar
+#### L2. Compat layer de `book2md` ainda depende de fallback por path em parte do workspace ampliado
+- **Onde:** integração `book2md` → `kb`
+- **Risco:** acoplamento operacional e comportamento inesperado em layouts alternativos
+- **Recomendação:** formalizar dependência explícita ou pacote compartilhado quando sair do mono-workspace
 
 ## 3. Gestão de secrets
 
-- `.env` está em `.gitignore`, o que reduz o risco de versionamento acidental da chave
-- `.env.example` não contém segredo real
-- A aplicação depende de `KB_API_KEY` para recursos LLM e usa `python-dotenv` para carregar o ambiente
-- **Observação:** a chave precisa continuar fora de logs, commits e documentação operacional
+- `.env` continua fora do versionamento
+- `.env.example` permanece sem segredos reais
+- `KB_API_KEY` segue obrigatório apenas para recursos LLM
+- a política de guardrails reduziu risco de envio acidental, mas não substitui classificação humana do conteúdo
 
-## 4. Deps com vulnerabilidades conhecidas
+## 4. Dependências e supply chain
 
-- Não houve consulta a base de CVEs nem execução de ferramenta dedicada neste fechamento
+- não houve auditoria automatizada de CVEs neste fechamento
 - **Status:** sem evidência de vulnerabilidade conhecida a partir desta auditoria offline
-- **Próximo passo recomendado:** rodar ferramenta específica de auditoria de dependências em ciclo futuro
+- **Próximo passo recomendado:** rodar `pip-audit` ou equivalente em ciclo futuro
 
-## 5. CI/CD e automações
+## 5. Veredito
 
-- Não há pipeline de CI/CD analisado neste sprint
-- Automação principal é o commit automático da wiki via git local
-- O comportamento de commit automático é útil para rastreabilidade, mas reforça o achado M2 quando o conteúdo é sensível
+- **Sem achados CRITICAL/HIGH** no escopo do sprint
+- o sprint **melhorou a postura de segurança** ao introduzir guardrails explícitos e controle `--no-commit`
+- ainda restam **dois pontos MEDIUM** de política operacional, não de falha técnica imediata
 
 ## 6. Recomendações priorizadas
 
-1. **Definir política operacional para conteúdo sensível** antes de promover uso real com provider externo
-2. **Decidir se commits automáticos precisam de modo opt-out** em cenários sensíveis
-3. **Executar smoke test real com OpenCode Go** para validar UX e mensagens de falha do subsistema LLM opcional
-4. **Planejar auditoria periódica de dependências** com ferramenta dedicada
-5. **Formalizar a integração `book2md` → `kb`** quando a distribuição externa deixar de ser mono-workspace
-
-## 7. Próximos passos
-
-- Abrir item de trabalho para política de segurança operacional do provider externo
-- Abrir item de trabalho para avaliar `no-commit`/`dry-run` nos fluxos que escrevem na wiki
-- Em ciclo futuro, considerar `upgrade-deps` ou processo equivalente se a auditoria de dependências apontar risco
-
-**Veredito geral:** sem achados CRITICAL/HIGH no escopo auditado, mas com dois pontos MEDIUM que merecem tratamento antes de ampliar uso com dados reais.
+1. fechar política operacional de conteúdo sensível
+2. documentar padrão de uso de `--no-commit` como exceção operacional
+3. executar smoke test real com OpenCode Go
+4. adicionar ferramenta de cobertura e auditoria de dependências
+5. formalizar a integração `book2md` → `kb` no próximo ciclo apropriado
