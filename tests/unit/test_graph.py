@@ -166,25 +166,32 @@ class TestTraverse:
         assert linked not in result
 
     def test_should_not_visit_file_twice(self, tmp_path):
-        """REQ-5: arquivo já nos seed_files não deve ser visitado via traversal."""
-        # RED: falha até wikilink-traversal ser implementada
+        """REQ-5: ciclo A→B→A não deve duplicar B nem reintroduzir A no resultado."""
         wiki = self._make_wiki(tmp_path)
-        seed = wiki / "xss.md"
-        seed.write_text(
-            "---\ntitle: XSS\ntags: [xss]\n---\n\n# XSS\n\nVeja [[xss]].",
+
+        file_a = wiki / "xss.md"
+        file_a.write_text(
+            "---\ntitle: XSS\ntags: [xss]\n---\n\n# XSS\n\nVeja [[csrf]].",
+            encoding="utf-8",
+        )
+        file_b = wiki / "csrf.md"
+        file_b.write_text(
+            "---\ntitle: CSRF\ntags: [csrf, xss]\n---\n\n# CSRF\n\nVeja [[xss]].",
             encoding="utf-8",
         )
 
         result = traverse(
-            seed_files=[seed],
-            question="xss",
+            seed_files=[file_a],
+            question="xss csrf",
             wiki_dir=tmp_path / "wiki",
-            depth=1,
+            depth=2,
             token_budget=8000,
         )
 
-        # xss.md está nos seed_files — não deve aparecer duas vezes
-        assert result.count(seed) <= 1
+        # B deve aparecer exatamente uma vez — back-edge A←B não duplica
+        assert result.count(file_b) == 1
+        # A (seed) nunca deve ser adicionado ao resultado
+        assert file_a not in result
 
     def test_should_respect_depth_1(self, tmp_path):
         """REQ-6: depth=1 não deve seguir links dos arquivos linkados."""

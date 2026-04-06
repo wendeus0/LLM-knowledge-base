@@ -48,9 +48,15 @@ def load_frontmatter(path: Path) -> dict:
     return result
 
 
+_STOP_WORDS = {"o", "a", "e", "é", "de", "do", "da", "em", "no", "na", "se", "com", "um", "uma", "os", "as", "ou"}
+
+
 def _is_relevant(frontmatter: dict, question: str) -> bool:
     """Verifica se o frontmatter do arquivo é relevante para a pergunta."""
-    terms = set(question.lower().split())
+    stripped = re.sub(r"[^\w\s]", "", question.lower())
+    terms = {t for t in stripped.split() if len(t) > 2 and t not in _STOP_WORDS}
+    if not terms:
+        return False
     title = frontmatter.get("title", "").lower()
     tags = [t.lower() for t in (frontmatter.get("tags") or [])]
     return any(term in title or term in tags for term in terms)

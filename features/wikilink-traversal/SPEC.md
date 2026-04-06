@@ -25,7 +25,7 @@ Nossa wiki já usa `[[wikilinks]]` em markdown. O que falta é o router entender
 - [ ] Se o frontmatter indicar relevância com a pergunta original (via match de `tags` ou `title`), carrega o conteúdo completo
 - [ ] Profundidade default: **1** (links dos arquivos iniciais, não links dos links)
 - [ ] Profundidade configurável: `--depth 2` para segundo nível
-- [ ] Limite de contexto: o traversal para automaticamente quando o contexto acumulado atingir 80% do limite configurado em `config.py` (`MAX_CONTEXT_TOKENS`)
+- [ ] Limite de contexto: o traversal para automaticamente quando o contexto acumulado atingir `MAX_CONTEXT_TOKENS` (default: 8000 tokens, configurado em `config.py`)
 - [ ] Arquivos já carregados não são visitados duas vezes (evitar ciclos)
 - [ ] `kb qa` sem flags usa traversal por padrão (opt-out: `--no-traverse`)
 
@@ -44,19 +44,21 @@ Nossa wiki já usa `[[wikilinks]]` em markdown. O que falta é o router entender
 ## Algoritmo de traversal (BFS com budget)
 
 ```
-1. seed_files = keyword_search(question)          # comportamento atual
-2. queue = extract_wikilinks(seed_files)
+1. seed_files = keyword_search(question)                    # comportamento atual
+2. queue = [(link, 1) for link in extract_wikilinks(seed_files)]
 3. visited = set(seed_files)
 4. context = seed_files content
 5. while queue and tokens(context) < budget:
-   a. path = resolve(queue.pop())
-   b. if path in visited: skip
-   c. fm = load_frontmatter(path)
-   d. if relevant(fm, question):
+   a. link, current_depth = queue.pop(0)
+   b. path = resolve(link)
+   c. if path is None or path in visited: skip
+   d. visited.add(path)
+   e. fm = load_frontmatter(path)
+   f. if relevant(fm, question):
       - content = load_full(path)
       - context += content
-      - if depth > 1: queue += extract_wikilinks(content)
-   e. visited.add(path)
+      - if current_depth < max_depth:
+          queue += [(l, current_depth + 1) for l in extract_wikilinks(content)]
 6. return context
 ```
 

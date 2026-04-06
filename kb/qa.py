@@ -70,9 +70,11 @@ def answer_and_file(
     top_k: int = 5,
     allow_sensitive: bool = False,
     no_commit: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta de volta na wiki."""
-    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive)
+    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive, traverse=traverse, depth=depth)
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
         source="qa:file_back",

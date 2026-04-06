@@ -118,7 +118,7 @@ def qa(
         if file_back:
             from kb.qa import answer_and_file
 
-            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit)
+            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit, traverse=traverse, depth=depth)
             console.print(Markdown(response))
             if saved:
                 console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
