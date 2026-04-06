@@ -80,8 +80,8 @@ kb/
 5. **Expansão funcional** (em andamento)
    - [x] outputs store (`kb/outputs.py`)
    - [x] URL ingest (`kb/web_ingest.py`)
-   - [x] wikilink traversal (`kb/graph.py`) — PR#14 aguardando merge
-   - [x] book metadata enriquecida + TOC hierárquico — PR#15 aguardando merge
+   - [ ] wikilink traversal (`kb/graph.py`) — PR#14 aguardando merge
+   - [ ] book metadata enriquecida + TOC hierárquico — PR#15 aguardando merge
 
 6. **Validação operacional real** (em aberto)
    - [ ] Smoke test com OpenCode Go real
