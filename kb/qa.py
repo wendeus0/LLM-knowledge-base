@@ -34,8 +34,14 @@ source: qa
 """
 
 
-def answer(question: str, top_k: int = 5, allow_sensitive: bool = False) -> str:
-    decision, context_parts = build_context(question, top_k=top_k)
+def answer(
+    question: str,
+    top_k: int = 5,
+    allow_sensitive: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
+) -> str:
+    decision, context_parts = build_context(question, top_k=top_k, traverse=traverse, depth=depth)
 
     if not context_parts:
         return "Nenhum contexto relevante encontrado. Use `kb compile` para adicionar conteúdo ou registre learnings/knowledge."
