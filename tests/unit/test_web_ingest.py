@@ -120,6 +120,7 @@ class TestIngestUrl:
 
         assert out.exists()
         assert out.suffix == ".md"
+        assert "example" in out.stem or "no-title" in out.stem
 
     def test_should_raise_on_http_error(self, tmp_path, monkeypatch):
         """REQ-5: HTTP 4xx/5xx deve levantar WebIngestError sem criar arquivo."""

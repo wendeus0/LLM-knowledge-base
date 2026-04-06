@@ -42,6 +42,9 @@ def ingest(
             dest = RAW_DIR / path.name
             dest.write_bytes(path.read_bytes())
             record_ingest(dest)
+            if not no_commit:
+                from kb.git import commit
+                commit(f"feat(raw): ingest — {path.name}", [dest])
             console.print(f"[green]Adicionado:[/] {dest}")
             ingested.append(dest)
 

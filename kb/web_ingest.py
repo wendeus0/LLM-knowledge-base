@@ -39,6 +39,10 @@ def _slugify(text: str) -> str:
     return text.strip("-")[:80]
 
 
+def _yaml_quote(s: str) -> str:
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def _url_fallback_slug(url: str) -> str:
     clean = re.sub(r"^https?://", "", url)
     return _slugify(clean)[:40] or "page"
@@ -65,7 +69,7 @@ def ingest_url(url: str, no_commit: bool = False) -> Path:
     html = response.text
     title = _extract_title(html) or ""
 
-    slug = _slugify(title) if title else _url_fallback_slug(url)
+    slug = (_slugify(title) if title else "") or _url_fallback_slug(url)
 
     h = _html2text.HTML2Text()
     h.ignore_links = False
@@ -76,7 +80,7 @@ def ingest_url(url: str, no_commit: bool = False) -> Path:
     ingested_at = datetime.now(timezone.utc).isoformat()
     content = (
         f"---\n"
-        f"title: {title or slug}\n"
+        f"title: {_yaml_quote(title or slug)}\n"
         f"source_url: {url}\n"
         f"ingested_at: {ingested_at}\n"
         f"---\n\n"

@@ -36,7 +36,7 @@ Hoje `kb ingest` aceita apenas arquivos locais. O usuário precisa copiar manual
 
 - Novo módulo `kb/web_ingest.py` com função `ingest_url(url) -> Path`
 - Detecção de URL em `cli.py`: `ingest` já existente recebe `url_or_path`; se `url_or_path.startswith("http")`, roteia para `web_ingest.ingest_url()`
-- Naming: `slugify(title)[:80] + ".md"` onde `title` vem do `<title>` da página; fallback: hash dos primeiros 8 chars da URL
+- Naming: `slugify(title)[:80] + ".md"` onde `title` vem do `<title>` da página; fallback: `slugify` da URL sem protocolo, truncado a 40 chars (ex: `https://example.com/page` → `example-com-page`)
 - Frontmatter gerado:
   ```yaml
   ---
