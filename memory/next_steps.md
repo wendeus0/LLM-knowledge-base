@@ -6,19 +6,18 @@ type: project
 
 ## Imediato (próxima sessão)
 
-0. **[P1] Resolver trabalho não commitado em branch errado**
-   - `git checkout -b feat/pal-foundation-phase-1` a partir do estado atual
-   - Passar pelo workflow: quality-gate → report-writer → branch-sync-guard → git-flow-manager
-   - Separar commits por feature (pal-foundation e sensitive-execution-controls são escopos distintos)
+1. **[P1] Merge PR#14 e PR#15** (F4)
+   - Revisar e mergear `feat/wikilink-traversal` e `feat/rich-book-import-metadata`
+   - Verificar se há conflitos após merge sequencial
 
-1. **[P1] Rodar smoke test real com OpenCode Go**
+2. **[P1] Rodar smoke test real com OpenCode Go** (F1)
    - `pip install -e .[llm]`
    - `kb import-book <arquivo.epub> --compile`
    - `kb qa "pergunta de verificação"`
    - `kb heal --n 3`
    - `kb lint`
 
-2. **[P1] Fechar política operacional de sensibilidade**
+3. **[P1] Fechar política operacional de sensibilidade** (F2)
    - consolidar regra explícita para conteúdo sensível
    - definir quando usar `--allow-sensitive`
    - definir quando usar `--no-commit`
@@ -26,25 +25,25 @@ type: project
 
 ## Curto prazo (próximas 2 sessões)
 
-3. **[P2] Finalizar Obsidian: instalar Shell Commands plugin manualmente**
+4. **[P2] Finalizar Obsidian: instalar Shell Commands plugin manualmente**
    - Abrir `wiki/` como vault
    - Settings → Community plugins → Shell Commands → Install → Enable
    - Verificar hotkeys Ctrl+Shift+C/Q/H/L/S
 
-4. **[P2] Adicionar tooling formal de cobertura**
+5. **[P2] Adicionar tooling formal de cobertura**
    - instalar `pytest-cov` ou `coverage.py`
    - passar a gerar relatório percentual por sprint
 
-5. **[P2] Formalizar distribuição entre `book2md` e `kb`**
+6. **[P2] Formalizar distribuição entre `book2md` e `kb`** (F3)
    - escolher entre dependência explícita ou pacote compartilhado
    - remover fallback por path se a distribuição formal for adotada
 
 ## Médio prazo
 
-6. **[P2] Embeddings + RAG híbrido**
+7. **[P2] Embeddings + RAG híbrido**
    - reavaliar quando a wiki ultrapassar a escala confortável da busca lexical
 
 ## Bloqueadores atuais
 
 - Nenhum bloqueador técnico
-- Trabalho não commitado em branch errado é risco de perda, mas não bloqueia leitura/uso
+- Baseline estável: 85 testes passando, main limpa

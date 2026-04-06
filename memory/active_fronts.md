@@ -6,24 +6,9 @@ type: project
 
 ## Frentes ativas
 
-### F0: Trabalho não commitado em branch errado
-
-**Status:** Pendente resolução
-
-**Contexto:** Branch `feat/readme-arch-docs` teve PR mergeado (`5520c05`), mas o branch local carrega implementação completa das features `pal-foundation-phase-1` e `sensitive-execution-controls` sem commit: novos módulos (`guardrails.py`, `router.py`, `state.py`, `jobs.py`, testes), 17 arquivos tracked modificados. 85 testes passando.
-
-**O que falta:**
-- [ ] Criar branch de feature correto a partir do estado atual
-- [ ] Passar pelo workflow: test-red → green-refactor → quality-gate → report-writer → git-flow-manager
-- [ ] Commitar e abrir PR para cada feature separadamente
-
-**Risco:** perda de trabalho ou mistura de escopo a cada nova sessão.
-
----
-
 ### F1: Validação operacional com provider real
 
-**Status:** Em progresso
+**Status:** Em aberto
 
 **Objetivo:** Confirmar que a configuração atual com OpenCode Go funciona ponta a ponta em uso real, não apenas com mocks.
 
@@ -54,16 +39,38 @@ type: project
 
 ### F3: Empacotamento definitivo da relação `book2md` → `kb`
 
-**Status:** Em aberto
+**Status:** Adiado
 
 **Objetivo:** Reduzir o acoplamento por path usado hoje no laboratório.
 
-**Opções:**
-1. Tornar `kb` dependência explícita de `book2md`
-2. Extrair pacote compartilhado mínimo
-3. Manter compat layer atual enquanto o laboratório seguir no mesmo mono-workspace
+**Recomendação atual:** adiar até o próximo ciclo; solução corrente está funcional e coberta por testes.
 
-**Recomendação atual:** adiar até o próximo ciclo, porque a solução corrente está funcional e coberta por testes.
+---
+
+### F4: Merge de PRs abertos
+
+**Status:** Aguardando aprovação
+
+**Objetivo:** Fechar o ciclo das features desenvolvidas neste sprint.
+
+**O que falta:**
+- [ ] Merge PR#14 (`feat/wikilink-traversal`)
+- [ ] Merge PR#15 (`feat/rich-book-import-metadata`) — inclui fix de URL-encoding de 2026-04-06
+
+---
+
+### F5: Avaliação de incrementos do produto
+
+**Status:** Aguardando subsídios do usuário
+
+**Objetivo:** Analisar material externo fornecido pelo usuário e decidir se o projeto deve ser expandido.
+
+**O que falta:**
+- [ ] Receber material (subsídios) do usuário
+- [ ] Avaliar alinhamento com a arquitetura atual
+- [ ] Decidir escopo de nova feature, se aplicável
+
+---
 
 ## Decisões abertas
 
