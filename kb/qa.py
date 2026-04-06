@@ -72,12 +72,14 @@ def answer_and_file(
     allow_sensitive: bool = False,
     no_commit: bool = False,
     to_wiki: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
     Por padrão grava em outputs/. Com to_wiki=True, arquiva em wiki/ (comportamento anterior).
     """
-    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive)
+    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive, traverse=traverse, depth=depth)
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
         source="qa:file_back",
