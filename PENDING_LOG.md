@@ -7,6 +7,8 @@ Pendências e decisões abertas.
 | P1 | Validar fluxo end-to-end com OpenCode Go real (`import-book --compile`, `qa`, `heal`, `lint`) | Pendente | 2026-04-03 |
 | P1 | Fechar política operacional para conteúdo sensível enviado ao provider externo | Pendente | 2026-04-03 |
 | P1 | Definir convenção operacional de uso de `--no-commit` e `--allow-sensitive` | Pendente | 2026-04-03 |
+| P1 | Merge PR#14 (wikilink-traversal) — aguardando aprovação | Pendente | 2026-04-06 |
+| P1 | Merge PR#15 (rich-book-import-metadata) — aguardando aprovação | Pendente | 2026-04-06 |
 | P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | Pendente | 2026-04-03 |
 | P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | Pendente | 2026-04-03 |
 | P2 | Integração Obsidian | ✅ Concluído | 2026-04-04 |
