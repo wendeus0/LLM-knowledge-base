@@ -34,19 +34,23 @@ kb/
 
 ## Status
 
-**Iniciativa:** Sprint de fundação inspirada em Pal + endurecimento operacional
+**Sprint atual:** Expansão funcional — outputs store, URL ingest, wikilink traversal, book metadata enriquecida
+
 - ✓ routing por fonte nativa introduzido (`wiki`, `raw`, `knowledge`, `learnings`)
 - ✓ stores separados para `knowledge`, `learnings` e `manifest`
 - ✓ compile agora gera summary compilado e registra knowledge
 - ✓ jobs canônicos `list/run` adicionados
 - ✓ guardrails de conteúdo sensível aplicados em runtime
 - ✓ flags explícitas `--allow-sensitive` e `--no-commit` adicionadas aos fluxos principais
-- ✓ fallback seguro para `defusedxml` e bloqueio de XML inseguro mantidos
-- ✓ suíte `kb`: 85 testes passando
+- ✓ `feat/outputs-store` (PR#12 mergeado): store separado para QA file-back (`kb/outputs.py`)
+- ✓ `feat/ingest-url` (PR#13 mergeado): URL scraping via `kb ingest <url>` (`kb/web_ingest.py`)
+- ✓ `feat/wikilink-traversal` (PR#14 aberto): QA enriquecido com BFS de wikilinks (`kb/graph.py`)
+- ⏳ `feat/rich-book-import-metadata` (PR#15 aberto): metadados EPUB ricos, TOC hierárquico, imagens opcionais
+- ✓ fix (2026-04-06): URL-encoded image paths em `book_import_core.py`
 
 ## Branches
 
-`feat/readme-arch-docs` — branch atual com mudanças de fundação e endurecimento operacional ainda não commitadas neste fechamento.
+`main` — PRs #12 e #13 mergeados. PRs #14 (wikilink-traversal) e #15 (rich-book-import-metadata) abertos aguardando merge.
 
 ## Marcos (Milestones)
 
@@ -73,10 +77,20 @@ kb/
    - [x] `--no-commit`
    - [x] documentação operacional inicial
 
-5. **Validação operacional real** (próximo)
+5. **Expansão funcional** (em andamento)
+   - [x] outputs store (`kb/outputs.py`)
+   - [x] URL ingest (`kb/web_ingest.py`)
+   - [x] wikilink traversal (`kb/graph.py`) — PR#14 aguardando merge
+   - [x] book metadata enriquecida + TOC hierárquico — PR#15 aguardando merge
+
+6. **Validação operacional real** (em aberto)
    - [ ] Smoke test com OpenCode Go real
    - [ ] Política final para conteúdo sensível
    - [ ] Convenção de uso de `--no-commit`
+
+7. **Avaliação de incrementos** (aguardando subsídios do usuário)
+   - [ ] Receber e analisar material externo
+   - [ ] Decidir escopo de expansão do produto
 
 ## Tecnologias
 
