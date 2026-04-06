@@ -15,6 +15,10 @@ dependencies = [
 llm = [
     "openai>=1.0",
 ]
+web = [
+    "requests>=2.31",
+    "html2text>=2024.1",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
