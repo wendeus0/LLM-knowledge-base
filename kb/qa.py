@@ -6,6 +6,7 @@ from kb.client import chat
 from kb.config import WIKI_DIR, TOPICS
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
+from kb.outputs import write_output as _write_output
 from kb.router import build_context
 from kb.state import add_learning
 
@@ -70,11 +71,13 @@ def answer_and_file(
     top_k: int = 5,
     allow_sensitive: bool = False,
     no_commit: bool = False,
-    traverse: bool = True,
-    depth: int | None = None,
+    to_wiki: bool = False,
 ) -> tuple[str, Path | None]:
-    """Responde e arquiva a resposta de volta na wiki."""
-    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive, traverse=traverse, depth=depth)
+    """Responde e arquiva a resposta.
+
+    Por padrão grava em outputs/. Com to_wiki=True, arquiva em wiki/ (comportamento anterior).
+    """
+    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive)
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
         source="qa:file_back",
@@ -99,12 +102,16 @@ def answer_and_file(
         if line.startswith("title:"):
             title = line.split(":", 1)[1].strip()
 
-    slug = re.sub(r"[^a-z0-9-]", "-", title.lower())[:60].strip("-")
-    folder = WIKI_DIR / topic if topic in TOPICS else WIKI_DIR
-    folder.mkdir(parents=True, exist_ok=True)
-    out = folder / f"{slug}.md"
-    out.write_text(article, encoding="utf-8")
+    if to_wiki:
+        slug = re.sub(r"[^a-z0-9-]", "-", title.lower())[:60].strip("-")
+        folder = WIKI_DIR / topic if topic in TOPICS else WIKI_DIR
+        folder.mkdir(parents=True, exist_ok=True)
+        out = folder / f"{slug}.md"
+        out.write_text(article, encoding="utf-8")
+    else:
+        _, out = _write_output(question, article, topic, no_commit=True)
+
     if not no_commit:
-        commit(f"feat(wiki): file back answer — {title[:50]}", [out])
+        commit(f"feat(outputs): file back answer — {title[:50]}", [out])
 
     return response, out

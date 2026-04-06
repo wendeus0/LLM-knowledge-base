@@ -12,16 +12,51 @@ console = Console()
 
 
 @app.command()
-def ingest(path: Path = typer.Argument(..., help="Arquivo para adicionar a raw/")):
-    """Copia um arquivo para raw/."""
+def ingest(
+    sources: list[str] = typer.Argument(..., help="Arquivo(s) ou URL(s) para adicionar a raw/"),
+    no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivo localmente sem criar commit git"),
+    compile_after: bool = typer.Option(False, "--compile", help="Compila os arquivos ingeridos para wiki/ após ingestão"),
+):
+    """Copia arquivo(s) para raw/ ou raspa URL(s) e salva como Markdown."""
     from kb.config import RAW_DIR
     from kb.state import record_ingest
 
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-    dest = RAW_DIR / path.name
-    dest.write_bytes(path.read_bytes())
-    record_ingest(dest)
-    console.print(f"[green]Adicionado:[/] {dest}")
+    ingested: list[Path] = []
+
+    for source in sources:
+        if source.startswith("http://") or source.startswith("https://"):
+            from kb.web_ingest import WebIngestError, ingest_url
+
+            console.print(f"[dim]Baixando {source}...[/]")
+            try:
+                out = ingest_url(source, no_commit=no_commit)
+            except WebIngestError as exc:
+                console.print(f"[red]Erro:[/] {exc}")
+                raise typer.Exit(code=1)
+            record_ingest(out)
+            console.print(f"[green]Adicionado:[/] {out}")
+            ingested.append(out)
+        else:
+            path = Path(source)
+            RAW_DIR.mkdir(parents=True, exist_ok=True)
+            dest = RAW_DIR / path.name
+            dest.write_bytes(path.read_bytes())
+            record_ingest(dest)
+            if not no_commit:
+                from kb.git import commit
+                commit(f"feat(raw): ingest — {path.name}", [dest])
+            console.print(f"[green]Adicionado:[/] {dest}")
+            ingested.append(dest)
+
+    if compile_after and ingested:
+        from kb.compile import compile_file, update_index as do_update_index
+
+        for f in ingested:
+            console.print(f"Compilando [bold]{f.name}[/]...")
+            out = compile_file(f, no_commit=no_commit)
+            rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
+            console.print(f"  → [green]{rel}[/]")
+        do_update_index(no_commit=no_commit)
 
 
 @app.command("import-book")
@@ -101,7 +136,8 @@ def compile(
 @app.command()
 def qa(
     question: str = typer.Argument(..., help="Pergunta para a knowledge base"),
-    file_back: bool = typer.Option(False, "--file-back", "-f", help="Arquiva a resposta de volta na wiki"),
+    file_back: bool = typer.Option(False, "--file-back", "-f", help="Arquiva a resposta em outputs/ (use --to-wiki para arquivar na wiki)"),
+    to_wiki: bool = typer.Option(False, "--to-wiki", help="Arquiva a resposta em wiki/ em vez de outputs/"),
     allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
     no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git quando houver file-back"),
     no_traverse: bool = typer.Option(False, "--no-traverse", help="Desativa traversal de wikilinks (usa apenas busca por palavra-chave)"),
@@ -118,7 +154,7 @@ def qa(
         if file_back:
             from kb.qa import answer_and_file
 
-            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit, traverse=traverse, depth=depth)
+            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit, to_wiki=to_wiki)
             console.print(Markdown(response))
             if saved:
                 console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")

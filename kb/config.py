@@ -7,6 +7,7 @@ load_dotenv()
 ROOT = Path(__file__).parent.parent
 RAW_DIR = ROOT / "raw"
 WIKI_DIR = ROOT / "wiki"
+OUTPUTS_DIR = ROOT / "outputs"
 STATE_DIR = ROOT / "kb_state"
 KNOWLEDGE_PATH = STATE_DIR / "knowledge.json"
 LEARNINGS_PATH = STATE_DIR / "learnings.json"
