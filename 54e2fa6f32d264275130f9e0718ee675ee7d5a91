@@ -1,0 +1,36 @@
+.gitignore
+  c9e9bacf6697f093 8-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "54e2fa6f32d264275130f9e0718ee675ee7d5a91",
+  "prompts": {
+    "6ecc94e000d3e743": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2a96a0391fferbqo3X3rbFfqM6",
+        "model": "opencode-go/kimi-k2.5"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 234,
+      "total_deletions": 0,
+      "accepted_lines": 201,
+      "overriden_lines": 36
+    },
+    "c9e9bacf6697f093": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e64e27a7-a929-43ad-b8f5-fda4c29da7d2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 42,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
