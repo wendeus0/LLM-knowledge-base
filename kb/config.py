@@ -18,3 +18,6 @@ BASE_URL = os.getenv("KB_BASE_URL", "https://opencode.ai/zen/go/v1")
 MODEL = os.getenv("KB_MODEL", "kimi-k2.5")
 
 TOPICS = ["cybersecurity", "ai", "python", "typescript"]
+
+WIKILINK_TRAVERSAL_DEPTH = 1
+MAX_CONTEXT_TOKENS = 8000

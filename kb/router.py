@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from kb.config import RAW_DIR
+from kb.config import MAX_CONTEXT_TOKENS, RAW_DIR, WIKI_DIR, WIKILINK_TRAVERSAL_DEPTH
 from kb.search import find_relevant
 from kb.state import discover_raw_sources, load_knowledge, load_learnings, search_structured_entries
 
@@ -31,9 +31,27 @@ def decide_route(question: str) -> RouteDecision:
     return RouteDecision("wiki", "Pergunta geral deve priorizar a wiki compilada.")
 
 
-def _build_wiki_context(question: str, top_k: int) -> list[str]:
-    relevant = find_relevant(question, top_k=top_k)
-    return [f"# {path.stem}\n{path.read_text(encoding='utf-8', errors='replace')}" for path in relevant]
+def _build_wiki_context(
+    question: str,
+    top_k: int,
+    traverse: bool = True,
+    depth: int | None = None,
+) -> list[str]:
+    from kb.graph import traverse as graph_traverse
+
+    seed_files = find_relevant(question, top_k=top_k)
+    extra_files = []
+    if traverse and seed_files:
+        extra_files = graph_traverse(
+            seed_files=seed_files,
+            question=question,
+            wiki_dir=WIKI_DIR,
+            depth=depth if depth is not None else WIKILINK_TRAVERSAL_DEPTH,
+            token_budget=MAX_CONTEXT_TOKENS,
+        )
+
+    all_files = seed_files + [f for f in extra_files if f not in seed_files]
+    return [f"# {path.stem}\n{path.read_text(encoding='utf-8', errors='replace')}" for path in all_files]
 
 
 def _build_raw_context(question: str, top_k: int) -> list[str]:
@@ -64,11 +82,16 @@ def _build_structured_context(route: str, question: str, top_k: int) -> list[str
     return context
 
 
-def build_context(question: str, top_k: int = 5) -> tuple[RouteDecision, list[str]]:
+def build_context(
+    question: str,
+    top_k: int = 5,
+    traverse: bool = True,
+    depth: int | None = None,
+) -> tuple[RouteDecision, list[str]]:
     decision = decide_route(question)
 
     if decision.route == "wiki":
-        context = _build_wiki_context(question, top_k)
+        context = _build_wiki_context(question, top_k, traverse=traverse, depth=depth)
     elif decision.route == "raw":
         context = _build_raw_context(question, top_k)
     else:
@@ -78,4 +101,4 @@ def build_context(question: str, top_k: int = 5) -> tuple[RouteDecision, list[st
         return decision, context
 
     fallback = RouteDecision("wiki", f"{decision.reason} Nenhum contexto encontrado; fallback para wiki.")
-    return fallback, _build_wiki_context(question, top_k)
+    return fallback, _build_wiki_context(question, top_k, traverse=traverse, depth=depth)

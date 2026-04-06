@@ -140,6 +140,8 @@ def qa(
     to_wiki: bool = typer.Option(False, "--to-wiki", help="Arquiva a resposta em wiki/ em vez de outputs/"),
     allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
     no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git quando houver file-back"),
+    no_traverse: bool = typer.Option(False, "--no-traverse", help="Desativa traversal de wikilinks (usa apenas busca por palavra-chave)"),
+    depth: int = typer.Option(1, "--depth", help="Profundidade de traversal de wikilinks (padrão: 1; use --no-traverse para desativar)"),
 ):
     """Responde uma pergunta consultando as fontes do kb."""
     from kb.guardrails import SensitiveContentError, summarize_findings
@@ -147,10 +149,12 @@ def qa(
     console.print("[dim]Pesquisando nas fontes do kb...[/]\n")
 
     def _run_qa(allow_sensitive_flag: bool) -> None:
+        traverse = not no_traverse
+
         if file_back:
             from kb.qa import answer_and_file
 
-            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit, to_wiki=to_wiki)
+            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit, to_wiki=to_wiki, traverse=traverse, depth=depth)
             console.print(Markdown(response))
             if saved:
                 console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
@@ -158,7 +162,7 @@ def qa(
 
         from kb.qa import answer
 
-        console.print(Markdown(answer(question, allow_sensitive=allow_sensitive_flag)))
+        console.print(Markdown(answer(question, allow_sensitive=allow_sensitive_flag, traverse=traverse, depth=depth)))
 
     try:
         _run_qa(allow_sensitive)

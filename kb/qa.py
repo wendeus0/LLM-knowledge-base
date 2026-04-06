@@ -35,8 +35,14 @@ source: qa
 """
 
 
-def answer(question: str, top_k: int = 5, allow_sensitive: bool = False) -> str:
-    decision, context_parts = build_context(question, top_k=top_k)
+def answer(
+    question: str,
+    top_k: int = 5,
+    allow_sensitive: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
+) -> str:
+    decision, context_parts = build_context(question, top_k=top_k, traverse=traverse, depth=depth)
 
     if not context_parts:
         return "Nenhum contexto relevante encontrado. Use `kb compile` para adicionar conteúdo ou registre learnings/knowledge."
@@ -66,12 +72,14 @@ def answer_and_file(
     allow_sensitive: bool = False,
     no_commit: bool = False,
     to_wiki: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
     Por padrão grava em outputs/. Com to_wiki=True, arquiva em wiki/ (comportamento anterior).
     """
-    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive)
+    response = answer(question, top_k=top_k, allow_sensitive=allow_sensitive, traverse=traverse, depth=depth)
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
         source="qa:file_back",
