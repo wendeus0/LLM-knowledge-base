@@ -145,12 +145,12 @@ class TestTraverse:
         wiki = self._make_wiki(tmp_path)
         seed = wiki / "xss.md"
         seed.write_text(
-            "---\ntitle: XSS\ntags: [xss]\n---\n\n# XSS\n\nVeja [[csrf]].\n" + ("x " * 500),
+            "---\ntitle: XSS\ntags: [xss]\n---\n\n# XSS\n\nVeja [[csrf]].",
             encoding="utf-8",
         )
         linked = wiki / "csrf.md"
         linked.write_text(
-            "---\ntitle: CSRF\ntags: [csrf]\n---\n\n# CSRF\n\nConteúdo sobre csrf.\n" + ("y " * 500),
+            "---\ntitle: CSRF\ntags: [csrf, xss]\n---\n\n# CSRF\n\nConteúdo sobre csrf.\n" + ("y " * 500),
             encoding="utf-8",
         )
 
@@ -159,7 +159,7 @@ class TestTraverse:
             question="xss",
             wiki_dir=tmp_path / "wiki",
             depth=1,
-            token_budget=100,  # muito pequeno para incluir csrf
+            token_budget=100,  # seed ~12 tokens; csrf ~262 tokens — excede budget
         )
 
         # csrf não deve ser incluído — budget esgotado
@@ -210,7 +210,7 @@ class TestTraverse:
         )
         level2 = wiki / "sqli.md"
         level2.write_text(
-            "---\ntitle: SQLi\ntags: [sqli]\n---\n\n# SQLi\n\nConteúdo.",
+            "---\ntitle: SQLi\ntags: [sqli, xss]\n---\n\n# SQLi\n\nConteúdo.",
             encoding="utf-8",
         )
 

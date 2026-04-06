@@ -59,7 +59,7 @@ def _is_relevant(frontmatter: dict, question: str) -> bool:
         return False
     title = frontmatter.get("title", "").lower()
     tags = [t.lower() for t in (frontmatter.get("tags") or [])]
-    return any(term in title or term in tags for term in terms)
+    return any(term in title or any(term in tag for tag in tags) for term in terms)
 
 
 def traverse(
