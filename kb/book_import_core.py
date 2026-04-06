@@ -170,7 +170,7 @@ def _resolve_image_reference(base_href: str | None, src: str, image_map: dict[st
     normalized_src = _normalize_book_path(unquote(src))
     candidates = [normalized_src, Path(normalized_src).name]
     if base_href:
-        resolved = _normalize_book_path(_resolve_href(base_href, src))
+        resolved = _normalize_book_path(_resolve_href(base_href, unquote(src)))
         candidates.insert(0, resolved)
         candidates.insert(1, Path(resolved).name)
     for candidate in candidates:
