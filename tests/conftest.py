@@ -3,12 +3,14 @@ import pytest
 
 @pytest.fixture
 def tmp_raw_wiki(tmp_path, monkeypatch):
-    """Setup raw/ e wiki/ temporários para testes com monkeypatch global"""
+    """Setup raw/, wiki/ e outputs/ temporários para testes com monkeypatch global"""
     raw = tmp_path / "raw"
     wiki = tmp_path / "wiki"
+    outputs = tmp_path / "outputs"
     state_dir = tmp_path / "kb_state"
     raw.mkdir()
     wiki.mkdir()
+    outputs.mkdir()
     state_dir.mkdir()
 
     # Criar subdiretórios de tópicos na wiki
@@ -22,6 +24,7 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     # Monkeypatch das variáveis globais
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
     monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.config.OUTPUTS_DIR", outputs)
     monkeypatch.setattr("kb.config.STATE_DIR", state_dir)
     monkeypatch.setattr("kb.config.KNOWLEDGE_PATH", knowledge_path)
     monkeypatch.setattr("kb.config.LEARNINGS_PATH", learnings_path)

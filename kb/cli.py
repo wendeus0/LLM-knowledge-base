@@ -101,7 +101,8 @@ def compile(
 @app.command()
 def qa(
     question: str = typer.Argument(..., help="Pergunta para a knowledge base"),
-    file_back: bool = typer.Option(False, "--file-back", "-f", help="Arquiva a resposta de volta na wiki"),
+    file_back: bool = typer.Option(False, "--file-back", "-f", help="Arquiva a resposta em outputs/ (use --to-wiki para arquivar na wiki)"),
+    to_wiki: bool = typer.Option(False, "--to-wiki", help="Arquiva a resposta em wiki/ em vez de outputs/"),
     allow_sensitive: bool = typer.Option(False, "--allow-sensitive", help="Permite processar conteúdo sensível sem confirmação adicional"),
     no_commit: bool = typer.Option(False, "--no-commit", help="Escreve arquivos localmente sem criar commit git quando houver file-back"),
 ):
@@ -114,7 +115,7 @@ def qa(
         if file_back:
             from kb.qa import answer_and_file
 
-            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit)
+            response, saved = answer_and_file(question, allow_sensitive=allow_sensitive_flag, no_commit=no_commit, to_wiki=to_wiki)
             console.print(Markdown(response))
             if saved:
                 console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
