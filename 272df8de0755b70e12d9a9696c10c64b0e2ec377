@@ -1,0 +1,29 @@
+kb/web_ingest.py
+  cb4bd3286a5356ce 42-45,72,83
+tests/unit/test_web_ingest.py
+  cb4bd3286a5356ce 123
+features/ingest-url/SPEC.md
+  cb4bd3286a5356ce 39
+kb/cli.py
+  cb4bd3286a5356ce 45-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "272df8de0755b70e12d9a9696c10c64b0e2ec377",
+  "prompts": {
+    "cb4bd3286a5356ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6eefc47-6f65-4f81-87d4-b40715595710",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 3,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
