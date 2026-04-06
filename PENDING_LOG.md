@@ -9,7 +9,7 @@ Pendências e decisões abertas.
 | P1 | Definir convenção operacional de uso de `--no-commit` e `--allow-sensitive` | Pendente | 2026-04-03 |
 | P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | Pendente | 2026-04-03 |
 | P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | Pendente | 2026-04-03 |
-| P2 | Integração Obsidian | Pendente | 2026-04-03 |
+| P2 | Integração Obsidian | ✅ Concluído | 2026-04-04 |
 | P2 | Embeddings + RAG híbrido | Pendente (futuro) | 2026-04-03 |
 
 ## P0 (Bloqueadores)
@@ -40,9 +40,10 @@ Pendências e decisões abertas.
 - Hoje `book2md` funciona como compat layer/lab
 - Próximo passo opcional: empacotar dependência de forma explícita e remover fallback por path
 
-**Obsidian integration**
-- Wiki já é Obsidian-compatible (markdown + wikilinks)
-- Futuro: plugin Obsidian que chama `kb` via CLI
+**Obsidian integration** ✅ Concluído em 2026-04-04
+- `wiki/.obsidian/` criado com config de vault + Shell Commands plugin pré-configurado
+- 5 hotkeys mapeados: Ctrl+Shift+C/Q/H/L/S → compile/qa/heal/lint/search
+- Passo manual restante: instalar plugin Shell Commands via Obsidian UI
 
 **Embeddings + RAG**
 - Atual: busca lexical simples funciona para a escala atual

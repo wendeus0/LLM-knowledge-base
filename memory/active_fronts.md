@@ -6,6 +6,21 @@ type: project
 
 ## Frentes ativas
 
+### F0: Trabalho não commitado em branch errado
+
+**Status:** Pendente resolução
+
+**Contexto:** Branch `feat/readme-arch-docs` teve PR mergeado (`5520c05`), mas o branch local carrega implementação completa das features `pal-foundation-phase-1` e `sensitive-execution-controls` sem commit: novos módulos (`guardrails.py`, `router.py`, `state.py`, `jobs.py`, testes), 17 arquivos tracked modificados. 85 testes passando.
+
+**O que falta:**
+- [ ] Criar branch de feature correto a partir do estado atual
+- [ ] Passar pelo workflow: test-red → green-refactor → quality-gate → report-writer → git-flow-manager
+- [ ] Commitar e abrir PR para cada feature separadamente
+
+**Risco:** perda de trabalho ou mistura de escopo a cada nova sessão.
+
+---
+
 ### F1: Validação operacional com provider real
 
 **Status:** Em progresso

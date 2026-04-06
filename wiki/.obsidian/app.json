@@ -1,0 +1,9 @@
+{
+  "useMarkdownLinks": false,
+  "newLinkFormat": "shortest",
+  "attachmentFolderPath": ".obsidian/attachments",
+  "userIgnoreFilters": [
+    ".obsidian"
+  ],
+  "showUnsupportedFiles": false
+}
