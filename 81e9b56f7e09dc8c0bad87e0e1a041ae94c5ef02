@@ -1,0 +1,27 @@
+kb/outputs.py
+  cb4bd3286a5356ce 10-13,28-29
+kb/cli.py
+  cb4bd3286a5356ce 112-114
+kb/qa.py
+  cb4bd3286a5356ce 106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "81e9b56f7e09dc8c0bad87e0e1a041ae94c5ef02",
+  "prompts": {
+    "cb4bd3286a5356ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6eefc47-6f65-4f81-87d4-b40715595710",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 3,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
