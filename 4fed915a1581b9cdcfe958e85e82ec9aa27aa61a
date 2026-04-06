@@ -1,0 +1,50 @@
+kb/outputs.py
+  c9e9bacf6697f093 1-36
+tests/unit/test_outputs.py
+  c9e9bacf6697f093 1-81
+tests/integration/test_outputs_store.py
+  c9e9bacf6697f093 1-106
+features/outputs-store/SPEC.md
+  c9e9bacf6697f093 1-68
+kb/qa.py
+  c9e9bacf6697f093 9,68,70-73,99-106,109
+kb/config.py
+  c9e9bacf6697f093 10
+kb/cli.py
+  c9e9bacf6697f093 104-105,118
+tests/conftest.py
+  c9e9bacf6697f093 6,9,13,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "4fed915a1581b9cdcfe958e85e82ec9aa27aa61a",
+  "prompts": {
+    "6ecc94e000d3e743": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2a96a0391fferbqo3X3rbFfqM6",
+        "model": "opencode-go/kimi-k2.5"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 237,
+      "overriden_lines": 0
+    },
+    "c9e9bacf6697f093": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e64e27a7-a929-43ad-b8f5-fda4c29da7d2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 516,
+      "total_deletions": 12,
+      "accepted_lines": 550,
+      "overriden_lines": 0
+    }
+  }
+}
