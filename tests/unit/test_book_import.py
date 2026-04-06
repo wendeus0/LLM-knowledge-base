@@ -47,6 +47,22 @@ def _create_sample_epub(path):
         )
 
 
+def test_should_decode_url_encoded_image_paths_when_resolving_relative_assets():
+    from kb.book_import_core import html_to_markdown
+
+    markdown = html_to_markdown(
+        "<p><img src='images/capa%20final.png' alt='Capa final'/></p>",
+        image_map={
+            "OPS/images/capa final.png": "images/capa-final.png",
+            "capa final.png": "images/capa-final.png",
+        },
+        base_href="OPS/text/chapter1.xhtml",
+    )
+
+    assert "![Capa final](images/capa-final.png)" in markdown
+
+
+
 def test_should_export_epub_to_markdown_chapters_inside_output_directory(tmp_path):
     from kb.book_import import import_epub
 
