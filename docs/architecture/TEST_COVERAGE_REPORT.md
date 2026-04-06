@@ -1,72 +1,55 @@
 # TEST_COVERAGE_REPORT.md
 
-## Sprint fechado em 2026-04-03
+## Sprint fechado em 2026-04-04
 
-## Evidência disponível
+## Evidência
 
-- suíte executada com sucesso: **85 testes passando**
-- coleta atual: **85 testes collected**
-- baseline validada com `pytest -q`
-- **não há artefato numérico de cobertura atualizado** neste ambiente porque `pytest-cov` / `coverage.py` não estão instalados
+- suíte: **89 testes passando**
+- cobertura total: **85%** (1019 stmts, 156 miss)
+- ferramenta: `pytest-cov` instalado no venv
 
-## Cobertura funcional observada
+## Cobertura por módulo
 
-### Áreas bem cobertas neste sprint
+| Módulo | Cobertura | Miss | Status |
+|--------|-----------|------|--------|
+| `kb/__init__.py` | 100% | 0 | ✓ |
+| `kb/config.py` | 100% | 0 | ✓ |
+| `kb/guardrails.py` | 100% | 0 | ✓ |
+| `kb/lint.py` | 100% | 0 | ✓ |
+| `kb/router.py` | 100% | 0 | ✓ |
+| `kb/compile.py` | 97% | 2 | ✓ |
+| `kb/qa.py` | 98% | 1 | ✓ |
+| `kb/state.py` | 98% | 2 | ✓ |
+| `kb/jobs.py` | 93% | 2 | ✓ |
+| `kb/heal.py` | 89% | 6 | ✓ |
+| `kb/search.py` | 91% | 3 | ✓ |
+| `kb/book_import_core.py` | 84% | 62 | ✓ |
+| `kb/book_import.py` | 77% | 3 | ⚠ abaixo de 80% |
+| `kb/client.py` | 63% | 10 | ✗ gap crítico |
+| `kb/cli.py` | 60% | 54 | ✗ gap crítico |
+| `kb/git.py` | 31% | 11 | ✗ gap crítico |
 
-- `kb.compile`
-  - compilação de raw para wiki
-  - geração de summary compilado
-  - update de índice
-  - controle `--no-commit`
-- `kb.qa`
-  - roteamento por fonte nativa
-  - file-back
-  - `--allow-sensitive`
-  - `--no-commit`
-- `kb.heal`
-  - fluxo de healing
-  - guardrails
-  - supressão de commit
-- `kb.guardrails`
-  - detecção de padrões sensíveis
-  - bloqueio programático
-  - bypass explícito
-- `kb.state`
-  - manifesto
-  - knowledge
-  - learnings
-- `kb.jobs`
-  - jobs canônicos `list/run`
-- CLI
-  - flags `--allow-sensitive`
-  - flags `--no-commit`
-  - propagação correta para módulos internos
-- `kb.book_import_core`
-  - fallback para parsing XML em ambiente mínimo
-  - rejeição de XML inseguro
+## Módulos abaixo do limiar (80%)
 
-## Gaps prioritários
+| Módulo | Cobertura | Gap |
+|--------|-----------|-----|
+| `kb/git.py` | 31% | 11 linhas |
+| `kb/cli.py` | 60% | 54 linhas |
+| `kb/client.py` | 63% | 10 linhas |
+| `kb/book_import.py` | 77% | 3 linhas |
 
-### P1
+## Top 3 gaps críticos
 
-1. **Cobertura numérica formal ausente**
-   - falta instalar e rodar ferramenta de cobertura (`pytest-cov` ou `coverage.py`)
-   - impede medir regressão percentual por módulo
+1. **`kb/git.py`** (31%) — linhas 9, 14-26: o caminho real de `commit()` com subprocess não é testado; apenas o caminho `enabled=False`. Gap de risco baixo (módulo simples), mas sem cobertura de regressão.
 
-2. **Smoke test real com provider ainda pendente**
-   - suíte atual é offline/mocked
-   - ainda falta validar `import-book --compile`, `qa`, `heal` e `lint` contra OpenCode Go real
+2. **`kb/cli.py`** (60%) — 54 linhas não cobertas incluem: comandos `ingest` (17-24), `import-book` (80-92), `compile` (123-148), `jobs` (182-211). CLI é a fronteira pública — gap de integração real.
 
-### P2
+3. **`kb/client.py`** (63%) — linhas 34-54: `get_client()` e `chat()` não são exercitados sem provider real. Esperado para suíte offline, mas sem fallback de test-double formal.
 
-3. **Fluxos manuais/documentais ainda sem golden tests**
-   - README / help do CLI / mensagens operacionais podem ganhar asserts mais específicos
+## Recomendação
 
-4. **Jobs ainda sem persistência de execução**
-   - há cobertura de invocação, mas não de histórico/telemetria porque a feature ainda não existe
+- `kb/git.py`: adicionar teste que mocka `subprocess.run` e valida o caminho de commit com mudanças staged
+- `kb/cli.py`: cobrir `ingest`, `import-book --compile`, `jobs list/run` via `typer.testing.CliRunner`
+- `kb/client.py`: formalizar test-double (mock de `openai.OpenAI`) para `chat()` e `get_client()`
 
-## Veredito
-
-- **Status:** cobertura funcional suficiente para fechar o sprint
-- **Limitação:** cobertura percentual não auditável neste ambiente atual
-- **Próximo passo recomendado:** adicionar tooling de cobertura e rodar smoke real com provider
+**Próximo sprint:** abrir itens de cobertura como P2 em `PENDING_LOG.md`.

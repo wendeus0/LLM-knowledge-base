@@ -4,6 +4,31 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
+## Sessão — 2026-04-04
+
+**O que foi feito:**
+- triage completo do estado do projeto (session-open + technical-triage)
+- identificado: branch `feat/readme-arch-docs` (já mergeado) carrega implementação não commitada de `pal-foundation-phase-1` + `sensitive-execution-controls` (17 arquivos tracked + novos módulos)
+- criado `wiki/.obsidian/` com configuração completa do vault Obsidian + Shell Commands plugin pré-configurado (hotkeys Ctrl+Shift+C/Q/H/L/S)
+- `PENDING_LOG.md`: Obsidian integration marcada como concluída
+- sprint-close executado
+
+**O que falta:**
+- instalar Shell Commands plugin manualmente no Obsidian (único passo do usuário)
+- resolver trabalho não commitado: criar branch correto + workflow de entrega
+- smoke test real com OpenCode Go
+- política operacional de sensibilidade
+
+**Próximo passo recomendado:**
+1. `git checkout -b feat/pal-foundation-phase-1` a partir do estado atual
+2. `quality-gate` → `report-writer` → `branch-sync-guard` → `git-flow-manager`
+3. Abrir `wiki/` no Obsidian → instalar Shell Commands plugin
+
+**Prompt de retomada:**
+> Retome do sprint fechado em 2026-04-04 no projeto `kb`. Prioridade: resolver trabalho não commitado em `feat/readme-arch-docs` (já mergeado). Implementação de `pal-foundation-phase-1` e `sensitive-execution-controls` está floating sem commit. Criar branch correto, passar pelo workflow (quality-gate → git-flow-manager) e então validar o fluxo real com OpenCode Go.
+
+---
+
 ## Sprint close — 2026-04-03
 
 **O que foi feito neste ciclo:**

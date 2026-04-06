@@ -1,0 +1,102 @@
+{
+  "settings_version": "0.21.0",
+  "debug": false,
+  "obsidian_command_palette_prefix": "Shell commands: ",
+  "working_directory": "/home/g0dsssp33d/work/kb",
+  "default_shells": {
+    "linux": "/bin/bash"
+  },
+  "output_channel_order": ["notification", "status-bar", "current-file-caret", "current-file-top", "current-file-bottom", "clipboard"],
+  "error_message_duration": 20,
+  "notification_message_duration": 10,
+  "shell_commands": {
+    "sc-compile": {
+      "platforms": {
+        "linux": "kb compile"
+      },
+      "shells": {},
+      "alias": "Compile KB",
+      "confirm_execution": false,
+      "ignore_error_codes": [],
+      "output_channels": {
+        "stdout": "notification",
+        "stderr": "notification"
+      },
+      "output_handlers": {},
+      "working_directory": "/home/g0dsssp33d/work/kb",
+      "icon": "refresh-cw",
+      "enabled": true
+    },
+    "sc-qa": {
+      "platforms": {
+        "linux": "kb qa \"{{value:Pergunta}}\""
+      },
+      "shells": {},
+      "alias": "Ask KB",
+      "confirm_execution": false,
+      "ignore_error_codes": [],
+      "output_channels": {
+        "stdout": "notification",
+        "stderr": "notification"
+      },
+      "output_handlers": {},
+      "working_directory": "/home/g0dsssp33d/work/kb",
+      "icon": "message-circle",
+      "enabled": true
+    },
+    "sc-heal": {
+      "platforms": {
+        "linux": "kb heal --n 5"
+      },
+      "shells": {},
+      "alias": "Heal KB",
+      "confirm_execution": false,
+      "ignore_error_codes": [],
+      "output_channels": {
+        "stdout": "notification",
+        "stderr": "notification"
+      },
+      "output_handlers": {},
+      "working_directory": "/home/g0dsssp33d/work/kb",
+      "icon": "heart-pulse",
+      "enabled": true
+    },
+    "sc-lint": {
+      "platforms": {
+        "linux": "kb lint"
+      },
+      "shells": {},
+      "alias": "Lint KB",
+      "confirm_execution": false,
+      "ignore_error_codes": [],
+      "output_channels": {
+        "stdout": "notification",
+        "stderr": "notification"
+      },
+      "output_handlers": {},
+      "working_directory": "/home/g0dsssp33d/work/kb",
+      "icon": "check-circle",
+      "enabled": true
+    },
+    "sc-search": {
+      "platforms": {
+        "linux": "kb search \"{{value:Buscar}}\""
+      },
+      "shells": {},
+      "alias": "Search KB",
+      "confirm_execution": false,
+      "ignore_error_codes": [],
+      "output_channels": {
+        "stdout": "notification",
+        "stderr": "notification"
+      },
+      "output_handlers": {},
+      "working_directory": "/home/g0dsssp33d/work/kb",
+      "icon": "search",
+      "enabled": true
+    }
+  },
+  "variables": {},
+  "custom_variables": {},
+  "prompts": {}
+}

@@ -9,3 +9,4 @@ Erros e bloqueadores encontrados durante sessões de IA.
 | 2026-04-03 | Estrutura de `compile` não alcançava capítulos importados em `raw/books/` | ✓ RESOLVIDO | `compile` passou a descobrir arquivos recursivamente e ignorar `metadata.json` |
 | 2026-04-03 | Ambientes mínimos sem `defusedxml` quebravam a importação/testes de EPUB | ✓ RESOLVIDO | `book_import_core` ganhou fallback seguro e bloqueio explícito para XML inseguro |
 | 2026-04-03 | Sem erros bloqueantes remanescentes no fechamento deste sprint | — | Baseline validada com 85 testes passando |
+| 2026-04-04 | Sem erros nesta sessão | — | Sessão focada em triage e configuração Obsidian; baseline mantida |
