@@ -1,0 +1,39 @@
+docs/adr/0009-outputs-store-separated-from-wiki.md
+  4d23680621c47688 1-38
+memory/active_fronts.md
+  4d23680621c47688 50,52-62
+memory/project_state.md
+  4d23680621c47688 37-38,45-49,53,80-86,91
+memory/next_steps.md
+  4d23680621c47688 9-11
+docs/adr/0008-wikilink-traversal-as-qa-context-enrichment.md
+  4d23680621c47688 1-45
+PENDING_LOG.md
+  4d23680621c47688 10-11
+memory/handoff.md
+  4d23680621c47688 7,10-13,16,19,22-24,27,31,33-37,39-40,42,44-49,52
+ERROR_LOG.md
+  4d23680621c47688 13
+SECURITY_AUDIT_REPORT.md
+  4d23680621c47688 3,5,9-18,20,22,26-28,30-37,40-45,47-60,64-68,70-74,76-79,81-84,88-94,96,100-110,112,114,116,118,122-140,142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "591a554ddc98cc899f7cf01e4024dc0ce12b242f",
+  "prompts": {
+    "4d23680621c47688": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a2049e44-067e-45ed-9286-99be09638f31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 263,
+      "total_deletions": 107,
+      "accepted_lines": 263,
+      "overriden_lines": 0
+    }
+  }
+}
