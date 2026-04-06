@@ -1,0 +1,48 @@
+tests/unit/test_graph.py
+  c9e9bacf6697f093 1-245
+kb/graph.py
+  c9e9bacf6697f093 1-103
+features/wikilink-traversal/SPEC.md
+  c9e9bacf6697f093 1-104
+kb/cli.py
+  c9e9bacf6697f093 107-108,116-117,129
+kb/config.py
+  c9e9bacf6697f093 20-22
+kb/router.py
+  c9e9bacf6697f093 8,34-38,40-54,85-89,94,104
+kb/qa.py
+  c9e9bacf6697f093 37-42,44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "086983998df05a365c3a7491450af72ecf0d1a7e",
+  "prompts": {
+    "6ecc94e000d3e743": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2a96a0391fferbqo3X3rbFfqM6",
+        "model": "opencode-go/kimi-k2.5"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 237,
+      "overriden_lines": 0
+    },
+    "c9e9bacf6697f093": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e64e27a7-a929-43ad-b8f5-fda4c29da7d2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 394,
+      "total_deletions": 10,
+      "accepted_lines": 530,
+      "overriden_lines": 0
+    }
+  }
+}
