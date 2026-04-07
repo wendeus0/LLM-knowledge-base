@@ -1,4 +1,3 @@
-```
 ---
 title: Building Applications with AI Agents
 topic: ai
@@ -82,4 +81,3 @@ Tracing agent reasoning steps, tool calls, and state changes through [[LLM Obser
 - [[Embeddings]]
 - [[Guardrails]]
 - [[LLM Observability]]
-```

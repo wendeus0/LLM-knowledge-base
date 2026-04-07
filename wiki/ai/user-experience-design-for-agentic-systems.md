@@ -1,4 +1,3 @@
-```markdown
 ---
 title: User Experience Design for Agentic Systems
 topic: ai
@@ -108,4 +107,3 @@ Quando enfrentam [[Ambiguity|ambiguidade]], agentes devem fazer [[Clarifying Que
 - [[Error Recovery]]
 - [[Cognitive Load]]
 - [[Accessibility in AI]]
-```

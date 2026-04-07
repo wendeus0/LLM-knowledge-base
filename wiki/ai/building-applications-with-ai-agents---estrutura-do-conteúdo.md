@@ -1,4 +1,3 @@
-```
 ---
 title: Building Applications with AI Agents - Estrutura do Conteúdo
 topic: ai
@@ -48,4 +47,3 @@ Os capítulos 1-8 encontram-se disponíveis, cobrindo o desenvolvimento técnico
 - [[Agent Evaluation]]
 - [[Agent Monitoring]]
 - [[AI Agent Security]]
-```

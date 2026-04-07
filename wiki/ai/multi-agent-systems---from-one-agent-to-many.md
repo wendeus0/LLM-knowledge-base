@@ -1,4 +1,3 @@
-```
 ---
 title: Multi-Agent Systems - From One Agent to Many
 topic: ai
@@ -103,4 +102,3 @@ A escalabilidade de sistemas multi-agente oferece vantagens significativas em ta
 - [[CrewAI]]
 - [[Swarm (Framework)]]
 - [[Handoffs]]
-```

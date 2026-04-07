@@ -1,4 +1,3 @@
-```
 ---
 title: Orchestration in AI Agents
 topic: ai
@@ -141,4 +140,3 @@ Comece com cenários bem definidos e abordagens simples de orquestração, escal
 - [[Chain of Thought]]
 - [[LangChain]]
 - [[Machine Learning]]
-```

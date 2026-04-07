@@ -1,4 +1,3 @@
-```
 ---
 title: Skills in AI Agents
 topic: ai
@@ -72,4 +71,3 @@ Effective skill design requires balancing several factors:
 - [[Code Generation]]
 - [[LangChain]]
 - [[Tool Use]]
-```

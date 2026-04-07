@@ -1,4 +1,3 @@
-```
 ---
 title: Learning in Agentic Systems
 topic: ai
@@ -104,4 +103,3 @@ When designing learning capabilities for agentic systems, consider that implemen
 - [[non-stationary environments]]
 - [[federated learning]]
 - [[overfitting]]
-```

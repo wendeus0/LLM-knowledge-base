@@ -1,4 +1,3 @@
-```
 ---
 title: Design de Sistemas Baseados em Agentes de IA
 topic: ai
@@ -149,4 +148,3 @@ Validação em produção:
 - [[Chatbots]]
 - [[Smart Cities]]
 - [[Human-in-the-loop]]
-```

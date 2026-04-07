@@ -1,4 +1,3 @@
-```
 ---
 title: Designing Agent Systems
 topic: ai
@@ -163,4 +162,3 @@ Framework abrangente incluindo:
 - [[Iterative Design]]
 - [[Scalability]]
 - [[Guardrails]]
-```

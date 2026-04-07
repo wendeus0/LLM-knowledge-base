@@ -1,9 +1,9 @@
-```
 ---
 title: Introdução aos Agentes Autônomos
 topic: ai
 tags: [agents, llm, machine-learning, langgraph, multi-agent-systems, architecture, foundation-models]
 source: 05-chapter-1-introduction-to-agents.md
+reviewed_at: "2026-04-07"
 ---
 
 # Introdução aos Agentes Autônomos
@@ -101,4 +101,3 @@ Os [[Foundation Models]], especialmente [[Large Language Models]], fornecem a ba
 - [[Personal Assistant Agent]]
 - [[Legal Agent]]
 - [[Advertising Agent]]
-```

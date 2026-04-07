@@ -1,4 +1,3 @@
-```
 ---
 title: Introduction to AI Agents
 topic: ai
@@ -86,4 +85,3 @@ The document emphasizes [[LangGraph]] as a leading framework for implementing th
 - [[Foundation Models]]
 - [[Component-Based Design]]
 - [[Error Handling]]
-```

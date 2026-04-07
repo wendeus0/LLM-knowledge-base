@@ -1,4 +1,3 @@
-```
 ---
 title: Knowledge and Memory in AI Agents
 topic: ai
@@ -136,4 +135,3 @@ This mimics human margin notes and summarization, improving performance on reaso
 - [[Named Entity Recognition]]
 - [[Chain of Thought]]
 - [[LangGraph]]
-```

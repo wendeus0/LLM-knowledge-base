@@ -108,13 +108,9 @@ Consider an agent tasked with managing all aspects of a smart city. This might i
 
 When a task is too broad you run into two issues:
 
-- 
+- *Complexity Increases*: Managing multiple domains or systems can make the agent’s architecture unnecessarily complex and difficult to maintain.
 
-*Complexity Increases*: Managing multiple domains or systems can make the agent’s architecture unnecessarily complex and difficult to maintain.
-
-- 
-
-*Lack of Focus*: A broad task might dilute the agent’s attention, leading to lower performance in each of the individual sub-tasks.
+- *Lack of Focus*: A broad task might dilute the agent’s attention, leading to lower performance in each of the individual sub-tasks.
 
 To mitigate these risks, broad tasks should be broken down into more manageable components, with specialized agents or sub-agents tackling each aspect. This modular approach allows for higher efficiency and better performance.
 

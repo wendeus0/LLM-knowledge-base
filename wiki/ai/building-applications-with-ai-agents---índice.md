@@ -1,4 +1,3 @@
-```
 ---
 title: Building Applications with AI Agents - Índice
 topic: ai
@@ -54,4 +53,3 @@ A fonte original indica que os capítulos 1-8 já estão disponíveis, enquanto 
 - [[Monitoramento de IA em Produção]]
 - [[Human-in-the-loop]]
 - [[Design Patterns para IA]]
-```

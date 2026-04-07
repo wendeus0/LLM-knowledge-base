@@ -1,4 +1,3 @@
-```markdown
 ---
 title: Skills em Agentes de IA
 topic: ai
@@ -127,4 +126,3 @@ Ao projetar skills para agentes de IA, considere:
 - [[Computer Vision]]
 - [[Natural Language Processing]]
 - [[Tool Use]]
-```
