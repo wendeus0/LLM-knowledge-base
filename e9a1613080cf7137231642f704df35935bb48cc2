@@ -1,0 +1,41 @@
+memory/next_steps.md
+  9df3b30bf540d055 9-17,22,24-26,28,30-31,36
+memory/pitfalls.md
+  9df3b30bf540d055 65-86
+memory/stable_decisions.md
+  9df3b30bf540d055 89-96
+memory/project_state.md
+  9df3b30bf540d055 9,18-19,23,25-27,29,31,36,38-45,49,53-59,61,63
+docs/adr/0010-belt-and-suspenders-llm-output-format-defense.md
+  9df3b30bf540d055 1-45
+SECURITY_AUDIT_REPORT.md
+  9df3b30bf540d055 3-21
+memory/handoff.md
+  9df3b30bf540d055 7,10-19,22-25,27-31,34,38,41-44
+ERROR_LOG.md
+  9df3b30bf540d055 14-17
+memory/active_fronts.md
+  9df3b30bf540d055 9,11,13-19,23,25,27,29,31,33,35,39,41,43,51,53,55,57,59
+PENDING_LOG.md
+  9df3b30bf540d055 10-13,25-28,32-35,37-40,42-45,48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "e9a1613080cf7137231642f704df35935bb48cc2",
+  "prompts": {
+    "9df3b30bf540d055": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19c6ab0d-2c81-4751-8467-325eed24fd74",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 218,
+      "total_deletions": 186,
+      "accepted_lines": 218,
+      "overriden_lines": 0
+    }
+  }
+}
