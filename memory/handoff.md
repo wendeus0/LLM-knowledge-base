@@ -4,6 +4,61 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
+## Sessão — 2026-04-07 (Repo hygiene / corpus extraction)
+
+**O que foi feito:**
+- Corpus pessoal extraído do repositório principal para `/home/g0dsssp33d/work/llm-wiki`
+- Diretórios `raw/`, `wiki/`, `outputs/` e `kb_state/` removidos do repo principal e realocados para o diretório externo
+- `kb/config.py` atualizado para suportar `KB_DATA_DIR` e overrides específicos (`KB_RAW_DIR`, `KB_WIKI_DIR`, `KB_OUTPUTS_DIR`, `KB_STATE_DIR`)
+- `.env.example`, README, `docs/OBSIDIAN.md`, `.pi/manifest.yaml`, `AGENTS.md` e `CLAUDE.md` atualizados para separar engine vs. corpus
+- `examples/` criado com seed neutro mínimo para onboarding
+- `.gitignore` ajustado para não versionar corpus local nem `.obsidian/`
+- Fluxo validado após migração: `kb search` passou a ler o corpus em `/home/g0dsssp33d/work/llm-wiki`
+
+**O que falta:**
+- Mergear PR#19 (feat/wikilink-traversal → main)
+- Corrigir 8 testes falhando em `test_web_ingest.py` (mock setup pré-existente)
+- Neutralizar referências históricas restantes a corpus temático pessoal em docs de arquitetura/ADR
+- Avaliar tornar `TOPICS` configurável em vez de fixo no código
+
+**Métricas da sessão:**
+- Engine e corpus: desacoplados
+- Diretório de dados ativo: `/home/g0dsssp33d/work/llm-wiki`
+- Seed neutro criado: `examples/raw/getting-started.md`
+- Configuração suportada: `KB_DATA_DIR`, `KB_RAW_DIR`, `KB_WIKI_DIR`, `KB_OUTPUTS_DIR`, `KB_STATE_DIR`
+
+**Prompt de retomada:**
+> Retome o projeto `kb` após a higienização do repositório. A engine está separada do corpus pessoal, que agora vive em `/home/g0dsssp33d/work/llm-wiki`, e o projeto suporta `KB_DATA_DIR`. Próximas ações: (1) revisar/neutralizar docs históricos ainda acoplados ao corpus antigo; (2) corrigir 8 testes de `test_web_ingest.py`; (3) avaliar tornar `TOPICS` configurável.
+
+---
+
+## Sessão — 2026-04-07 (Obsidian integration close)
+
+**O que foi feito:**
+- Integração operacional com Obsidian consolidada usando o plugin `obsidian-terminal`
+- A estratégia com `Shell Commands` foi descartada por fragilidade de PATH/working directory e falta de input dinâmico para `qa`
+- Profile integrado do plugin configurado com shell login (`/bin/zsh --login` no Linux)
+- Fluxo validado no terminal integrado do Obsidian com `kb qa "Como implementar um orquestrador em meu workflow?" --allow-sensitive`
+- README atualizado com menção explícita ao plugin adotado e tutorial de uso
+- `docs/OBSIDIAN.md` criado com passo a passo operacional completo
+
+**O que falta:**
+- Mergear PR#19 (feat/wikilink-traversal → main)
+- Corrigir 8 testes falhando em `test_web_ingest.py` (mock setup pré-existente)
+- Refinar guardrail para falso positivo de nomes de variável em código técnico
+- Opcional: configurar hotkeys/profile defaults no `obsidian-terminal`
+
+**Métricas da sessão:**
+- Vault Obsidian: operacional
+- Plugin adotado: `obsidian-terminal`
+- Comando validado no Obsidian: `kb qa`
+- Documentação atualizada: `README.md`, `docs/OBSIDIAN.md`, logs de sessão
+
+**Prompt de retomada:**
+> Retome o projeto `kb` após a consolidação da integração com Obsidian. O vault `wiki/` está operacional com `obsidian-terminal`, `kb qa` já rodou com sucesso dentro do Obsidian e o README/tutorial foram atualizados. Próximas ações: (1) mergear PR#19; (2) corrigir 8 testes de `test_web_ingest.py`; (3) refinar o guardrail de sensibilidade para exemplos de código.
+
+---
+
 ## Sessão — 2026-04-07 (Sprint close)
 
 **O que foi feito:**

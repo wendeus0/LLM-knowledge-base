@@ -1,6 +1,6 @@
 # DEBT_REPORT.md
 
-## Sprint fechado em 2026-04-03
+## Sprint fechado em 2026-04-07
 
 ## P0
 
@@ -8,30 +8,36 @@
 
 ## P1
 
-1. **Validar fluxo real com OpenCode Go**
-   - a baseline está verde, mas ainda depende de mocks para o subsistema LLM
+1. **Corrigir 8 testes falhando em `tests/unit/test_web_ingest.py`**
+   - `AttributeError: None does not have the attribute 'get'`
+   - falha pré-existente no setup de mock
+   - impacta a confiabilidade da suíte
 
-2. **Fechar política operacional para conteúdo sensível**
-   - falta regra clara de classificação do que pode ir ao provider
-
-3. **Definir convenção de uso para `--no-commit` e `--allow-sensitive`**
-   - flags já existem, mas ainda precisam de política de uso e revisão operacional
+2. **Neutralizar documentação histórica restante ainda acoplada ao corpus antigo**
+   - `docs/architecture/ARCHITECTURE.md` ainda contém blocos grandes com estrutura temática antiga
+   - `docs/API.md` ainda tem exemplos residuais e referências técnicas a `TOPICS`
 
 ## P2
 
-1. **Adicionar tooling formal de cobertura**
-   - hoje existe evidência funcional forte, mas não métrica percentual reproduzível
+1. **Tornar `TOPICS` configurável por corpus**
+   - hoje ainda é lista fixa em `kb/config.py`
+   - isso mantém acoplamento parcial entre engine e domínios temáticos
 
-2. **Formalizar integração `book2md` → `kb`**
-   - ainda há acoplamento operacional aceitável, porém provisório
+2. **Refinar guardrail de credenciais**
+   - falso positivo com nomes de variável como `OPENAI_API_KEY` em exemplos de código
+   - desejável ignorar blocos de código markdown ou melhorar contexto do detector
 
-3. **Integração Obsidian**
-   - desejável, mas não bloqueia a baseline atual
+3. **Aumentar cobertura em `kb/git.py` e `kb/client.py`**
+   - gaps seguem prioritários para estabilização do produto
 
-4. **Embeddings + RAG híbrido**
-   - futuro, condicionado à escala da wiki
+4. **Decidir a política do repositório externo do corpus**
+   - definir se `/home/g0dsssp33d/work/llm-wiki` terá Git próprio, backup automatizado ou será apenas diretório local
+
+5. **Embeddings + RAG híbrido**
+   - futuro, condicionado à escala do corpus
 
 ## Veredito
 
-- sprint fecha com baseline estável
-- débito atual é majoritariamente operacional/documental, não de quebra técnica imediata
+- sprint fecha com separação bem-sucedida entre engine e corpus do usuário
+- débito principal remanescente é documental/técnico, não bloqueador arquitetural
+- postura open source do repositório melhorou significativamente
