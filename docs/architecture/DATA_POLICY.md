@@ -81,10 +81,10 @@ Define como dados são persistidos localmente pelo kb (CLI Python).
 
 ```bash
 # Backup completo do corpus do usuário
-tar -czf kb-backup-$(date +%Y%m%d).tar.gz "$KB_DATA_DIR"/
+tar -czf kb-backup-$(date +%Y%m%d).tar.gz "${KB_DATA_DIR:?}"/
 
 # Ou use Git no repositório do corpus, se existir
-# git -C "$KB_DATA_DIR" push origin main
+# git -C "${KB_DATA_DIR:?}" push origin main
 ```
 
 ### Migração

@@ -14,7 +14,7 @@ Pendências e decisões abertas.
 | P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | ✅ Concluído — `pytest-cov` em `[dev]`; 80% cobertura; HTML em `htmlcov/` | 2026-04-07 |
 | P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | ✅ Concluído — A3 rejeitada formalmente em ADR-0001; núcleo permanece em `kb/book_import_core.py` | 2026-04-07 |
 | P2 | Integração Obsidian | ✅ Concluído — `<KB_DATA_DIR>/wiki` validado com plugin `obsidian-terminal`; `kb qa` executado dentro do Obsidian | 2026-04-07 |
-| P2 | Higienização do repositório open source | ✅ Concluído — corpus pessoal movido para `/home/g0dsssp33d/work/llm-wiki`; engine separada do conteúdo | 2026-04-07 |
+| P2 | Higienização do repositório open source | ✅ Concluído — corpus pessoal movido para `<KB_DATA_DIR>`; engine separada do conteúdo | 2026-04-07 |
 | P2 | Embeddings + RAG híbrido | Pendente (futuro) | 2026-04-03 |
 
 ## P0 (Bloqueadores)

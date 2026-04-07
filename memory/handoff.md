@@ -7,13 +7,13 @@ type: project
 ## Sessão — 2026-04-07 (Repo hygiene / corpus extraction)
 
 **O que foi feito:**
-- Corpus pessoal extraído do repositório principal para `/home/g0dsssp33d/work/llm-wiki`
+- Corpus pessoal extraído do repositório principal para `<KB_DATA_DIR>`
 - Diretórios `raw/`, `wiki/`, `outputs/` e `kb_state/` removidos do repo principal e realocados para o diretório externo
 - `kb/config.py` atualizado para suportar `KB_DATA_DIR` e overrides específicos (`KB_RAW_DIR`, `KB_WIKI_DIR`, `KB_OUTPUTS_DIR`, `KB_STATE_DIR`)
 - `.env.example`, README, `docs/OBSIDIAN.md`, `.pi/manifest.yaml`, `AGENTS.md` e `CLAUDE.md` atualizados para separar engine vs. corpus
 - `examples/` criado com seed neutro mínimo para onboarding
 - `.gitignore` ajustado para não versionar corpus local nem `.obsidian/`
-- Fluxo validado após migração: `kb search` passou a ler o corpus em `/home/g0dsssp33d/work/llm-wiki`
+- Fluxo validado após migração: `kb search` passou a ler o corpus em `<KB_DATA_DIR>`
 
 **O que falta:**
 - Mergear PR#19 (feat/wikilink-traversal → main)
@@ -23,12 +23,12 @@ type: project
 
 **Métricas da sessão:**
 - Engine e corpus: desacoplados
-- Diretório de dados ativo: `/home/g0dsssp33d/work/llm-wiki`
+- Diretório de dados ativo: `<KB_DATA_DIR>`
 - Seed neutro criado: `examples/raw/getting-started.md`
 - Configuração suportada: `KB_DATA_DIR`, `KB_RAW_DIR`, `KB_WIKI_DIR`, `KB_OUTPUTS_DIR`, `KB_STATE_DIR`
 
 **Prompt de retomada:**
-> Retome o projeto `kb` após a higienização do repositório. A engine está separada do corpus pessoal, que agora vive em `/home/g0dsssp33d/work/llm-wiki`, e o projeto suporta `KB_DATA_DIR`. Próximas ações: (1) revisar/neutralizar docs históricos ainda acoplados ao corpus antigo; (2) corrigir 8 testes de `test_web_ingest.py`; (3) avaliar tornar `TOPICS` configurável.
+> Retome o projeto `kb` após a higienização do repositório. A engine está separada do corpus pessoal, que agora vive em `<KB_DATA_DIR>`, e o projeto suporta `KB_DATA_DIR`. Próximas ações: (1) revisar/neutralizar docs históricos ainda acoplados ao corpus antigo; (2) corrigir 8 testes de `test_web_ingest.py`; (3) avaliar tornar `TOPICS` configurável.
 
 ---
 

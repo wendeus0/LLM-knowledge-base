@@ -15,7 +15,7 @@
 - Cliente LLM: OpenAI SDK (compatível com OpenCode Go)
 - Armazenamento: JSON (`kb_state/`), Markdown (`wiki/`) dentro do `KB_DATA_DIR` do usuário
 - Busca: contagem simples de palavras-chave em Markdown
-- Versionamento: Git (todo write é commit automático)
+- Versionamento: Git (writes podem gerar commit automático, com opt-out via `--no-commit`)
 
 ## Comandos do projeto
 

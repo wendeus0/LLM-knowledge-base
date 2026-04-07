@@ -125,16 +125,19 @@ Tutorial completo:
 ## Arquitetura
 
 ```text
+# Repositório da engine
 kb/
 ├── kb/               ← engine/CLI principal
 ├── docs/             ← documentação do produto
 ├── tests/            ← testes unitários e integração
-├── examples/         ← exemplos neutros de corpus/seed
-└── <KB_DATA_DIR>/    ← vault/corpus local do usuário (fora deste repositório)
-   ├── raw/           ← documentos fonte
-   ├── wiki/          ← markdown compilado
-   ├── outputs/       ← file-backs de QA
-   └── kb_state/      ← manifesto/knowledge/learnings
+└── examples/         ← exemplos neutros de corpus/seed
+
+# Corpus/vault do usuário (fora deste repositório)
+<KB_DATA_DIR>/
+├── raw/              ← documentos fonte
+├── wiki/             ← markdown compilado
+├── outputs/          ← file-backs de QA
+└── kb_state/         ← manifesto/knowledge/learnings
 ```
 
 ## Convenções
