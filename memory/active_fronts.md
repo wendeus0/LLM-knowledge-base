@@ -6,62 +6,41 @@ type: project
 
 ## Frentes ativas
 
-### F1: Validação operacional com provider real
+### F1–F6: Validação operacional, política sensibilidade, pytest-cov, book2md, smoke test, EPUB
 
-**Status:** Concluído (2026-04-07)
+**Status:** Todas concluídas (2026-04-07)
 
-**Resultado:**
-- [x] `kb search` — OK
-- [x] `kb lint` — OK (auditoria via LLM funcionando)
-- [x] `kb qa "pergunta"` — OK (resposta via wiki + provider)
-- [x] `kb heal --n 2` — OK (provider lento ~>60s, sem erro)
-- [x] `kb import-book <epub> --compile` — OK; 12 capítulos de "Building Applications with AI Agents" compilados para wiki/ai/
-
-**Nota:** `heal` é notavelmente lento com o provider atual (>60s). Não é erro — é latência do OpenCode Go.
-
----
-
-### F2: Política operacional de sensibilidade
-
-**Status:** Concluído (2026-04-07)
-
-**Entregável:** `docs/SENSITIVE_CONTENT_POLICY.md`
-- Padrões detectados pelo guardrail documentados
-- Critérios explícitos de quando usar/não usar `--allow-sensitive`
-- Critérios de quando usar/não usar `--no-commit`
-- Lacunas conhecidas (L2: AWS/GitHub/GitLab tokens) sinalizadas
-- Política por diretório (`raw/private/`) identificada como futura
+**Resultado resumido:**
+- F1 (smoke test): `search`, `lint`, `qa`, `heal`, `import-book --compile` OK com OpenCode Go
+- F2 (política sensibilidade): `docs/SENSITIVE_CONTENT_POLICY.md` criado
+- F3 (book2md): A3 rejeitada em ADR-0001; núcleo em `kb/book_import_core.py`
+- F4 (merge PRs #14 e #15): mergeados conforme confirmação do usuário
+- F5 (pytest-cov): 80% cobertura baseline; HTML em `htmlcov/`
+- F6 (EPUB): "Building Applications with AI Agents" importado → 12 artigos em `wiki/ai/`
 
 ---
 
-### F3: Empacotamento definitivo da relação `book2md` → `kb`
+## Frentes abertas para próxima sessão
 
-**Status:** Encerrado (2026-04-07)
+### F7: Corrigir 8 testes falhando em `test_web_ingest.py`
 
-**Decisão:** A3 rejeitada formalmente em ADR-0001. Núcleo permanece em `kb/book_import_core.py`. Sem demanda concreta de distribuição externa independente.
+**Status:** Aberto
 
-**Critério de reabertura:** necessidade real de instalar `book2md` fora do workspace como pacote independente.
+**Problema:** `AttributeError: None does not have the attribute 'get'` — mock setup com `patch.object` retornando `None` quando o target é um objeto sem atributo
 
----
+**Impacto:** 8 testes falham; módulo `web_ingest.py` com 27% de cobertura
 
-### F4: Merge de PRs abertos
+**Próximo passo:** corrigir fixture de mock em `tests/unit/test_web_ingest.py`
 
-**Status:** Concluído (2026-04-07)
-
-**Resultado:** PR#14 e PR#15 mergeados conforme confirmação do usuário.
+**Por que agora:** pre-existente, mas degrada confiança na suíte; resolver antes de adicionar nova feature
 
 ---
 
-### F5: Avaliação de incrementos do produto
+### F8: Merge PR#19 (feat/wikilink-traversal)
 
-**Status:** Aguardando subsídios do usuário
+**Status:** Aguardando merge pelo usuário
 
-**Objetivo:** Analisar material externo fornecido pelo usuário e decidir se o projeto deve ser expandido.
-
-**O que falta:**
-- [ ] Receber material (subsídios) do usuário
-- [ ] Avaliar alinhamento com a arquitetura atual
-- [ ] Decidir escopo de nova feature, se aplicável
+**Branch:** `feat/wikilink-traversal`
 
 ---
 
@@ -69,20 +48,12 @@ type: project
 
 ### Q1: O fluxo de livro importado deve sempre passar por `compile`?
 
-**Trade-off:**
-- Sim: maximiza consistência com a wiki assistida por LLM
-- Não: preserva capítulos markdown como saída final legível sem custo de provider
+**Estado:** mantido como `--compile` opcional; padrão operacional recomendado = com `--compile` para livros técnicos.
 
-**Estado:** parcialmente resolvido com `--compile` opcional; ainda falta decidir o padrão operacional recomendado.
+### Q2: `--no-commit` por comando ou política configurável?
 
-### Q2: `--no-commit` deve permanecer apenas por comando ou ganhar política configurável?
+**Estado:** mantido por comando nesta fase.
 
-**Trade-off:**
-- Por comando: mais explícito e seguro
-- Configurável: mais prático para certos ambientes, mas mais arriscado
+### Q3: Quando promover `book2md` a distribuição formal?
 
-**Estado:** mantido por comando nesta fase; sem estado global persistente.
-
-### Q3: Quando promover o pacote/laboratório para distribuição formal?
-
-**Limiar sugerido:** quando o fluxo de livro estiver estabilizado e for necessário consumir `book2md` fora do workspace atual.
+**Estado:** encerrado; sem demanda. Critério de reabertura: necessidade real de instalar fora do workspace.
