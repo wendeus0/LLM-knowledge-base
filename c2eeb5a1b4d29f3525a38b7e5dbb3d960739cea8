@@ -1,0 +1,23 @@
+kb/compile.py
+  9df3b30bf540d055 17-18,36-44,111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "c2eeb5a1b4d29f3525a38b7e5dbb3d960739cea8",
+  "prompts": {
+    "9df3b30bf540d055": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19c6ab0d-2c81-4751-8467-325eed24fd74",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 3,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}
