@@ -1,6 +1,8 @@
 # Arquitetura do kb
 
-> Sistema de knowledge base pessoal mantido por LLM
+> Engine de knowledge base mantida por LLM
+
+> **Nota de escopo:** este documento descreve a engine e pode usar `raw/`, `wiki/` e `outputs/` como nomes lógicos de diretórios. No modelo recomendado atual, esses diretórios vivem no `KB_DATA_DIR` do usuário, fora do repositório principal.
 
 ## 1. Visão Geral (C4 Model)
 
@@ -130,8 +132,8 @@
        │
        ▼
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  file-back  │────▶│  LLM gera   │────▶│   wiki/     │
-│   (artigo)  │     │   artigo    │     │ (novo .md)  │
+│  file-back  │────▶│  LLM gera   │────▶│ outputs/    │
+│   (rascunho)│     │   artigo    │     │ (padrão)    │
 └─────────────┘     └─────────────┘     └──────┬──────┘
                                                │
                                                ▼
@@ -194,7 +196,7 @@
 ```yaml
 ---
 title: <título>
-topic: <cybersecurity|ai|python|typescript|general>
+topic: <topic-derivado-do-corpus|general>
 tags: [tag1, tag2]
 source: <nome do arquivo original>
 ---
@@ -728,7 +730,7 @@ Legenda:
 
 4. QA
    Pergunta ──▶ search ──▶ wiki/*.md ──▶ LLM ──▶ Resposta
-                                         └──▶ --file-back ──▶ wiki/ ──▶ git commit
+                                         └──▶ --file-back ──▶ outputs/ ──▶ git commit
 
 5. HEAL
    wiki/*.md ──▶ random.sample(N) ──▶ LLM/heurísticas ──▶ wiki/ ──▶ git commit
@@ -762,7 +764,7 @@ Legenda:
 ```yaml
 ---
 title: string
-topic: cybersecurity|ai|python|typescript|general
+topic: topic-derivado-do-corpus|general
 tags: [string]
 source: string
 reviewed_at: YYYY-MM-DD # adicionado por heal
@@ -793,11 +795,7 @@ def novo_comando(arg: str):
 
 ### Novos Topics
 
-Adicionar em `config.TOPICS`:
-
-```python
-TOPICS = ["cybersecurity", "ai", "python", "typescript", "novo"]
-```
+No estado atual, `TOPICS` ainda é uma lista fixa em `config.py`. A direção recomendada é torná-la configurável por corpus no futuro, evitando acoplamento do produto a domínios específicos.
 
 ### Novos Formatos de Importação
 
@@ -811,7 +809,7 @@ def _extract_chapters_from_format(source: Path, ...) -> tuple[list[dict], dict]:
 
 ### Integração Obsidian
 
-- wiki/ é compatível com vault Obsidian
+- `<KB_DATA_DIR>/wiki` é compatível com vault Obsidian
 - Wikilinks nativos (`[[...]]`)
 - Frontmatter YAML padrão
 - `_index.md` como MOC (Map of Content)

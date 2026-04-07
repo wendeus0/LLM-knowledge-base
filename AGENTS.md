@@ -7,13 +7,13 @@
 > Manifesto estruturado do Pi: `.pi/manifest.yaml`
 
 
-**Produto:** Sistema de knowledge base pessoal mantido por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático. Baseado na proposta de Andrej Karpathy.
+**Produto:** Engine de knowledge base mantida por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático. Baseado na proposta de Andrej Karpathy.
 
 **Stack:**
 - Linguagem: Python 3.11+
 - Framework: Typer (CLI), Rich (terminal UI)
 - Cliente LLM: OpenAI SDK (compatível com OpenCode Go)
-- Armazenamento: JSON (strategies.json), Markdown (wiki/)
+- Armazenamento: JSON (`kb_state/`), Markdown (`wiki/`) dentro do `KB_DATA_DIR` do usuário
 - Busca: contagem simples de palavras-chave em Markdown
 - Versionamento: Git (todo write é commit automático)
 
@@ -36,7 +36,7 @@ ruff check kb
 pip install -e .
 
 # Dev/CLI
-kb ingest <arquivo>      # Adicionar documento a raw/
+kb ingest <arquivo>      # Adicionar documento a raw/ do vault do usuário
 kb import-book <arquivo> # Importar EPUB/PDF textual para raw/books/
 kb compile               # Compilar raw/ (recursivo, incluindo raw/books/) → wiki/ + summaries + knowledge
 kb compile --no-commit   # Compilar sem commit git automático
@@ -68,7 +68,8 @@ kb jobs run <job>       # Executar job canônico
 
 ## Regras específicas do domínio
 
-- Todo write na wiki (compile, heal, qa --file-back) faz commit git automático
+- O corpus do usuário deve viver fora do repositório principal, preferencialmente via `KB_DATA_DIR`
+- Writes em wiki/outputs/ podem fazer commit automático dependendo do comando e de `--no-commit`
 - Chamadas ao provider externo passam por guardrails de conteúdo sensível e podem exigir confirmação
 - `--allow-sensitive` faz opt-in explícito para processar conteúdo sinalizado
 - `--no-commit` preserva writes locais, mas suprime o commit automático do fluxo atual
@@ -81,29 +82,15 @@ kb jobs run <job>       # Executar job canônico
 
 ```
 kb/
-├── raw/              ← documentos fonte (não processados)
-│   └── books/        ← livros importados em capítulos markdown + metadata.json
-├── wiki/             ← markdown compilado, versionado
-│   ├── _index.md     ← índice atualizado automaticamente
-│   ├── cybersecurity/
-│   ├── ai/
-│   ├── python/
-│   └── typescript/
-├── kb/               ← pacote Python
-│   ├── client.py     ← wrapper OpenAI SDK
-│   ├── compile.py    ← raw/ → wiki/ (LLM + summary compilado)
-│   ├── qa.py         ← Q&A + file-back
-│   ├── router.py     ← roteamento entre wiki/raw/knowledge/learnings
-│   ├── state.py      ← manifesto + stores knowledge/learnings
-│   ├── guardrails.py ← política de sensibilidade em runtime
-│   ├── jobs.py       ← catálogo de jobs canônicos
-│   ├── search.py     ← contagem simples de palavras-chave
-│   ├── heal.py       ← stochastic heal
-│   ├── lint.py       ← health checks (LLM)
-│   ├── git.py        ← commit automático
-│   ├── config.py     ← constantes, paths, env
-│   └── cli.py        ← Typer CLI
-└── pyproject.toml
+├── kb/               ← pacote Python / engine
+├── docs/             ← documentação
+├── tests/            ← testes
+├── examples/         ← exemplos neutros
+└── <KB_DATA_DIR>/    ← corpus/vault do usuário (fora do repositório principal)
+   ├── raw/           ← documentos fonte + books/
+   ├── wiki/          ← markdown compilado
+   ├── outputs/       ← file-backs de QA
+   └── kb_state/      ← manifesto + stores knowledge/learnings
 ```
 
 ## Palavras-chave do domínio
@@ -114,17 +101,17 @@ kb/
 | wiki | Coleção de .md compilados e versionados |
 | compile | LLM processa raw/ e escreve wiki/ |
 | Q&A | Query contra a wiki com contexto |
-| file-back | Arquivar resposta de volta na wiki |
+| file-back | Arquivar resposta em `outputs/` por padrão |
 | heal | Correção estocástica: links, stubs, reviewed_at |
-| topic | Classificação (cybersecurity, ai, python, typescript) |
+| topic | Classificação gerada/derivada do corpus |
 | frontmatter | YAML no início de cada .md (title, topic, tags) |
 
 ## Restrições específicas
 
 - Nunca editar wiki manualmente — apenas via CLI/LLM
 - API key só em .env (nunca em código)
-- Git commits automáticos → sem staging manual de wiki/
-- Compile, heal, qa sempre comitam se houver mudanças
+- Não versionar `.obsidian/` e corpus pessoal no repositório principal
+- Preferir `qa -f --no-commit` no fluxo via Obsidian
 
 ## Fluxo de sessão
 
@@ -139,8 +126,8 @@ Para visão rápida e estruturada de comandos, paths e convenções estáveis, c
 
 - [ ] Instalar base: `pip install -e .`
 - [ ] Instalar LLM opcional: `pip install -e .[llm]`
-- [ ] Configurar `.env` com KB_API_KEY
-- [ ] Testar: `kb ingest docs/test.md && kb compile`
+- [ ] Configurar `.env` com `KB_API_KEY` e `KB_DATA_DIR`
+- [ ] Testar: `kb ingest examples/raw/getting-started.md && kb compile`
 - [ ] Testar: `kb import-book livro.epub --compile`
-- [ ] Integrar Obsidian como frontend
+- [ ] Validar Obsidian em `<KB_DATA_DIR>/wiki`
 - [ ] Expandir cobertura de testes em `tests/`

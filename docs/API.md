@@ -1,6 +1,8 @@
 # API do kb
 
-Documentação completa da API pública do sistema de knowledge base pessoal.
+Documentação completa da API pública da engine de knowledge base.
+
+> **Nota de escopo:** `raw/`, `wiki/`, `outputs/` e `kb_state/` são diretórios lógicos do corpus do usuário. No modelo recomendado atual, eles vivem em `KB_DATA_DIR`, fora do repositório principal.
 
 ---
 
@@ -120,7 +122,7 @@ Responde uma pergunta consultando a wiki.
 | Parâmetro           | Tipo | Obrigatório | Padrão  | Descrição                      |
 | ------------------- | ---- | ----------- | ------- | ------------------------------ |
 | `question`          | str  | Sim         | -       | Pergunta para a knowledge base |
-| `--file-back`, `-f` | Flag | Não         | `False` | Arquivar resposta na wiki      |
+| `--file-back`, `-f` | Flag | Não         | `False` | Arquivar resposta em `outputs/` por padrão |
 
 **Exemplo:**
 
@@ -152,7 +154,7 @@ Busca artigos na wiki por palavra-chave.
 **Exemplo:**
 
 ```bash
-kb search "python async"
+kb search "async"
 kb search docker
 ```
 
@@ -236,13 +238,16 @@ from kb.config import RAW_DIR, WIKI_DIR, API_KEY, BASE_URL, MODEL, TOPICS
 
 | Nome       | Tipo      | Descrição                          |
 | ---------- | --------- | ---------------------------------- |
-| `ROOT`     | Path      | Raiz do projeto                    |
-| `RAW_DIR`  | Path      | `raw/` - documentos fonte          |
-| `WIKI_DIR` | Path      | `wiki/` - markdown compilado       |
-| `API_KEY`  | str       | KB_API_KEY do .env                 |
-| `BASE_URL` | str       | Endpoint LLM (padrão: opencode.ai) |
-| `MODEL`    | str       | Modelo LLM (padrão: kimi-k2.5)     |
-| `TOPICS`   | list[str] | Tópicos suportados                 |
+| `ROOT`        | Path      | Raiz do projeto                               |
+| `DATA_DIR`    | Path      | Diretório do corpus do usuário (`KB_DATA_DIR`) |
+| `RAW_DIR`     | Path      | `raw/` - documentos fonte                     |
+| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                  |
+| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                 |
+| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings   |
+| `API_KEY`     | str       | KB_API_KEY do .env                            |
+| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)            |
+| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                |
+| `TOPICS`      | list[str] | Tópicos suportados atualmente                 |
 
 ---
 
@@ -317,7 +322,7 @@ Compila um documento bruto para a wiki.
 
 **Efeitos colaterais:**
 
-- Escreve arquivo em `wiki/`
+- Escreve arquivo em `wiki/` do corpus do usuário
 - Faz commit git automático
 
 ---
@@ -387,8 +392,8 @@ Responde e arquiva a resposta na wiki.
 
 **Efeitos colaterais:**
 
-- Escreve arquivo em `wiki/`
-- Faz commit git automático
+- Escreve arquivo em `outputs/` por padrão, ou em `wiki/` com `to_wiki=True`
+- Faz commit git automático, salvo com `no_commit=True`
 
 ---
 
@@ -579,12 +584,12 @@ from kb.qa import answer
 from kb.search import search
 
 # Buscar primeiro
-results = search("python asyncio", top_k=3)
+results = search("async runtime", top_k=3)
 for r in results:
     print(f"{r['path'].name}: score={r['score']}")
 
 # Responder pergunta
-resposta = answer("Como funciona o asyncio em Python?", top_k=5)
+resposta = answer("Como funciona este corpus?", top_k=5)
 print(resposta)
 ```
 
@@ -681,8 +686,13 @@ print(resposta)
 
 | Variável      | Padrão                          | Descrição            |
 | ------------- | ------------------------------- | -------------------- |
-| `KB_BASE_URL` | `https://opencode.ai/zen/go/v1` | Endpoint da API LLM  |
-| `KB_MODEL`    | `kimi-k2.5`                     | Modelo padrão a usar |
+| `KB_BASE_URL`    | `https://opencode.ai/zen/go/v1` | Endpoint da API LLM                         |
+| `KB_MODEL`       | `kimi-k2.5`                     | Modelo padrão a usar                        |
+| `KB_DATA_DIR`    | `ROOT`                          | Diretório base do corpus do usuário         |
+| `KB_RAW_DIR`     | `KB_DATA_DIR/raw`               | Override opcional para documentos fonte     |
+| `KB_WIKI_DIR`    | `KB_DATA_DIR/wiki`              | Override opcional para wiki compilada       |
+| `KB_OUTPUTS_DIR` | `KB_DATA_DIR/outputs`           | Override opcional para file-backs de QA     |
+| `KB_STATE_DIR`   | `KB_DATA_DIR/kb_state`          | Override opcional para manifesto/estado     |
 
 ### Arquivo `.env`
 
@@ -692,6 +702,7 @@ Crie um arquivo `.env` na raiz do projeto:
 KB_API_KEY=sua-chave-aqui
 KB_BASE_URL=https://opencode.ai/zen/go/v1
 KB_MODEL=kimi-k2.5
+KB_DATA_DIR=/caminho/para/seu/llm-wiki
 ```
 
 ### Detecção
@@ -703,16 +714,17 @@ As variáveis são carregadas automaticamente via `python-dotenv` no módulo `kb
 ## Estrutura de Diretórios
 
 ```
-kb/
+<KB_DATA_DIR>/
 ├── raw/              # Documentos fonte (não processados)
 │   └── books/        # Livros importados
 ├── wiki/             # Markdown compilado, versionado
 │   ├── _index.md     # Índice automático
-│   ├── ai/
-│   ├── python/
-│   ├── cybersecurity/
-│   └── typescript/
-└── kb/               # Pacote Python
+│   ├── topic-a/
+│   ├── topic-b/
+│   └── summaries/
+├── outputs/          # File-backs de QA
+├── kb_state/         # Manifesto, knowledge, learnings
+└── (repo kb)         # Engine e pacote Python
 ```
 
 ---
@@ -724,7 +736,7 @@ Todo arquivo wiki gerado inclui frontmatter:
 ```yaml
 ---
 title: Título do Artigo
-topic: python
+topic: general
 tags: [tag1, tag2]
 source: nome-do-arquivo-original.md
 reviewed_at: 2024-01-15
@@ -734,7 +746,7 @@ reviewed_at: 2024-01-15
 **Campos:**
 
 - `title`: Título do artigo
-- `topic`: Tópico principal (`ai`, `python`, `cybersecurity`, `typescript`, `general`)
+- `topic`: Tópico principal derivado do corpus (ou `general`)
 - `tags`: Lista de tags
 - `source`: Arquivo fonte original
 - `reviewed_at`: Data da última revisão (adicionado pelo heal)
@@ -746,7 +758,7 @@ reviewed_at: 2024-01-15
 Use wikilinks para referenciar outros artigos:
 
 ```markdown
-Veja também [[Python Async]] para mais detalhes.
+Veja também [[Runtime Assíncrono]] para mais detalhes.
 
 Conceitos relacionados:
 

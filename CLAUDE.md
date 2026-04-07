@@ -7,11 +7,11 @@
 > Manifesto estruturado do Pi: `.pi/manifest.yaml`
 
 
-**kb** é um sistema de knowledge base pessoal mantido por LLM. A ideia é automática:
-- Jogue documentos em `raw/`
-- LLM compila para wiki em markdown estruturado
+**kb** é uma engine de knowledge base mantida por LLM. A ideia é automática:
+- Jogue documentos em `raw/` do seu vault/corpus local
+- LLM compila para `wiki/` em markdown estruturado
 - Faça perguntas contra a wiki
-- Cada resposta enriquece a wiki (file-back)
+- Cada resposta pode ser arquivada em `outputs/` (file-back)
 - Healing automático (stochastic heal) mantém a wiki fresca mesmo em escala
 
 Baseado em proposta de Andrej Karpathy: "LLMs Turn Raw Research Into a Living Knowledge Base"
@@ -27,12 +27,12 @@ cd . # na raiz do projeto
 pip install -e .
 pip install -e .[llm]   # necessário para compile/qa/heal/lint
 
-# 2. Configurar API
+# 2. Configurar API e diretório de dados
 cp .env.example .env
-# Editar .env com KB_API_KEY
+# Editar .env com KB_API_KEY e KB_DATA_DIR
 
 # 3. Adicionar um documento
-kb ingest ~/Downloads/artigo.md
+kb ingest examples/raw/getting-started.md
 
 # 4. Importar um livro em capítulos (opcional)
 kb import-book ~/Downloads/livro.epub --compile
@@ -43,8 +43,8 @@ kb compile
 # 6. Fazer uma pergunta
 kb qa "O que é XSS?"
 
-# 7. Arquivar a resposta de volta
-kb qa "O que é SQL injection?" -f
+# 7. Arquivar a resposta em outputs/
+kb qa "O que é SQL injection?" -f --no-commit
 
 # 8. Auditoria (health checks)
 kb lint
@@ -53,12 +53,14 @@ kb lint
 kb heal --n 10
 ```
 
-## Tópicos de pesquisa (wiki/)
+## Modelo de dados
 
-- **cybersecurity** — vulnerabilidades, técnicas, defesas
-- **ai** — machine learning, LLMs, agentes
-- **python** — padrões, libs, performance
-- **typescript** — type system, frameworks, patterns
+O repositório principal entrega a engine. O conteúdo do usuário deve viver fora daqui, em um diretório apontado por `KB_DATA_DIR`, com a estrutura:
+
+- `raw/` — documentos fonte
+- `wiki/` — markdown compilado
+- `outputs/` — file-backs de QA
+- `kb_state/` — manifesto, knowledge, learnings
 
 ## Stack técnico
 
@@ -75,6 +77,7 @@ kb heal --n 10
 KB_API_KEY=<sua-api-key>
 KB_BASE_URL=https://opencode.ai/zen/go/v1
 KB_MODEL=kimi-k2.5
+KB_DATA_DIR=<caminho-para-seu-llm-wiki>
 ```
 
 Validação explícita: quando `KB_BASE_URL` aponta para OpenCode Go, o projeto aceita apenas nomes de modelo compatíveis e sem prefixo (ex.: `kimi-k2.5`, `minimax-2.7`, `glm-5`). Exemplo inválido: `opencode-go/kimi-k2.5`.
@@ -92,18 +95,19 @@ KB_MODEL=qwen2.5-coder:7b
 
 ## Pontos-chave
 
-1. **Loop de composição** — cada `qa` com `--file-back` adiciona à wiki
+1. **Separação engine vs. corpus** — código no repositório principal; dados do usuário em `KB_DATA_DIR`
 2. **Importação de livros integrada** — `kb import-book` quebra EPUB/PDF textual em capítulos markdown dentro de `raw/books/` e pode compilar tudo com `--compile`
 3. **Stochastic heal** — `kb heal` processa N arquivos aleatórios, corrige links, deleta stubs
-4. **Git automático** — todo write é commit (estratégia Pawel Huryn: append/update, nunca rewrite)
+4. **Git automático** — writes no corpus local podem gerar commit (estratégia Pawel Huryn: append/update, nunca rewrite)
 5. **Sem RAG sofisticado** — TF-IDF simples + busca de palavra-chave funciona bem até ~100 artigos/400K palavras
-6. **Obsidian-ready** — wiki/ é um vault pronto para Obsidian (wikilinks, markdown)
+6. **Obsidian oficial** — o frontend recomendado é o Obsidian apontando para `<KB_DATA_DIR>/wiki`
 
 ## Próximos passos
 
 - Instalar dependências (`pip install -e .[dev]` para ambiente de desenvolvimento)
 - Configurar API
 - Testar fluxo básico (ingest → compile → qa → file-back)
+- Validar Obsidian sobre `<KB_DATA_DIR>/wiki`
 - (Futuro) Integração Obsidian native
 - (Futuro) Embeddings + RAG if wiki > 500 artigos
 - (Futuro) Finetuning no corpus da wiki

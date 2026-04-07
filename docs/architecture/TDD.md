@@ -47,7 +47,7 @@ def test_compile_file_creates_wiki_article(tmp_path):
 
     # Assert
     assert result.exists()
-    assert result.parent.name in ["cybersecurity", "ai", "python", "typescript"]
+    assert result.parent.name != ""
 ```
 
 ### Integration tests
@@ -96,7 +96,7 @@ def sample_md():
     """Documento de teste"""
     return """---
 title: Test Article
-topic: cybersecurity
+topic: general
 ---
 
 # Test
