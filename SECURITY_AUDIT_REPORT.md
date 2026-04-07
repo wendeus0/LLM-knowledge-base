@@ -158,4 +158,4 @@ Sem CI/CD formal (sem `.github/workflows/`). Automações limitadas a commit git
 
 ---
 
-**Veredito:** `SECURITY_PASS_WITH_NOTES` — sem achados CRITICAL/HIGH; dois MEDIUM de baixo esforço para corrigir; postura de segurança melhorada em relação ao sprint anterior.
+**Veredito:** `SECURITY_PASS_WITH_NOTES` — sem achados CRITICAL/HIGH; três MEDIUM documentados; postura de segurança melhorada em relação ao sprint anterior.

@@ -23,7 +23,7 @@ kb/
 │   ├── book_import.py, book_import_core.py, graph.py, outputs.py, web_ingest.py
 ├── kb_state/         ← manifesto + stores knowledge/learnings
 ├── tests/            ← suíte unit + integration (113 passando, 8 falhando pré-existentes)
-├── docs/adr/         ← ADRs 0001–0009
+├── docs/adr/         ← ADRs 0001–0007, 0010
 ├── docs/SENSITIVE_CONTENT_POLICY.md ← política operacional de sensibilidade
 ├── features/         ← SPECs de implementação
 ├── pyproject.toml    ← pytest-cov configurado; 80% cobertura baseline

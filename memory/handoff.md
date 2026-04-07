@@ -12,6 +12,7 @@ type: project
 - `docs/SENSITIVE_CONTENT_POLICY.md` criado — critérios para `--allow-sensitive` e `--no-commit`
 - pytest-cov instalado; 80% cobertura baseline; HTML em `htmlcov/`
 - ADR-0001 atualizado — A3 (extração de pacote) rejeitada formalmente
+- ADR-0010 criado — defesa dupla para output do LLM (prompt + `_strip_outer_fence()`)
 - Root cause de code fence wrapping identificado e corrigido:
   - SYSTEM prompt em `compile.py` atualizado com instrução "SEM code fences"
   - `_strip_outer_fence()` adicionado como defesa defensiva em `compile_file()`
@@ -28,7 +29,7 @@ type: project
 - Testes: 113 passando, 8 falhando (pré-existentes, test_web_ingest.py)
 - Cobertura: 80% total
 - Wiki: 14 artigos em wiki/ai/, 11 summaries
-- ADRs: 0001–0009
+- ADRs: 0001–0007, 0010
 
 **Prompt de retomada:**
 > Retome o projeto `kb` após o sprint de 2026-04-07. As entregas deste sprint: smoke test real OK, EPUB importado (12 artigos wiki/ai/), política de sensibilidade criada, pytest-cov 80%, fix de code fence em compile.py, PR#19 aberto. Próximas ações: (1) mergear PR#19; (2) corrigir 8 testes falhando em test_web_ingest.py (mock AttributeError); (3) instalar Shell Commands no Obsidian (passo manual).
