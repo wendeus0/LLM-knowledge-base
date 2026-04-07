@@ -1,5 +1,24 @@
 # SECURITY_AUDIT_REPORT.md
 
+Última auditoria: 2026-04-07 (sprint: validação operacional + fix code fence + import EPUB real)
+
+---
+
+## Auditoria 2026-04-07 — Escopo: `compile.py` e `guardrails.py`
+
+### `_strip_outer_fence()` em `compile.py`
+Operação de string pura (splitlines + slice). Sem I/O, sem execução de código. Seguro.
+
+### Padrão `api_key` em `guardrails.py` — Falso positivo (LOW, pré-existente)
+`(?i)(api[_-]?key\s*[:=]\s*|sk-[a-z0-9]{10,})` corresponde a nomes de variável como `OPENAI_API_KEY = "..."` em exemplos de código de livros técnicos. Não é vulnerabilidade — é falso positivo que degrada usabilidade. Mitigação documentada em `docs/SENSITIVE_CONTENT_POLICY.md`. Refinamento aguarda próximo sprint.
+
+### Superfície de prompt injection via `compile.py:103`
+`prompt = f"Documento: {raw_path.name}\n\n{content}"` — conteúdo de `raw/` incluído diretamente. Risco aceitável: knowledge base pessoal, entrada controlada pelo owner. Guardrails filtram credenciais reais antes do envio.
+
+**Veredito desta auditoria incremental:** Nenhum achado novo de severidade MEDIUM ou superior. Achados anteriores (M1, M2, M3, L1–L4) permanecem abertos.
+
+---
+
 Última auditoria: 2026-04-06 (sprint: outputs-store + ingest-url + wikilink-traversal + rich-book-import-metadata)
 
 ---
@@ -139,4 +158,4 @@ Sem CI/CD formal (sem `.github/workflows/`). Automações limitadas a commit git
 
 ---
 
-**Veredito:** `SECURITY_PASS_WITH_NOTES` — sem achados CRITICAL/HIGH; dois MEDIUM de baixo esforço para corrigir; postura de segurança melhorada em relação ao sprint anterior.
+**Veredito:** `SECURITY_PASS_WITH_NOTES` — sem achados CRITICAL/HIGH; três MEDIUM documentados; postura de segurança melhorada em relação ao sprint anterior.

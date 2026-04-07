@@ -62,6 +62,28 @@ type: project
 
 ---
 
+### P8: LLM envolvendo output em code fences
+
+**Problema:** LLM retorna conteúdo de `compile` envolvido em `` ```markdown `` ou `` ``` ``, corrompendo o frontmatter YAML dos artigos da wiki.
+
+**Causa raiz:** Exemplos de formato no SYSTEM prompt que usam `` ``` `` ensinam o modelo a envolver a resposta em fences.
+
+**Solução (dupla):** (1) SYSTEM prompt explicitamente instrui "SEM code fences"; (2) `_strip_outer_fence()` em `compile.py` remove fences defensivamente após cada chamada.
+
+**Sinal de alerta:** Artigos que começam com `` ```markdown `` em vez de `---` no frontmatter.
+
+---
+
+### P9: Falso positivo de guardrail em código técnico
+
+**Problema:** Nome de variável `OPENAI_API_KEY` em exemplos de código de livros técnicos dispara `SensitiveContentError`.
+
+**Mitigação atual:** `--allow-sensitive` para livros técnicos com exemplos de código.
+
+**Solução futura:** guardrail contextual que ignora padrões em blocos de código markdown.
+
+---
+
 ## Padrões que funcionam
 
 ✓ Ingest → compile 1:N (um documento pode gerar vários artigos)
