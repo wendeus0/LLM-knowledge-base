@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "c2fc440b4cdc8b9251eb9cf4b1a535072655ce7a",
+  "prompts": {
+    "9df3b30bf540d055": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19c6ab0d-2c81-4751-8467-325eed24fd74",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 168,
+      "overriden_lines": 0
+    }
+  }
+}
