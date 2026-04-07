@@ -1,0 +1,29 @@
+outputs/cybersecurity/2026-04-06-qual-diferen-a-xss.md
+  d69479793e13f655 2
+outputs/general/2026-04-06-test.md
+  d69479793e13f655 2
+outputs/ai/2026-04-06-base.md
+  d69479793e13f655 2
+kb/outputs.py
+  d69479793e13f655 10-36,49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "90d3ad723323ee627b8d92d922c5dbb26d3954ba",
+  "prompts": {
+    "d69479793e13f655": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8feb4bbe-f77d-4278-a3d6-6cdd037db132",
+        "model": "<synthetic>"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 31,
+      "total_deletions": 30,
+      "accepted_lines": 31,
+      "overriden_lines": 0
+    }
+  }
+}
