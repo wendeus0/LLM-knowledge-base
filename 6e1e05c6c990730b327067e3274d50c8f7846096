@@ -1,0 +1,93 @@
+wiki/summaries/ai/knowledge-and-memory-in-ai-agents.md
+  9df3b30bf540d055 10
+outputs/cybersecurity/2026-04-06-qual-diferen-a-xss.md
+  d69479793e13f655 2
+docs/adr/0008-wikilink-traversal-as-qa-context-enrichment.md
+  4d23680621c47688 1-45
+raw/books/building-applications-with-ai-agents-fifth-early-release-michael-albada-z-library-sk-1lib-sk-z-lib-sk/06-chapter-2-overview-of-designing-agent-systems.md
+  9df3b30bf540d055 111,113
+wiki/summaries/ai/skills-em-agentes-de-ia.md
+  9df3b30bf540d055 10
+wiki/ai/introdução-aos-agentes-autônomos.md
+  9df3b30bf540d055 6
+outputs/general/2026-04-06-test.md
+  d69479793e13f655 2
+outputs/ai/2026-04-06-base.md
+  d69479793e13f655 2
+wiki/summaries/ai/building-applications-with-ai-agents.md
+  9df3b30bf540d055 10
+docs/adr/0009-outputs-store-separated-from-wiki.md
+  4d23680621c47688 1-38
+wiki/summaries/ai/design-de-sistemas-baseados-em-agentes-de-ia.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/orchestration-in-ai-agents.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/introduction-to-ai-agents.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/skills-in-ai-agents.md
+  9df3b30bf540d055 10
+kb/outputs.py
+  d69479793e13f655 10-36,49
+wiki/summaries/ai/building-applications-with-ai-agents---índice.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/introdução-aos-agentes-autônomos.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/learning-in-agentic-systems.md
+  9df3b30bf540d055 10
+kb/compile.py
+  9df3b30bf540d055 17-18,36-44,111
+wiki/summaries/ai/user-experience-design-for-agentic-systems.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/designing-agent-systems.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/multi-agent-systems---from-one-agent-to-many.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/building-applications-with-ai-agents---estrutura-do-conteúdo.md
+  9df3b30bf540d055 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "6e1e05c6c990730b327067e3274d50c8f7846096",
+  "prompts": {
+    "4d23680621c47688": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a2049e44-067e-45ed-9286-99be09638f31",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 83,
+      "overriden_lines": 0
+    },
+    "9df3b30bf540d055": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19c6ab0d-2c81-4751-8467-325eed24fd74",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    },
+    "d69479793e13f655": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8feb4bbe-f77d-4278-a3d6-6cdd037db132",
+        "model": "<synthetic>"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 31,
+      "overriden_lines": 0
+    }
+  }
+}
