@@ -1,10 +1,10 @@
 ---
 title: Summary — Building Applications with AI Agents
 topic: ai
-source: 01-building-applications-with-ai-agents.md
+source: 02-building-applications-with-ai-agents.md
 article: ai/building-applications-with-ai-agents.md
 ---
 
 # Summary — Building Applications with AI Agents
 
-``` title: Building Applications with AI Agents topic: ai tags: [ai-agents, llm, architecture, software-engineering, autonomous-systems] source: 01-building-applications-with-ai-agents.md Desenvolver aplicações com [[AI Agents]] representa uma mudança de paradigma na engenharia de software, movendo-se de sistemas dete…
+``` title: Building Applications with AI Agents topic: ai tags: [ai-agents, multi-agent-systems, application-development, agent-architecture, llm] source: 02-building-applications-with-ai-agents.md Recurso bibliográfico focado em [[Design Patterns]] e [[Software Architecture]] para sistemas baseados em [[AI Agents]].…

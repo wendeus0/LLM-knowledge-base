@@ -2,92 +2,64 @@
 ---
 title: Building Applications with AI Agents
 topic: ai
-tags: [ai-agents, llm, architecture, software-engineering, autonomous-systems]
-source: 01-building-applications-with-ai-agents.md
+tags: [ai-agents, multi-agent-systems, application-development, agent-architecture, llm]
+source: 02-building-applications-with-ai-agents.md
 ---
 
 # Building Applications with AI Agents
 
-Desenvolver aplicações com [[AI Agents]] representa uma mudança de paradigma na engenharia de software, movendo-se de sistemas determinísticos para arquiteturas [[Agentic AI]] capazes de tomar decisões autônomas, usar ferramentas e executar tarefas complexas através de raciocínio de múltiplas etapas.
+Recurso bibliográfico focado em [[Design Patterns]] e [[Software Architecture]] para sistemas baseados em [[AI Agents]]. O material aborda metodologias para construir aplicações robustas utilizando [[Multi-Agent Systems]] (MAS), onde múltiplos agentes autônomos colaboram para resolver problemas complexos.
 
-## Arquiteturas Fundamentais
+## Conceitos Fundamentais
 
-### ReAct (Reasoning + Acting)
-O padrão [[ReAct Pattern]] combina raciocínio em cadeia ([[Chain of Thought]]) com ações em ambientes externos. O agente itera entre:
-1. **Thought**: Análise da situação atual
-2. **Action**: Seleção e execução de ferramentas
-3. **Observation**: Processamento dos resultados
+### Agentes em Aplicações de Software
 
-### Plan-and-Execute
-Diferente do ReAct reativo, esta arquitetura separa explicitamente o [[Planning]] da execução:
-- **Planner**: Decompõe objetivos em subtarefas sequenciais
-- **Executor**: Implementa cada subtarefa usando [[Tool Use]] ou sub-agentes especializados
+[[AI Agents]] são entidades computacionais autônomas que percebem seu ambiente e executam ações para atingir objetivos específicos. Em [[Application Development]] moderno, estes agentes frequentemente utilizam [[Large Language Models]] (LLMs) como motor de raciocínio, combinados com ferramentas externas e memória persistente.
 
-## Componentes Essenciais
+### Sistemas Multi-Agente
 
-### Tool Use (Function Calling)
-Agentes requerem capacidade de interagir com sistemas externos via [[Function Calling]] ou [[Tool Use]]. Ferramentas comuns incluem:
-- APIs de busca e bancos de dados ([[RAG]])
-- Calculadoras e interpretadores de código ([[Code Interpreter]])
-- APIs de comunicação (email, Slack)
+[[Multi-Agent Systems]] representam uma arquitetura distribuída onde vários agentes interagem entre si. Diferente de sistemas monolíticos com único agente, MAS permitem:
+- **Divisão de responsabilidades**: Especialização por domínio ou função
+- [[Agent Orchestration]]: Coordenação entre agentes via protocols de comunicação
+- **Resiliência**: Falha de um agente não compromete o sistema inteiro
+- **Escalabilidade**: Adição dinâmica de agentes conforme demanda
 
-### Memory Systems
-[[Agent Memory]] divide-se em:
-- **Short-term**: Contexto da conversa atual (janela de contexto do [[LLM]])
-- **Long-term**: Bancos vetoriais ([[Vector Stores]]) para recuperação de conhecimento histórico
-- **Working Memory**: Estado mantido entre etapas de execução
+## Aspectos de Design
 
-### Observability e Controle
-Implementar [[Agent Observability]] através de:
-- [[Tracing]] de cadeias de raciocínio
-- [[Human-in-the-loop]] para aprovação de ações críticas
-- [[Guardrails]] para limitar comportamentos indesejados
+### Arquitetura de Agentes
 
-## Padrões de Implementação
+O design de [[Agent Architecture]] envolve decisões sobre:
+- **Perception**: Como o agente recebe input do ambiente
+- [[Cognitive Architecture]]: Mecanismos de raciocínio e planejamento
+- **Actuation**: Execução de ações via [[Function Calling]] ou [[API Integration]]
+- [[Memory Management]]: Estado conversacional e memória de longo prazo
 
-### Single-Agent
-Um único [[LLM]] com acesso a múltiplas ferramentas. Adequado para tarefas sequenciais simples com [[Zero-Shot Prompting]] ou [[Few-Shot Prompting]].
+### Patterns de Implementação
 
-### Multi-Agent Systems
-Arquiteturas [[Multi-Agent]] onde agentes especializados colaboram:
-- **Orchestrator-Workers**: Coordenador delega tarefas especializadas
-- **Agent Debate**: Múltiplos agentes analisam o mesmo problema sob perspectivas diferentes ([[Ensemble Methods]])
-- **Hierárquico**: Estruturas de gerenciamento com agentes supervisores
+Padrões comuns em [[Agent-Based Development]]:
+- **ReAct** (Reasoning + Acting): Ciclos iterativos de pensamento e ação
+- **Reflexion**: Agentes que avaliam e melhoram suas próprias saídas
+- **Multi-Agent Collaboration**: Frameworks como [[AutoGen]] ou [[CrewAI]] para orquestração
 
-## Frameworks e Ferramentas
+## Considerações Práticas
 
-Ecossistema comum inclui:
-- [[LangChain]] / [[LangGraph]]: Orquestração e estados complexos
-- [[AutoGen]]: Conversação multi-agente da Microsoft
-- [[CrewAI]]: Framework para equipes de agentes especializados
-- [[OpenAI Assistants API]]: Gerenciamento de threads e tool calling nativo
-
-## Desafios de Produção
-
-### Reliability
-Agentes sofrem com [[Hallucination]] e loops infinitos. Mitigações incluem:
-- [[Retry Logic]] e [[Circuit Breakers]]
-- [[Structured Output]] schemas (JSON mode)
-- Timeout e limites de iteração
-
-### Segurança
-Riscos específicos de [[Agent Security]]:
-- [[Prompt Injection]] via dados de ferramentas
-- Escalonamento de privilégios não intencional
-- [[Sandboxing]] para execução de código
-
-### Performance
-Latência acumulada em cadeias de raciocínio exige:
-- [[Streaming]] de respostas parciais
-- [[Caching]] de resultados de ferramentas
-- Estratégias de [[Parallel Tool Calling]]
+Ao implementar [[AI Agents]] em produção, desenvolvedores devem considerar:
+- [[Observability]]: Rastreamento de decisões e cadeias de raciocínio
+- [[Safety & Alignment]]: Controles para prevenir comportamentos indesejados
+- [[State Management]]: Persistência de contexto entre interações
+- [[Human-in-the-loop]]: Pontos de intervenção humana em workflows críticos
 
 ## Conceitos Relacionados
-- [[LLM]]
-- [[Prompt Engineering]]
-- [[RAG]]
+
+- [[AI Agents]]
+- [[Multi-Agent Systems]]
+- [[Agent Architecture]]
 - [[Autonomous Agents]]
-- [[Reinforcement Learning]]
-- [[State Machines]]
-- [[Event-Driven Architecture]]
+- [[LLM Applications]]
+- [[Agent Orchestration]]
+- [[Function Calling]]
+- [[ReAct Pattern]]
+- [[Cognitive Architecture]]
+- [[AutoGen]]
+- [[CrewAI]]
 ```
