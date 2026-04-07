@@ -2,64 +2,47 @@
 ---
 title: Building Applications with AI Agents
 topic: ai
-tags: [ai-agents, multi-agent-systems, application-development, agent-architecture, llm]
-source: 02-building-applications-with-ai-agents.md
+tags: [ai-agents, book, oreilly, agentic-ai, software-development]
+source: 03-building-applications-with-ai-agents.md
 ---
 
 # Building Applications with AI Agents
 
-Recurso bibliográfico focado em [[Design Patterns]] e [[Software Architecture]] para sistemas baseados em [[AI Agents]]. O material aborda metodologias para construir aplicações robustas utilizando [[Multi-Agent Systems]] (MAS), onde múltiplos agentes autônomos colaboram para resolver problemas complexos.
+**Building Applications with AI Agents** é um livro escrito por [[Michael Albada]] e publicado pela [[O'Reilly Media]]. A obra aborda o desenvolvimento de aplicações utilizando [[AI Agents|agentes de inteligência artificial]], explorando padrões arquiteturais, ferramentas e melhores práticas para construir sistemas autônomos e semi-autônomos.
 
-## Conceitos Fundamentais
+O livro foi lançado em formato *Early Release* (edição antecipada) com atualizações incrementais ao longo de 2024-2025, permitindo que leitores acessem o conteúdo antes da edição final de outubro de 2025.
 
-### Agentes em Aplicações de Software
+## Detalhes da Publicação
 
-[[AI Agents]] são entidades computacionais autônomas que percebem seu ambiente e executam ações para atingir objetivos específicos. Em [[Application Development]] moderno, estes agentes frequentemente utilizam [[Large Language Models]] (LLMs) como motor de raciocínio, combinados com ferramentas externas e memória persistente.
+- **Autor**: [[Michael Albada]]
+- **Editora**: [[O'Reilly Media]]
+- **Primeira Edição**: Outubro 2025
+- **ISBN**: 978-1-098-17650-1
+- **Formato**: Early Release (atualizações periódicas desde outubro de 2024)
 
-### Sistemas Multi-Agente
+## Tópicos Cobertos
 
-[[Multi-Agent Systems]] representam uma arquitetura distribuída onde vários agentes interagem entre si. Diferente de sistemas monolíticos com único agente, MAS permitem:
-- **Divisão de responsabilidades**: Especialização por domínio ou função
-- [[Agent Orchestration]]: Coordenação entre agentes via protocols de comunicação
-- **Resiliência**: Falha de um agente não compromete o sistema inteiro
-- **Escalabilidade**: Adição dinâmica de agentes conforme demanda
+O material foca em:
+- Arquitetura de [[Agentic AI|sistemas agenticos]]
+- Integração de [[Large Language Models|LLMs]] em aplicações
+- Padrões de design para agentes autônomos
+- Ferramentas e frameworks para desenvolvimento de agentes
+- Considerações de segurança e governança em sistemas multi-agente
 
-## Aspectos de Design
+## Histórico de Releases (Early Release)
 
-### Arquitetura de Agentes
-
-O design de [[Agent Architecture]] envolve decisões sobre:
-- **Perception**: Como o agente recebe input do ambiente
-- [[Cognitive Architecture]]: Mecanismos de raciocínio e planejamento
-- **Actuation**: Execução de ações via [[Function Calling]] ou [[API Integration]]
-- [[Memory Management]]: Estado conversacional e memória de longo prazo
-
-### Patterns de Implementação
-
-Padrões comuns em [[Agent-Based Development]]:
-- **ReAct** (Reasoning + Acting): Ciclos iterativos de pensamento e ação
-- **Reflexion**: Agentes que avaliam e melhoram suas próprias saídas
-- **Multi-Agent Collaboration**: Frameworks como [[AutoGen]] ou [[CrewAI]] para orquestração
-
-## Considerações Práticas
-
-Ao implementar [[AI Agents]] em produção, desenvolvedores devem considerar:
-- [[Observability]]: Rastreamento de decisões e cadeias de raciocínio
-- [[Safety & Alignment]]: Controles para prevenir comportamentos indesejados
-- [[State Management]]: Persistência de contexto entre interações
-- [[Human-in-the-loop]]: Pontos de intervenção humana em workflows críticos
+- **2024-10-18**: Primeiro Release
+- **2024-11-05**: Segundo Release  
+- **2024-12-13**: Terceiro Release
+- **2025-01-30**: Quarto Release
+- **2025-04-11**: Quinto Release
 
 ## Conceitos Relacionados
-
 - [[AI Agents]]
+- [[Agentic AI]]
+- [[Large Language Models]]
+- [[O'Reilly Media]]
+- [[Application Development]]
+- [[Autonomous Systems]]
 - [[Multi-Agent Systems]]
-- [[Agent Architecture]]
-- [[Autonomous Agents]]
-- [[LLM Applications]]
-- [[Agent Orchestration]]
-- [[Function Calling]]
-- [[ReAct Pattern]]
-- [[Cognitive Architecture]]
-- [[AutoGen]]
-- [[CrewAI]]
 ```
