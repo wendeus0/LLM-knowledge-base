@@ -8,54 +8,47 @@ type: project
 
 ### F1: Validação operacional com provider real
 
-**Status:** Em aberto
+**Status:** Concluído (2026-04-07)
 
-**Objetivo:** Confirmar que a configuração atual com OpenCode Go funciona ponta a ponta em uso real, não apenas com mocks.
+**Resultado:**
+- [x] `kb search` — OK
+- [x] `kb lint` — OK (auditoria via LLM funcionando)
+- [x] `kb qa "pergunta"` — OK (resposta via wiki + provider)
+- [x] `kb heal --n 2` — OK (provider lento ~>60s, sem erro)
+- [x] `kb import-book <epub> --compile` — OK; 12 capítulos de "Building Applications with AI Agents" compilados para wiki/ai/
 
-**O que falta:**
-- [ ] Rodar `kb import-book <arquivo> --compile` com um EPUB real
-- [ ] Rodar `kb qa`, `kb heal` e `kb lint` usando a chave já configurada
-- [ ] Validar ergonomia de erro quando o extra `.[llm]` não está instalado
-
-**Risco principal:** comportamento real do provider pode divergir do ambiente de teste mockado.
+**Nota:** `heal` é notavelmente lento com o provider atual (>60s). Não é erro — é latência do OpenCode Go.
 
 ---
 
 ### F2: Política operacional de sensibilidade
 
-**Status:** Em aberto
+**Status:** Concluído (2026-04-07)
 
-**Objetivo:** Consolidar regras de uso para `--allow-sensitive` e `--no-commit`.
-
-**O que falta:**
-- [ ] Documentar o que pode ou não ser enviado ao provider externo
-- [ ] Definir quando `--allow-sensitive` é aceitável
-- [ ] Definir quando `--no-commit` pode ser usado sem comprometer rastreabilidade
-- [ ] Avaliar políticas por diretório (`raw/private/`) como evolução futura
-
-**Risco principal:** uso inconsistente das novas flags por falta de política operacional fechada.
+**Entregável:** `docs/SENSITIVE_CONTENT_POLICY.md`
+- Padrões detectados pelo guardrail documentados
+- Critérios explícitos de quando usar/não usar `--allow-sensitive`
+- Critérios de quando usar/não usar `--no-commit`
+- Lacunas conhecidas (L2: AWS/GitHub/GitLab tokens) sinalizadas
+- Política por diretório (`raw/private/`) identificada como futura
 
 ---
 
 ### F3: Empacotamento definitivo da relação `book2md` → `kb`
 
-**Status:** Adiado
+**Status:** Encerrado (2026-04-07)
 
-**Objetivo:** Reduzir o acoplamento por path usado hoje no laboratório.
+**Decisão:** A3 rejeitada formalmente em ADR-0001. Núcleo permanece em `kb/book_import_core.py`. Sem demanda concreta de distribuição externa independente.
 
-**Recomendação atual:** adiar até o próximo ciclo; solução corrente está funcional e coberta por testes.
+**Critério de reabertura:** necessidade real de instalar `book2md` fora do workspace como pacote independente.
 
 ---
 
 ### F4: Merge de PRs abertos
 
-**Status:** Aguardando aprovação
+**Status:** Concluído (2026-04-07)
 
-**Objetivo:** Fechar o ciclo das features desenvolvidas neste sprint.
-
-**O que falta:**
-- [ ] Merge PR#14 (`feat/wikilink-traversal`)
-- [ ] Merge PR#15 (`feat/rich-book-import-metadata`) — inclui fix de URL-encoding de 2026-04-06
+**Resultado:** PR#14 e PR#15 mergeados conforme confirmação do usuário.
 
 ---
 
