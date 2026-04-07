@@ -8,7 +8,7 @@
 
 ## Contexto
 
-O sistema kb é uma knowledge base pessoal mantida por LLM que precisa fornecer capacidade de busca sobre a wiki em Markdown. A wiki pode crescer para milhares de arquivos, mas ainda se trata de um vault pessoal, não de um sistema de produção com milhões de documentos.
+O sistema kb é uma engine de knowledge base mantida por LLM que precisa fornecer capacidade de busca sobre a wiki em Markdown. A wiki pode crescer para milhares de arquivos no corpus do usuário, mas ainda não se trata de um sistema de produção com milhões de documentos.
 
 A necessidade é permitir que usuários encontrem documentos relevantes através de termos de busca, sem adicionar complexidade de infraestrutura externa ao projeto.
 
@@ -29,7 +29,7 @@ A estratégia funciona assim:
 
 - **Zero dependências externas**: Não requer SQLite FTS, Elasticsearch, ou serviços de vector search
 - **Funciona offline**: Sem necessidade de conectividade para APIs de embeddings
-- **Rápido para vaults pessoais**: Escala bem para milhares de documentos em hardware modesto
+- **Rápido para corpus locais de usuário**: Escala bem para milhares de documentos em hardware modesto
 - **Código simples**: Fácil de entender, manter e depurar
 - **Sem configuração**: Não requer setup de índices, schemas ou tuning
 - **Determinístico**: Mesma busca sempre retorna mesmos resultados
@@ -46,8 +46,8 @@ A estratégia funciona assim:
 
 | Alternativa                    | Por que não foi escolhida                                                                                              |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| **SQLite FTS**                 | Adiciona dependência de banco de dados, requer schema e migrações, complexidade desnecessária para vault pessoal       |
-| **Elasticsearch**              | Infraestrutura pesada, requer servidor dedicado, overkill para uso pessoal                                             |
+| **SQLite FTS**                 | Adiciona dependência de banco de dados, requer schema e migrações, complexidade desnecessária para corpus local        |
+| **Elasticsearch**              | Infraestrutura pesada, requer servidor dedicado, overkill para o escopo atual                                          |
 | **Vector search / Embeddings** | Requer API de LLM para gerar embeddings, custo adicional, latência de rede, não funciona totalmente offline            |
 | **ripgrep (rg)**               | Excelente performance, mas é uma ferramenta externa; preferimos solução puramente Python para portabilidade e controle |
 | **Whoosh (Python FTS)**        | Biblioteca dedicada de full-text search, mas adiciona dependência pesada; nossa solução simples é suficiente           |

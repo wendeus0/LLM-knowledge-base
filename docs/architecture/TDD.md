@@ -35,19 +35,25 @@ tests/
 **Padrão:** Cada função pública merece um teste
 
 ```python
-def test_compile_file_creates_wiki_article(tmp_path):
+def test_compile_file_creates_wiki_article(tmp_path, monkeypatch):
     # Arrange
     raw_dir = tmp_path / "raw"
     wiki_dir = tmp_path / "wiki"
+    raw_dir.mkdir()
+    wiki_dir.mkdir()
+
     raw_file = raw_dir / "test.md"
-    raw_file.write_text("# Teste\nConteúdo sobre XSS")
+    raw_file.write_text("# Teste\nConteúdo de teste")
+
+    monkeypatch.setattr("kb.compile.WIKI_DIR", wiki_dir)
+    monkeypatch.setattr("kb.compile.chat", lambda *args, **kwargs: """---\ntitle: Test Article\ntopic: general\ntags: [test]\nsource: test.md\n---\n\n# Test Article\n\nConteúdo.\n""")
 
     # Act
     result = compile_file(raw_file)
 
     # Assert
     assert result.exists()
-    assert result.parent.name in ["cybersecurity", "ai", "python", "typescript"]
+    assert result.parent == wiki_dir / "general"
 ```
 
 ### Integration tests
@@ -96,7 +102,7 @@ def sample_md():
     """Documento de teste"""
     return """---
 title: Test Article
-topic: cybersecurity
+topic: general
 ---
 
 # Test

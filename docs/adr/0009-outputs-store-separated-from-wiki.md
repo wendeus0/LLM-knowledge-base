@@ -1,5 +1,7 @@
 # ADR 0009 — Store de outputs de QA separado da wiki
 
+> **Nota histórica:** este ADR foi escrito quando `raw/`, `wiki/` e `outputs/` ainda viviam dentro do repositório principal. No modelo recomendado atual, esses diretórios vivem no `KB_DATA_DIR` do usuário.
+
 - **Status:** Aceito
 - **Data:** 2026-04-06
 

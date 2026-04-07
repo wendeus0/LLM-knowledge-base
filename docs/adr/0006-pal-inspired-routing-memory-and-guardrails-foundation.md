@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O `kb` já possui um pipeline funcional de `raw/ -> wiki/`, busca lexical, Q&A e manutenção da wiki. Entretanto, a consulta ainda depende quase inteiramente de `wiki/`, não há separação clara entre conhecimento compilado e aprendizados operacionais do sistema, e os guardrails de conteúdo sensível estão majoritariamente documentados, mas pouco impostos em runtime.
+O `kb` já possui um pipeline funcional de `raw/ -> wiki/`, busca lexical, Q&A e manutenção da wiki no corpus do usuário. Entretanto, a consulta ainda depende quase inteiramente de `wiki/`, não há separação clara entre conhecimento compilado e aprendizados operacionais do sistema, e os guardrails de conteúdo sensível estão majoritariamente documentados, mas pouco impostos em runtime.
 
 A análise do repositório `agno-agi/pal` mostrou quatro padrões com alto valor para o `kb`:
 

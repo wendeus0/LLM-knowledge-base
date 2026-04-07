@@ -1,5 +1,7 @@
 # Roadmap — Pal-inspired foundations for `kb`
 
+> **Nota de escopo:** referências a `raw/` e `wiki/` neste documento são lógicas. No modelo recomendado atual, esses diretórios vivem no `KB_DATA_DIR` do usuário.
+
 ## Objetivo
 
 Adaptar ao `kb` as capacidades mais valiosas observadas em `agno-agi/pal`, sem descaracterizar a arquitetura local baseada em CLI + markdown + git.

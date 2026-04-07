@@ -4,6 +4,8 @@
 
 Define como dados são persistidos localmente pelo kb (CLI Python).
 
+> **Nota de escopo:** `raw/`, `wiki/`, `outputs/` e `kb_state/` são diretórios do corpus do usuário. No modelo recomendado atual, eles vivem em `KB_DATA_DIR`, fora do repositório principal.
+
 ## Diretórios de Dados
 
 ### raw/
@@ -35,7 +37,7 @@ Define como dados são persistidos localmente pelo kb (CLI Python).
 | ------------------- | ------------------------------------ |
 | `kb compile`        | Commit automático se houver mudanças |
 | `kb heal`           | Commit automático após correções     |
-| `kb qa --file-back` | Commit automático da resposta        |
+| `kb qa --file-back` | Commit automático da resposta, salvo com `--no-commit` |
 | Edição manual       | **Proibida** — apenas via CLI        |
 
 ### Limpeza
@@ -78,11 +80,11 @@ Define como dados são persistidos localmente pelo kb (CLI Python).
 ### Backup
 
 ```bash
-# Backup completo
-tar -czf kb-backup-$(date +%Y%m%d).tar.gz raw/ wiki/ .git/
+# Backup completo do corpus do usuário
+tar -czf kb-backup-$(date +%Y%m%d).tar.gz "${KB_DATA_DIR:?}"/
 
-# Ou use Git
-git push origin main
+# Ou use Git no repositório do corpus, se existir
+# git -C "${KB_DATA_DIR:?}" push origin main
 ```
 
 ### Migração
@@ -93,7 +95,7 @@ git clone <repo>
 cd kb
 pip install -e ".[llm]"
 cp .env.example .env
-# Editar .env
+# Editar .env com KB_API_KEY e KB_DATA_DIR
 ```
 
 ## Revisão

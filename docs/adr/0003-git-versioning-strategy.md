@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O projeto `kb` mantém uma wiki em markdown gerada a partir de documentos brutos. Cada operação que modifica a wiki (compile, heal, qa --file-back) resulta em mudanças no filesystem que precisam ser persistidas e rastreáveis.
+O projeto `kb` mantém uma wiki em markdown gerada a partir de documentos brutos no corpus do usuário. Cada operação que modifica a wiki (compile, heal, ou `qa --file-back` com `--to-wiki`) resulta em mudanças no filesystem que precisam ser persistidas e rastreáveis.
 
 Sem uma estratégia de versionamento formal, havia risco de:
 
@@ -16,7 +16,7 @@ Sem uma estratégia de versionamento formal, havia risco de:
 
 ## Decisão
 
-1. Git será a fonte de verdade única para todo o estado da wiki.
+1. Git será a fonte de verdade única para o estado versionado da wiki no corpus do usuário.
 2. Commits automáticos serão executados sempre que a wiki for modificada por operações do CLI.
 3. Não haverá staging manual — o processo é totalmente automatizado.
 4. Adotamos a estratégia de Pawel Huryn: operações são append-only ou atualizam seções específicas, nunca reescrevem arquivos completos arbitrariamente.

@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Após a introdução dos guardrails iniciais inspirados em `Pal`, o projeto `kb` passou a bloquear ou confirmar interativamente operações que enviam conteúdo potencialmente sensível ao provider externo. Ao mesmo tempo, a política histórica do produto continuava sendo commitar automaticamente todo write relevante na wiki.
+Após a introdução dos guardrails iniciais inspirados em `Pal`, o projeto `kb` passou a bloquear ou confirmar interativamente operações que enviam conteúdo potencialmente sensível ao provider externo. Ao mesmo tempo, a política histórica do produto continuava sendo commitar automaticamente todo write relevante no corpus do usuário, especialmente na wiki.
 
 Essa combinação era boa para uso manual simples, mas insuficiente para dois cenários reais:
 
@@ -15,7 +15,7 @@ Essa combinação era boa para uso manual simples, mas insuficiente para dois ce
 ## Decisão
 
 1. Adotar `--allow-sensitive` como **opt-in explícito por execução** para `compile`, `qa`, `qa --file-back`, `heal`, `lint` e `import-book --compile`.
-2. Adotar `--no-commit` como **opt-out explícito do commit automático** para fluxos que escrevem na wiki.
+2. Adotar `--no-commit` como **opt-out explícito do commit automático** para fluxos que escrevem no corpus do usuário (`wiki/` ou `outputs/`).
 3. Manter o comportamento seguro por padrão:
    - sem `--allow-sensitive`, o sistema continua bloqueando programaticamente ou pedindo confirmação
    - sem `--no-commit`, o sistema continua fazendo commit automático onde já fazia antes

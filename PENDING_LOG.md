@@ -13,7 +13,8 @@ Pendências e decisões abertas.
 | P1 | Abrir PR com entregas do sprint (feat/wikilink-traversal branch) | ✅ Concluído — PR#19 aberto | 2026-04-07 |
 | P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | ✅ Concluído — `pytest-cov` em `[dev]`; 80% cobertura; HTML em `htmlcov/` | 2026-04-07 |
 | P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | ✅ Concluído — A3 rejeitada formalmente em ADR-0001; núcleo permanece em `kb/book_import_core.py` | 2026-04-07 |
-| P2 | Integração Obsidian | ✅ Concluído | 2026-04-04 |
+| P2 | Integração Obsidian | ✅ Concluído — `<KB_DATA_DIR>/wiki` validado com plugin `obsidian-terminal`; `kb qa` executado dentro do Obsidian | 2026-04-07 |
+| P2 | Higienização do repositório open source | ✅ Concluído — corpus pessoal movido para `<KB_DATA_DIR>`; engine separada do conteúdo | 2026-04-07 |
 | P2 | Embeddings + RAG híbrido | Pendente (futuro) | 2026-04-03 |
 
 ## P0 (Bloqueadores)
@@ -34,10 +35,17 @@ Pendências e decisões abertas.
 - Mitigação atual: `--allow-sensitive` para livros técnicos com exemplos de código
 - Refinamento desejável: guardrail mais contextual (ex: ignorar padrões em blocos de código markdown)
 
-**Instalar Shell Commands plugin no Obsidian (passo manual)**
-- Abrir `wiki/` como vault no Obsidian
-- Settings → Community plugins → Shell Commands → Install → Enable
-- Verificar hotkeys Ctrl+Shift+C/Q/H/L/S
+**Obsidian operacional via `obsidian-terminal`**
+- `<KB_DATA_DIR>/wiki` aberto como vault no Obsidian
+- Plugin `obsidian-terminal` adotado no lugar de `Shell Commands`
+- Profile integrado validado com shell login (`/bin/zsh --login` ou `/bin/bash --login`)
+- `kb qa` executado com sucesso dentro do terminal integrado
+- Próximo refinamento opcional: documentar/profile defaults e hotkeys do plugin
+
+**Próxima etapa estrutural do open source**
+- Remover/neutralizar referências históricas restantes a corpus temático pessoal em docs de arquitetura/ADR
+- Avaliar tornar `TOPICS` configurável em vez de fixo no código
+- Definir se `examples/` deve crescer com seeds neutros adicionais ou permanecer mínimo
 
 **Cobertura de testes — gaps prioritários**
 - `kb/git.py`: 31% → adicionar testes de integração para commit automático

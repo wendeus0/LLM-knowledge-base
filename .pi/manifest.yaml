@@ -3,18 +3,18 @@ kind: pi-project-manifest
 
 project:
   name: kb
-  description: LLM-powered personal knowledge base
+  description: LLM-powered knowledge base engine
   primary_language: python
   runtime: python>=3.11
   purpose: >-
-    Sistema de knowledge base pessoal mantido por LLM para ingestão,
+    Engine de knowledge base mantida por LLM para ingestão,
     compilação em wiki markdown, busca, Q&A e healing.
 
 paths:
   package: kb/
   tests: tests/
-  raw: raw/
-  wiki: wiki/
+  examples: examples/
+  user_data: <KB_DATA_DIR>/
   pi: .pi/
   agent_context:
     - AGENTS.md
@@ -35,8 +35,8 @@ commands:
   run_heal: kb heal --n 10
 
 conventions:
-  wiki_writes: "Não editar wiki/ manualmente; preferir CLI/LLM do projeto."
-  file_back: "Respostas arquivadas voltam para wiki/ e podem gerar commit automático."
+  wiki_writes: "Não editar a wiki manualmente; preferir CLI/LLM do projeto no corpus do usuário."
+  file_back: "Respostas arquivadas vão para outputs/ por padrão; no fluxo Obsidian, preferir --no-commit."
   testing: "Priorizar testes offline/mocados quando houver dependência externa."
   source_of_truth: "Manifesto para estrutura curta; AGENTS.md e CLAUDE.md para contexto narrativo."
 

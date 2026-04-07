@@ -58,7 +58,7 @@ Se público: descrever novo CLI, novo módulo público, breaking changes, etc.
 
 ## Epics do kb
 
-- **compile:** raw/ → wiki/
+- **compile:** raw/ → wiki/ no corpus do usuário
 - **qa:** perguntas contra wiki
 - **heal:** stochastic healing
 - **lint:** health checks

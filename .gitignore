@@ -6,5 +6,12 @@ dist/
 *.egg-info/
 .coverage
 
+# Local corpus / vault data (recommended outside this repository)
+/raw/
+/wiki/
+/outputs/
+/kb_state/
+
 # Obsidian machine-specific config
-wiki/.obsidian/plugins/obsidian-shellcommands/data.json
+.obsidian/
+**/.obsidian/

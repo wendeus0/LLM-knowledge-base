@@ -1,5 +1,24 @@
 # SECURITY_AUDIT_REPORT.md
 
+Última auditoria: 2026-04-07 (sprint: higienização do repositório + externalização do corpus)
+
+---
+
+## Auditoria 2026-04-07 — Escopo: `kb/config.py`, `.gitignore`, docs de separação engine/corpus
+
+### `KB_DATA_DIR` e overrides por diretório
+A mudança externaliza `raw/`, `wiki/`, `outputs/` e `kb_state/` para fora do repositório principal. Do ponto de vista de segurança, isso reduz risco de versionar dados sensíveis por engano no repo da engine e melhora a separação entre código e conteúdo do usuário.
+
+### `.gitignore` ampliado para corpus e `.obsidian/`
+A decisão reduz risco operacional de vazar conteúdo pessoal, artefatos locais do vault e configuração de editor. Não elimina risco de exposição no repositório externo do corpus, mas diminui o blast radius no projeto open source.
+
+### Novo risco residual: `.env` local pode apontar para diretório pessoal absoluto
+O valor de `KB_DATA_DIR` em `.env` é local e já está protegido por `.gitignore`. Risco aceitável.
+
+**Veredito desta auditoria incremental:** Nenhum achado novo de severidade MEDIUM ou superior introduzido pela higienização. A mudança melhora a postura de segurança operacional do repositório principal.
+
+---
+
 Última auditoria: 2026-04-07 (sprint: validação operacional + fix code fence + import EPUB real)
 
 ---

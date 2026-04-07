@@ -1,12 +1,14 @@
-# kb — LLM-powered Personal Knowledge Base
+# kb — LLM-powered Knowledge Base Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-41%20passing-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)]()
 
-Sistema de knowledge base pessoal mantido por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático.
+Engine de knowledge base mantida por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático.
 
 Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas de conhecimento assistidos por IA.
+
+> Este repositório contém a **engine** (`kb`), testes e documentação. O **corpus/vault do usuário** deve ficar fora daqui, em um diretório próprio apontado por `KB_DATA_DIR`.
 
 ## Features
 
@@ -46,70 +48,103 @@ Crie um arquivo `.env` na raiz do projeto:
 KB_API_KEY=sua_api_key_aqui
 KB_BASE_URL=https://opencode.ai/zen/go/v1  # opcional
 KB_MODEL=kimi-k2.5                          # opcional
+KB_DATA_DIR=/caminho/para/seu/llm-wiki      # recomendado: fora deste repositório
 ```
+
+`KB_DATA_DIR` aponta para o vault/corpus do usuário. Dentro dele, o `kb` espera encontrar ou criar:
+
+```text
+<KB_DATA_DIR>/
+  raw/
+  wiki/
+  outputs/
+  kb_state/
+```
+
+Veja também `.env.example`.
 
 ## Uso Rápido
 
 ```bash
-# 1. Ingerir um documento
-kb ingest docs/artigo-sobre-xss.md
+# 1. Aponte para seu vault/corpus local
+export KB_DATA_DIR=/caminho/para/seu/llm-wiki
 
-# 2. Compilar para wiki (usa LLM para estruturar)
+# 2. Ingerir um documento neutro de exemplo
+kb ingest examples/raw/getting-started.md
+
+# 3. Compilar para wiki (usa LLM para estruturar)
 kb compile
 
-# 3. Fazer perguntas
-kb qa "O que é XSS e como prevenir?"
+# 4. Fazer perguntas
+kb qa "O que este corpus descreve?"
 
-# 4. Arquivar resposta na wiki
-kb qa "Explique CSRF" -f
-
-# 5. Executar sem commit automático (cenários sensíveis/experimentos)
-kb compile --no-commit
-kb qa "Explique CSRF" -f --no-commit
+# 5. Arquivar resposta fora da wiki (recomendado no fluxo Obsidian)
+kb qa "Resuma este corpus" -f --no-commit
 
 # 6. Permitir explicitamente conteúdo sensível quando necessário
 kb compile --allow-sensitive
 
 # 7. Health check
-kb heal --n 5
+kb heal --n 5 --no-commit
 kb lint
 ```
 
+## Obsidian
+
+O frontend oficial recomendado é o Obsidian sobre o vault do usuário, e a integração operacional recomendada usa o plugin community [`obsidian-terminal`](https://github.com/polyipseity/obsidian-terminal).
+
+### Setup recomendado
+
+1. Configurar `KB_DATA_DIR` para o diretório do seu vault/corpus local
+2. Abrir `<KB_DATA_DIR>/wiki` como vault no Obsidian
+3. Instalar o plugin `obsidian-terminal`
+4. Criar um profile integrado com:
+   - Executable: `/bin/zsh` (ou `/bin/bash`)
+   - Arguments: `--login`
+5. Adicionar no shell um alias apontando para o binário do projeto:
+
+```bash
+alias kb='<raiz-do-repositorio>/.venv/bin/kb'
+```
+
+> Substitua `<raiz-do-repositorio>` pelo caminho absoluto do seu clone local.
+
+6. No terminal integrado do Obsidian, entrar na raiz do projeto e rodar:
+
+```bash
+cd <raiz-do-repositorio>
+kb --help
+kb qa "Como implementar um orquestrador em meu workflow?" --allow-sensitive
+```
+
+Tutorial completo:
+
+- [docs/OBSIDIAN.md](docs/OBSIDIAN.md)
+- Plugin upstream: <https://github.com/polyipseity/obsidian-terminal>
+
 ## Arquitetura
 
-```
+```text
+# Repositório da engine
 kb/
-├── raw/              ← documentos fonte (não processados)
-│   └── books/        ← livros importados (EPUB/PDF)
-├── wiki/             ← markdown compilado, versionado
-│   ├── _index.md     ← índice automático
-│   ├── cybersecurity/
-│   ├── ai/
-│   ├── python/
-│   └── typescript/
-├── kb/               ← pacote Python
-│   ├── cli.py        ← interface Typer
-│   ├── client.py     ← wrapper OpenAI SDK
-│   ├── compile.py    ← raw → wiki (LLM + summary compilado)
-│   ├── qa.py         ← Q&A + file-back com routing por fonte
-│   ├── router.py     ← roteamento entre wiki/raw/knowledge/learnings
-│   ├── state.py      ← stores de knowledge, learnings e manifesto
-│   ├── guardrails.py ← detecção de conteúdo sensível
-│   ├── jobs.py       ← catálogo de jobs canônicos
-│   ├── search.py     ← busca por keywords
-│   ├── heal.py       ← stochastic healing
-│   ├── lint.py       ← health checks
-│   ├── book_import_core.py  # núcleo de importação
-│   ├── config.py     ← constantes e env
-│   └── git.py        ← commits automáticos
-└── tests/            ← testes unitários e integração
+├── kb/               ← engine/CLI principal
+├── docs/             ← documentação do produto
+├── tests/            ← testes unitários e integração
+└── examples/         ← exemplos neutros de corpus/seed
+
+# Corpus/vault do usuário (fora deste repositório)
+<KB_DATA_DIR>/
+├── raw/              ← documentos fonte
+├── wiki/             ← markdown compilado
+├── outputs/          ← file-backs de QA
+└── kb_state/         ← manifesto/knowledge/learnings
 ```
 
 ## Convenções
 
-- **Topics:** `cybersecurity`, `ai`, `python`, `typescript`
-- **Frontmatter YAML:** Cada artigo da wiki inclui `title`, `topic`, `tags`, `source`, `reviewed_at`
-- **Git:** Todo write na wiki gera commit automático, exceto quando `--no-commit` é usado explicitamente
+- **Corpus do usuário:** `raw/`, `wiki/`, `outputs/` e `kb_state/` devem ficar preferencialmente fora do repositório principal via `KB_DATA_DIR`
+- **Frontmatter YAML:** Cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `reviewed_at`
+- **Git:** writes no corpus local podem gerar commit automático, exceto quando `--no-commit` é usado explicitamente
 - **LLM:** O LLM nunca escreve a wiki manualmente — tudo é via CLI
 - **Sensibilidade:** operações com provider externo aceitam `--allow-sensitive` para bypass explícito da confirmação interativa
 
@@ -139,6 +174,7 @@ ruff check kb
 | [AGENTS.md](AGENTS.md)                                               | Convenções e contexto do projeto     |
 | [docs/architecture/TDD.md](docs/architecture/TDD.md)                 | Convenções de teste                  |
 | [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md) | Formato de especificação de features |
+| [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                 | Guia oficial de uso com Obsidian     |
 | [docs/adr/](docs/adr/)                                               | Architectural Decision Records       |
 
 ## Roadmap
@@ -149,7 +185,7 @@ ruff check kb
 - [x] Stochastic healing
 - [x] Suite de testes completa
 - [ ] Multi-agent specialization (futuro)
-- [ ] Integração com Obsidian como frontend
+- [x] Integração com Obsidian como frontend oficial recomendado (`obsidian-terminal`)
 - [ ] Embeddings + RAG híbrido (futuro)
 - [x] Modo no-commit para cenários sensíveis
 

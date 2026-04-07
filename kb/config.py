@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ROOT = Path(__file__).parent.parent
-RAW_DIR = ROOT / "raw"
-WIKI_DIR = ROOT / "wiki"
-OUTPUTS_DIR = ROOT / "outputs"
-STATE_DIR = ROOT / "kb_state"
+DATA_DIR = Path(os.getenv("KB_DATA_DIR", ROOT)).expanduser()
+RAW_DIR = Path(os.getenv("KB_RAW_DIR", DATA_DIR / "raw")).expanduser()
+WIKI_DIR = Path(os.getenv("KB_WIKI_DIR", DATA_DIR / "wiki")).expanduser()
+OUTPUTS_DIR = Path(os.getenv("KB_OUTPUTS_DIR", DATA_DIR / "outputs")).expanduser()
+STATE_DIR = Path(os.getenv("KB_STATE_DIR", DATA_DIR / "kb_state")).expanduser()
 KNOWLEDGE_PATH = STATE_DIR / "knowledge.json"
 LEARNINGS_PATH = STATE_DIR / "learnings.json"
 MANIFEST_PATH = STATE_DIR / "manifest.json"

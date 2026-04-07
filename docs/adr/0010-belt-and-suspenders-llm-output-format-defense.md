@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Durante a compilação real do EPUB "Building Applications with AI Agents" (12 capítulos), o LLM retornou todos os artigos envoltos em `` ```markdown `` e `` ``` ``. Isso corrompeu o frontmatter YAML de 25 arquivos em `wiki/ai/` e `wiki/summaries/ai/`, tornando-os inválidos para Obsidian e para o pipeline de search/heal.
+Durante a compilação real do EPUB "Building Applications with AI Agents" (12 capítulos), o LLM retornou todos os artigos envoltos em `` ```markdown `` e `` ``` ``. Isso corrompeu o frontmatter YAML de 25 arquivos no corpus então versionado, tornando-os inválidos para Obsidian e para o pipeline de search/heal.
 
 A causa raiz foi o SYSTEM prompt do `compile.py`, que usava `` ``` `` para delimitar o exemplo de formato de saída, ensinando implicitamente o modelo a envolver a resposta em fences.
 
