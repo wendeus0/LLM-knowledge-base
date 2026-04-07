@@ -6,45 +6,31 @@ type: project
 
 ## Imediato (próxima sessão)
 
-0. **[P1] Resolver trabalho não commitado em branch errado**
-   - `git checkout -b feat/pal-foundation-phase-1` a partir do estado atual
-   - Passar pelo workflow: quality-gate → report-writer → branch-sync-guard → git-flow-manager
-   - Separar commits por feature (pal-foundation e sensitive-execution-controls são escopos distintos)
+1. **[P1] Mergear PR#19** (feat/wikilink-traversal → main)
+   - `gh pr merge 19 --squash` ou via UI do GitHub
 
-1. **[P1] Rodar smoke test real com OpenCode Go**
-   - `pip install -e .[llm]`
-   - `kb import-book <arquivo.epub> --compile`
-   - `kb qa "pergunta de verificação"`
-   - `kb heal --n 3`
-   - `kb lint`
+2. **[P1] Corrigir 8 testes falhando em `test_web_ingest.py`**
+   - Mock setup: `patch.object` retorna `None` quando atributo não existe no target
+   - Arquivo: `tests/unit/test_web_ingest.py`
+   - Cobertura atual: 27% → esperada >70% após fix
 
-2. **[P1] Fechar política operacional de sensibilidade**
-   - consolidar regra explícita para conteúdo sensível
-   - definir quando usar `--allow-sensitive`
-   - definir quando usar `--no-commit`
-   - alinhar docs com `SECURITY_AUDIT_REPORT.md`
-
-## Curto prazo (próximas 2 sessões)
-
-3. **[P2] Finalizar Obsidian: instalar Shell Commands plugin manualmente**
+3. **[P2] Instalar Shell Commands plugin no Obsidian (passo manual — usuário)**
    - Abrir `wiki/` como vault
    - Settings → Community plugins → Shell Commands → Install → Enable
    - Verificar hotkeys Ctrl+Shift+C/Q/H/L/S
 
-4. **[P2] Adicionar tooling formal de cobertura**
-   - instalar `pytest-cov` ou `coverage.py`
-   - passar a gerar relatório percentual por sprint
-
-5. **[P2] Formalizar distribuição entre `book2md` e `kb`**
-   - escolher entre dependência explícita ou pacote compartilhado
-   - remover fallback por path se a distribuição formal for adotada
-
 ## Médio prazo
 
+4. **[P2] Refinar guardrail de credenciais**
+   - Falso positivo: `OPENAI_API_KEY` como nome de variável em código dispara `SensitiveContentError`
+   - Solução: ignorar padrões em blocos de código markdown (fenced code blocks)
+
+5. **[P2] Aumentar cobertura em `kb/git.py` (31%) e `kb/client.py` (63%)**
+
 6. **[P2] Embeddings + RAG híbrido**
-   - reavaliar quando a wiki ultrapassar a escala confortável da busca lexical
+   - Reavaliar quando wiki ultrapassar ~200 artigos
 
 ## Bloqueadores atuais
 
 - Nenhum bloqueador técnico
-- Trabalho não commitado em branch errado é risco de perda, mas não bloqueia leitura/uso
+- Baseline: 113 testes passando, 8 falhando pré-existentes (web_ingest mock)

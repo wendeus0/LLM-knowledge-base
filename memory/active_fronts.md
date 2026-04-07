@@ -6,83 +6,54 @@ type: project
 
 ## Frentes ativas
 
-### F0: Trabalho não commitado em branch errado
+### F1–F6: Validação operacional, política sensibilidade, pytest-cov, book2md, smoke test, EPUB
 
-**Status:** Pendente resolução
+**Status:** Todas concluídas (2026-04-07)
 
-**Contexto:** Branch `feat/readme-arch-docs` teve PR mergeado (`5520c05`), mas o branch local carrega implementação completa das features `pal-foundation-phase-1` e `sensitive-execution-controls` sem commit: novos módulos (`guardrails.py`, `router.py`, `state.py`, `jobs.py`, testes), 17 arquivos tracked modificados. 85 testes passando.
-
-**O que falta:**
-- [ ] Criar branch de feature correto a partir do estado atual
-- [ ] Passar pelo workflow: test-red → green-refactor → quality-gate → report-writer → git-flow-manager
-- [ ] Commitar e abrir PR para cada feature separadamente
-
-**Risco:** perda de trabalho ou mistura de escopo a cada nova sessão.
-
----
-
-### F1: Validação operacional com provider real
-
-**Status:** Em progresso
-
-**Objetivo:** Confirmar que a configuração atual com OpenCode Go funciona ponta a ponta em uso real, não apenas com mocks.
-
-**O que falta:**
-- [ ] Rodar `kb import-book <arquivo> --compile` com um EPUB real
-- [ ] Rodar `kb qa`, `kb heal` e `kb lint` usando a chave já configurada
-- [ ] Validar ergonomia de erro quando o extra `.[llm]` não está instalado
-
-**Risco principal:** comportamento real do provider pode divergir do ambiente de teste mockado.
+**Resultado resumido:**
+- F1 (smoke test): `search`, `lint`, `qa`, `heal`, `import-book --compile` OK com OpenCode Go
+- F2 (política sensibilidade): `docs/SENSITIVE_CONTENT_POLICY.md` criado
+- F3 (book2md): A3 rejeitada em ADR-0001; núcleo em `kb/book_import_core.py`
+- F4 (merge PRs #14 e #15): mergeados conforme confirmação do usuário
+- F5 (pytest-cov): 80% cobertura baseline; HTML em `htmlcov/`
+- F6 (EPUB): "Building Applications with AI Agents" importado → 12 artigos em `wiki/ai/`
 
 ---
 
-### F2: Política operacional de sensibilidade
+## Frentes abertas para próxima sessão
 
-**Status:** Em aberto
+### F7: Corrigir 8 testes falhando em `test_web_ingest.py`
 
-**Objetivo:** Consolidar regras de uso para `--allow-sensitive` e `--no-commit`.
+**Status:** Aberto
 
-**O que falta:**
-- [ ] Documentar o que pode ou não ser enviado ao provider externo
-- [ ] Definir quando `--allow-sensitive` é aceitável
-- [ ] Definir quando `--no-commit` pode ser usado sem comprometer rastreabilidade
-- [ ] Avaliar políticas por diretório (`raw/private/`) como evolução futura
+**Problema:** `AttributeError: None does not have the attribute 'get'` — mock setup com `patch.object` retornando `None` quando o target é um objeto sem atributo
 
-**Risco principal:** uso inconsistente das novas flags por falta de política operacional fechada.
+**Impacto:** 8 testes falham; módulo `web_ingest.py` com 27% de cobertura
+
+**Próximo passo:** corrigir fixture de mock em `tests/unit/test_web_ingest.py`
+
+**Por que agora:** pre-existente, mas degrada confiança na suíte; resolver antes de adicionar nova feature
 
 ---
 
-### F3: Empacotamento definitivo da relação `book2md` → `kb`
+### F8: Merge PR#19 (feat/wikilink-traversal)
 
-**Status:** Em aberto
+**Status:** Aguardando merge pelo usuário
 
-**Objetivo:** Reduzir o acoplamento por path usado hoje no laboratório.
+**Branch:** `feat/wikilink-traversal`
 
-**Opções:**
-1. Tornar `kb` dependência explícita de `book2md`
-2. Extrair pacote compartilhado mínimo
-3. Manter compat layer atual enquanto o laboratório seguir no mesmo mono-workspace
-
-**Recomendação atual:** adiar até o próximo ciclo, porque a solução corrente está funcional e coberta por testes.
+---
 
 ## Decisões abertas
 
 ### Q1: O fluxo de livro importado deve sempre passar por `compile`?
 
-**Trade-off:**
-- Sim: maximiza consistência com a wiki assistida por LLM
-- Não: preserva capítulos markdown como saída final legível sem custo de provider
+**Estado:** mantido como `--compile` opcional; padrão operacional recomendado = com `--compile` para livros técnicos.
 
-**Estado:** parcialmente resolvido com `--compile` opcional; ainda falta decidir o padrão operacional recomendado.
+### Q2: `--no-commit` por comando ou política configurável?
 
-### Q2: `--no-commit` deve permanecer apenas por comando ou ganhar política configurável?
+**Estado:** mantido por comando nesta fase.
 
-**Trade-off:**
-- Por comando: mais explícito e seguro
-- Configurável: mais prático para certos ambientes, mas mais arriscado
+### Q3: Quando promover `book2md` a distribuição formal?
 
-**Estado:** mantido por comando nesta fase; sem estado global persistente.
-
-### Q3: Quando promover o pacote/laboratório para distribuição formal?
-
-**Limiar sugerido:** quando o fluxo de livro estiver estabilizado e for necessário consumir `book2md` fora do workspace atual.
+**Estado:** encerrado; sem demanda. Critério de reabertura: necessidade real de instalar fora do workspace.

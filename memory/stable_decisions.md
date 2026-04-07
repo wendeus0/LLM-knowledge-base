@@ -86,6 +86,14 @@ type: project
 
 ---
 
+### D12: defesa dupla para qualidade de output do LLM em `compile`
+
+**Why:** O LLM pode envolver output em code fences mesmo com instrução explícita. Depender só do prompt é frágil.
+
+**How to apply:** Toda geração de conteúdo via `compile` aplica `_strip_outer_fence()` após a resposta do LLM, além de instruções explícitas no SYSTEM prompt. Belt-and-suspenders é o padrão para outputs de formato estrito.
+
+---
+
 ### D11: controles sensíveis e de commit são explícitos por comando
 
 **Why:** Segurança e rastreabilidade devem permanecer seguras por padrão, com escape hatch apenas consciente e local à execução.

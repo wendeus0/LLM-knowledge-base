@@ -4,65 +4,50 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
-## Sessão — 2026-04-04
+## Sessão — 2026-04-07 (Sprint close)
 
 **O que foi feito:**
-- triage completo do estado do projeto (session-open + technical-triage)
-- identificado: branch `feat/readme-arch-docs` (já mergeado) carrega implementação não commitada de `pal-foundation-phase-1` + `sensitive-execution-controls` (17 arquivos tracked + novos módulos)
-- criado `wiki/.obsidian/` com configuração completa do vault Obsidian + Shell Commands plugin pré-configurado (hotkeys Ctrl+Shift+C/Q/H/L/S)
-- `PENDING_LOG.md`: Obsidian integration marcada como concluída
-- sprint-close executado
+- Smoke test completo com OpenCode Go real: `search`, `lint`, `qa`, `heal`, `import-book --compile` OK
+- EPUB "Building Applications with AI Agents" importado → 12 artigos em `wiki/ai/`
+- `docs/SENSITIVE_CONTENT_POLICY.md` criado — critérios para `--allow-sensitive` e `--no-commit`
+- pytest-cov instalado; 80% cobertura baseline; HTML em `htmlcov/`
+- ADR-0001 atualizado — A3 (extração de pacote) rejeitada formalmente
+- Root cause de code fence wrapping identificado e corrigido:
+  - SYSTEM prompt em `compile.py` atualizado com instrução "SEM code fences"
+  - `_strip_outer_fence()` adicionado como defesa defensiva em `compile_file()`
+  - 25 artigos em `wiki/ai/` e `wiki/summaries/ai/` corrigidos manualmente
+- PR#19 aberto (branch `feat/wikilink-traversal`) com todas as entregas do sprint
 
 **O que falta:**
-- instalar Shell Commands plugin manualmente no Obsidian (único passo do usuário)
-- resolver trabalho não commitado: criar branch correto + workflow de entrega
-- smoke test real com OpenCode Go
-- política operacional de sensibilidade
+- Merge PR#19 (feat/wikilink-traversal → main)
+- Corrigir 8 testes falhando em `test_web_ingest.py` (mock setup pré-existente)
+- Instalar Shell Commands plugin no Obsidian (passo manual do usuário)
+- Refinar guardrail para falso positivo de nomes de variável em código técnico
 
-**Próximo passo recomendado:**
-1. `git checkout -b feat/pal-foundation-phase-1` a partir do estado atual
-2. `quality-gate` → `report-writer` → `branch-sync-guard` → `git-flow-manager`
-3. Abrir `wiki/` no Obsidian → instalar Shell Commands plugin
+**Métricas do sprint:**
+- Testes: 113 passando, 8 falhando (pré-existentes, test_web_ingest.py)
+- Cobertura: 80% total
+- Wiki: 14 artigos em wiki/ai/, 11 summaries
+- ADRs: 0001–0009
 
 **Prompt de retomada:**
-> Retome do sprint fechado em 2026-04-04 no projeto `kb`. Prioridade: resolver trabalho não commitado em `feat/readme-arch-docs` (já mergeado). Implementação de `pal-foundation-phase-1` e `sensitive-execution-controls` está floating sem commit. Criar branch correto, passar pelo workflow (quality-gate → git-flow-manager) e então validar o fluxo real com OpenCode Go.
+> Retome o projeto `kb` após o sprint de 2026-04-07. As entregas deste sprint: smoke test real OK, EPUB importado (12 artigos wiki/ai/), política de sensibilidade criada, pytest-cov 80%, fix de code fence em compile.py, PR#19 aberto. Próximas ações: (1) mergear PR#19; (2) corrigir 8 testes falhando em test_web_ingest.py (mock AttributeError); (3) instalar Shell Commands no Obsidian (passo manual).
+
+---
+
+## Sessão — 2026-04-06
+
+**O que foi feito:**
+- revisão da violation P2 do PR#15 (`feat/rich-book-import-metadata`)
+- fix aplicado em `kb/book_import_core.py:173`: `_resolve_href` agora recebe `unquote(src)` para alinhar paths resolvidos com keys do `image_map` (built from decoded manifest hrefs)
+- PR#15 description atualizada via `gh pr edit 15`
+- sprint-close executado: logs, memória e handoff atualizados
 
 ---
 
 ## Sprint close — 2026-04-03
 
 **O que foi feito neste ciclo:**
-- analisado o repositório `agno-agi/pal` e traduzidos os padrões relevantes para o `kb`
-- criado roadmap de fundação em `docs/architecture/PAL_FOUNDATIONS_ROADMAP.md`
-- criada SPEC `features/pal-foundation-phase-1/SPEC.md`
-- adicionados routing por fonte nativa, stores `knowledge`/`learnings`, manifesto e summaries compilados
-- adicionados jobs canônicos (`kb jobs list/run`)
-- adicionados guardrails de conteúdo sensível em runtime
-- criada SPEC `features/sensitive-execution-controls/SPEC.md`
-- implementadas flags `--allow-sensitive` e `--no-commit`
-- README, AGENTS, SECURITY, PENDING e memória do projeto atualizados
-- fallback seguro em `book_import_core` para ambientes mínimos sem `defusedxml`
-- ADRs novos criados: `0006` e `0007`
+- fundação inspirada em Pal: routing por fonte, stores, manifesto, summaries, jobs, guardrails, flags `--allow-sensitive`/`--no-commit`
+- ADRs `0006` e `0007` criados
 - baseline validada com **85 testes passando**
-
-**Artefatos principais deste sprint:**
-- `docs/architecture/PAL_FOUNDATIONS_ROADMAP.md`
-- `docs/architecture/TEST_COVERAGE_REPORT.md`
-- `features/pal-foundation-phase-1/`
-- `features/sensitive-execution-controls/`
-- `docs/adr/0006-pal-inspired-routing-memory-and-guardrails-foundation.md`
-- `docs/adr/0007-explicit-sensitive-and-no-commit-controls.md`
-
-**O que falta:**
-- smoke test real com a chave/endpoint OpenCode Go
-- política operacional final para conteúdo sensível e uso das flags explícitas
-- decisão sobre distribuição formal entre `book2md` e `kb`
-- tooling formal de cobertura percentual
-
-**Próximo passo recomendado:**
-1. revisar o diff atual e fechar o fluxo git com `/git-flow-manager`
-2. na próxima sessão, rodar smoke real com provider
-3. consolidar política operacional de sensibilidade
-
-**Prompt de retomada:**
-> Retome o projeto `kb` após o sprint de fundação inspirada em Pal. Primeiro revise/feche o fluxo git da branch atual; depois rode o smoke test real com OpenCode Go (`pip install -e .[llm]`, `kb import-book <arquivo> --compile`, `kb qa`, `kb heal`, `kb lint`) e finalize a política operacional para `--allow-sensitive` e `--no-commit`.
