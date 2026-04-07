@@ -44,4 +44,6 @@ Sem uma decisão formal, havia risco de:
 - **Rejeitada** porque a importação de livros funciona sem LLM e não deve exigir dependência desnecessária.
 
 ### A3. Extrair imediatamente um terceiro pacote compartilhado
-- **Adiada**. É uma opção válida quando houver necessidade real de distribuição externa independente.
+- **Rejeitada**. Fluxo de livro estabilizado (PR#14 + PR#15 mergeados). Distribuição externa de `book2md` não tem demanda concreta. O núcleo em `kb/book_import_core.py` cobre todos os casos de uso; `book2md` pode continuar consumindo esse núcleo diretamente sem empacotamento formal.
+
+**Critério de reabertura:** necessidade real de instalar `book2md` fora do workspace atual como pacote independente.
