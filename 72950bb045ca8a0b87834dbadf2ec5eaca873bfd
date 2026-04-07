@@ -1,0 +1,53 @@
+wiki/summaries/ai/introdução-aos-agentes-autônomos.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/skills-in-ai-agents.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/introduction-to-ai-agents.md
+  9df3b30bf540d055 10
+raw/books/building-applications-with-ai-agents-fifth-early-release-michael-albada-z-library-sk-1lib-sk-z-lib-sk/06-chapter-2-overview-of-designing-agent-systems.md
+  9df3b30bf540d055 111,113
+wiki/summaries/ai/design-de-sistemas-baseados-em-agentes-de-ia.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/orchestration-in-ai-agents.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/knowledge-and-memory-in-ai-agents.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/user-experience-design-for-agentic-systems.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/learning-in-agentic-systems.md
+  9df3b30bf540d055 10
+wiki/ai/introdução-aos-agentes-autônomos.md
+  9df3b30bf540d055 6
+wiki/summaries/ai/building-applications-with-ai-agents---estrutura-do-conteúdo.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/designing-agent-systems.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/building-applications-with-ai-agents---índice.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/skills-em-agentes-de-ia.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/multi-agent-systems---from-one-agent-to-many.md
+  9df3b30bf540d055 10
+wiki/summaries/ai/building-applications-with-ai-agents.md
+  9df3b30bf540d055 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "72950bb045ca8a0b87834dbadf2ec5eaca873bfd",
+  "prompts": {
+    "9df3b30bf540d055": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19c6ab0d-2c81-4751-8467-325eed24fd74",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 48,
+      "accepted_lines": 17,
+      "overriden_lines": 0
+    }
+  }
+}
