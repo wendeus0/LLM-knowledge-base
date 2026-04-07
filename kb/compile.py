@@ -14,8 +14,8 @@ SYSTEM = """Você é um compilador de knowledge base. Dado um documento bruto, v
 3. Gera um artigo wiki em markdown com frontmatter YAML, seções claras e wikilinks [[conceito]]
 4. O artigo deve ser auto-contido mas referenciar outros conceitos relacionados com [[wikilinks]]
 
-Formato de saída — apenas o markdown, sem explicações:
-```
+Formato de saída — apenas o markdown bruto, sem explicações e SEM code fences envolvendo o output:
+
 ---
 title: <título>
 topic: <topic>
@@ -30,8 +30,16 @@ source: <nome do arquivo original>
 ## Conceitos Relacionados
 - [[conceito1]]
 - [[conceito2]]
-```
 """
+
+
+def _strip_outer_fence(text: str) -> str:
+    lines = text.strip().splitlines()
+    if lines and lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines).strip() + "\n"
 
 
 TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
@@ -100,6 +108,7 @@ def compile_file(raw_path: Path, allow_sensitive: bool = False, no_commit: bool 
             {"role": "user", "content": prompt},
         ]
     )
+    response = _strip_outer_fence(response)
 
     # Extrai frontmatter para determinar topic e title
     topic = "general"

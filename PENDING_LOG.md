@@ -4,13 +4,13 @@ Pendências e decisões abertas.
 
 | Prioridade | Item | Status | Data |
 |------------|------|--------|------|
-| P1 | Validar fluxo end-to-end com OpenCode Go real (`import-book --compile`, `qa`, `heal`, `lint`) | Pendente | 2026-04-03 |
-| P1 | Fechar política operacional para conteúdo sensível enviado ao provider externo | Pendente | 2026-04-03 |
-| P1 | Definir convenção operacional de uso de `--no-commit` e `--allow-sensitive` | Pendente | 2026-04-03 |
+| P1 | Validar fluxo end-to-end com OpenCode Go real (`import-book --compile`, `qa`, `heal`, `lint`) | ✅ Concluído — todos os comandos validados; 12 caps compilados de EPUB real | 2026-04-07 |
+| P1 | Fechar política operacional para conteúdo sensível enviado ao provider externo | ✅ Concluído — `docs/SENSITIVE_CONTENT_POLICY.md` criado | 2026-04-07 |
+| P1 | Definir convenção operacional de uso de `--no-commit` e `--allow-sensitive` | ✅ Concluído — documentado em `docs/SENSITIVE_CONTENT_POLICY.md` | 2026-04-07 |
 | P1 | Merge PR#14 (wikilink-traversal) — aguardando aprovação | Pendente | 2026-04-06 |
 | P1 | Merge PR#15 (rich-book-import-metadata) — aguardando aprovação | Pendente | 2026-04-06 |
-| P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | Pendente | 2026-04-03 |
-| P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | Pendente | 2026-04-03 |
+| P2 | Adicionar toolchain formal de cobertura (`pytest-cov`/`coverage.py`) | ✅ Concluído — `pytest-cov` em `[dev]`; 80% cobertura; HTML em `htmlcov/` | 2026-04-07 |
+| P2 | Formalizar dependência/distribuição entre `book2md` e `kb` (pacote compartilhado vs dependência explícita) | ✅ Concluído — A3 rejeitada formalmente em ADR-0001; núcleo permanece em `kb/book_import_core.py` | 2026-04-07 |
 | P2 | Integração Obsidian | ✅ Concluído | 2026-04-04 |
 | P2 | Embeddings + RAG híbrido | Pendente (futuro) | 2026-04-03 |
 

