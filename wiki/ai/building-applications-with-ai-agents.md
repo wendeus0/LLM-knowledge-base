@@ -2,51 +2,84 @@
 ---
 title: Building Applications with AI Agents
 topic: ai
-tags: [ai-agents, multi-agent-systems, agent-architecture, llm-applications, autonomous-systems]
-source: 02-building-applications-with-ai-agents.md
+tags: [ai-agents, agentic-systems, llm-applications, software-architecture, oreilly-book]
+source: 03-building-applications-with-ai-agents.md
 ---
 
 # Building Applications with AI Agents
 
-**Building Applications with AI Agents** é uma obra de Michael Albada focada no [[design]] e [[implementação]] de [[Multi-Agent Systems|sistemas multi-agente]] (MAS). O livro aborda as metodologias e padrões arquiteturais necessários para construir aplicações distribuídas compostas por [[AI Agents|agentes de IA]] autônomos que colaboram para resolver problemas complexos.
+**Building Applications with AI Agents** is a technical guide by Michael Albada (O'Reilly Media, 2026) that explores architectural patterns, implementation strategies, and best practices for developing software systems powered by autonomous [[AI Agent|AI agents]]. The book addresses the entire lifecycle of agentic application development, from initial design to deployment and monitoring.
 
-## Sistemas Multi-Agente
+## Core Architecture Patterns
 
-Os [[Multi-Agent Systems|sistemas multi-agente]] representam uma abordagem computacional onde múltiplos [[AI Agents|agentes de IA]] autônomos interagem em um ambiente compartilhado. Diferente de sistemas monolíticos de IA, estas arquiteturas distribuem responsabilidades entre agentes especializados, permitindo:
+### ReAct Pattern
+The [[ReAct Pattern]] (Reasoning + Acting) forms the foundation of modern agent applications. This iterative loop allows agents to:
+1. **Reason** about the current state and next steps
+2. **Act** by calling tools or functions
+3. **Observe** the results
+4. **Repeat** until the objective is complete
 
-- **Escalabilidade**: Decomposição de tarefas complexas em subtarefas gerenciáveis
-- **Resiliência**: Falha graciosa quando agentes individuais ficam indisponíveis
-- **Especialização**: Agentes otimizados para funções específicas ([[LLM]]s para linguagem, modelos especializados para domínios técnicos)
-- [[Agent Orchestration|Coordinação dinâmica]] entre componentes
+### Plan-and-Execute
+An alternative to iterative reasoning, the [[Plan-and-Execute]] approach involves creating a comprehensive task plan upfront before execution. This pattern suits complex, multi-step workflows where global optimization is preferable to local decision-making.
 
-## Design de Arquiteturas de Agentes
+### Tool-Augmented Systems
+Modern agents rely heavily on [[Tool Use|tool use]] (also called [[Function Calling|function calling]]), enabling LLMs to interact with external APIs, databases, calculators, and specialized services. Effective [[Tool Design|tool design]]—including clear schemas and documentation—is critical for reliable agent behavior.
 
-O livro enfatiza padrões de [[Agent Architecture|arquitetura de agentes]] incluindo:
+## Key System Components
 
-- **Agentes Reativos vs. Deliberativos**: Escolha entre comportamento baseado em regras e planejamento complexo
-- [[Agent Communication|Protocolos de comunicação]] (ACL - Agent Communication Languages)
-- **Memória compartilhada vs. estado local**: Gerenciamento de [[contexto]] em ambientes distribuídos
-- [[Tool Use|Uso de ferramentas]] e [[Function Calling]] para interação com sistemas externos
+### Memory Management
+Agent applications require sophisticated [[Memory Architecture|memory systems]]:
+- **Short-term memory**: Conversation history and current context window management
+- **Working memory**: Intermediate calculations and scratchpad space
+- **Long-term memory**: [[Vector Database|vector database]] integration for persistent knowledge retrieval using [[Embeddings|embeddings]]
 
-## Implementação Prática
+### Observation and Perception
+How agents receive information from the environment, including [[Multimodal AI|multimodal inputs]] (text, images, audio) and structured data parsing.
 
-A implementação de aplicações com [[AI Agents]] envolve desafios específicos:
+### Action Space Definition
+The boundary of what an agent *can* do, constrained by available tools, safety [[Guardrails|guardrails]], and permission scopes.
 
-- [[Agent Orchestration|Orquestração]] de workflows multi-agente
-- Gerenciamento de [[estado]] e [[context window]] em interações coordenadas
-- Resolução de conflitos e negociação entre agentes ([[Game Theory|teoria dos jogos]] aplicada)
-- Integração com [[LLM Applications|aplicações de LLM]] existentes
-- Monitoramento e [[observability]] de sistemas autônomos distribuídos
+## Multi-Agent Orchestration
+
+Complex applications often employ [[Multi-Agent Systems]] where specialized agents collaborate:
+- **Hierarchical**: Supervisor agents delegating to worker agents
+- **Peer-to-Peer**: Agents negotiating and sharing resources
+- **Competitive**: Agents checking each other's work for accuracy
+
+Frameworks like [[LangGraph]] and [[CrewAI]] provide abstractions for managing these interactions.
+
+## Development Frameworks and Tools
+
+The book likely covers practical implementation using:
+- [[LangChain]] / [[LangGraph]] for agent orchestration and state management
+- [[LlamaIndex]] for data ingestion and retrieval-augmented generation (RAG)
+- [[AutoGPT]] and [[BabyAGI]] for autonomous agent research
+- [[Semantic Kernel]] for enterprise integration
+
+## Production Considerations
+
+### Evaluation and Testing
+[[Agent Evaluation|Evaluating agents]] requires moving beyond unit tests to trajectory analysis, outcome-based metrics, and [[LLM-as-a-Judge|LLM-as-a-judge]] methodologies.
+
+### Safety and Alignment
+Implementing [[Agent Safety|safety mechanisms]], human-in-the-loop checkpoints, and [[Constitutional AI|constitutional constraints]] to prevent goal misgeneralization and unauthorized actions.
+
+### Observability
+Tracing agent reasoning steps, tool calls, and state changes through [[LLM Observability|LLM observability]] platforms to debug complex failure modes.
 
 ## Conceitos Relacionados
-- [[AI Agents]]
-- [[Multi-Agent Systems]]
-- [[Agent Architecture]]
-- [[Agent Orchestration]]
-- [[Autonomous Systems]]
-- [[LLM Applications]]
-- [[Agent Communication]]
+- [[AI Agent]]
+- [[Large Language Model]]
+- [[ReAct Pattern]]
+- [[Tool Use]]
 - [[Function Calling]]
-- [[Prompt Engineering]]
-- [[Chain-of-Thought]]
+- [[LangChain]]
+- [[LangGraph]]
+- [[Retrieval-Augmented Generation]]
+- [[Agentic Workflow]]
+- [[Multi-Agent Systems]]
+- [[Vector Database]]
+- [[Embeddings]]
+- [[Guardrails]]
+- [[LLM Observability]]
 ```
