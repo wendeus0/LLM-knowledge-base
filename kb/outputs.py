@@ -13,8 +13,12 @@ def _build_content(answer: str, question: str, today: str, topic: str) -> str:
         for i, line in enumerate(lines[1:], 1):
             if line.strip() == "---":
                 front_lines = lines[1:i]
-                body_lines = lines[i + 1:]
-                front_keys = {l.split(":", 1)[0].strip() for l in front_lines if ":" in l}
+                body_lines = lines[i + 1 :]
+                front_keys = {
+                    front_line.split(":", 1)[0].strip()
+                    for front_line in front_lines
+                    if ":" in front_line
+                }
                 extra = []
                 if "source_question" not in front_keys:
                     extra.append(f"source_question: {question}")

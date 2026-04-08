@@ -12,14 +12,12 @@ Rastreabilidade SPEC:
   REQ-9: slug usa <title> da página; fallback: 8 primeiros chars da URL
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 # RED: falha até ingest-url ser implementada
 from kb.web_ingest import ingest_url, WebIngestError  # noqa: E402
-
 
 HTML_SAMPLE = """
 <html>
@@ -53,8 +51,10 @@ class TestIngestUrl:
         mock_response.text = HTML_SAMPLE
         mock_response.raise_for_status = MagicMock()
 
-        with patch("kb.web_ingest.requests.get", return_value=mock_response), \
-             patch("kb.web_ingest.commit"):
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
             out = ingest_url("https://example.com/xss")
 
         assert out.suffix == ".md"
@@ -73,8 +73,10 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         url = "https://example.com/xss"
-        with patch("kb.web_ingest.requests.get", return_value=mock_response), \
-             patch("kb.web_ingest.commit"):
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
             out = ingest_url(url)
 
         content = out.read_text(encoding="utf-8")
@@ -95,14 +97,18 @@ class TestIngestUrl:
         mock_response.text = HTML_SAMPLE
         mock_response.raise_for_status = MagicMock()
 
-        with patch("kb.web_ingest.requests.get", return_value=mock_response), \
-             patch("kb.web_ingest.commit"):
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
             out = ingest_url("https://example.com/xss")
 
         # title "XSS Attack Explained" → slug "xss-attack-explained"
         assert "xss" in out.stem.lower()
 
-    def test_should_use_url_fallback_when_page_has_no_title(self, tmp_path, monkeypatch):
+    def test_should_use_url_fallback_when_page_has_no_title(
+        self, tmp_path, monkeypatch
+    ):
         """REQ-9b: quando página não tem <title>, usa hash dos primeiros 8 chars da URL."""
         # RED: falha até ingest-url ser implementada
         raw_dir = tmp_path / "raw"
@@ -114,8 +120,10 @@ class TestIngestUrl:
         mock_response.text = HTML_NO_TITLE
         mock_response.raise_for_status = MagicMock()
 
-        with patch("kb.web_ingest.requests.get", return_value=mock_response), \
-             patch("kb.web_ingest.commit"):
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
             out = ingest_url("https://example.com/no-title")
 
         assert out.exists()
@@ -132,7 +140,9 @@ class TestIngestUrl:
         import requests as _requests
 
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = _requests.HTTPError("404 Not Found")
+        mock_response.raise_for_status.side_effect = _requests.HTTPError(
+            "404 Not Found"
+        )
 
         with patch("kb.web_ingest.requests.get", return_value=mock_response):
             with pytest.raises(WebIngestError, match="404"):
@@ -167,8 +177,10 @@ class TestIngestUrl:
         mock_response.text = HTML_SAMPLE
         mock_response.raise_for_status = MagicMock()
 
-        with patch("kb.web_ingest.requests.get", return_value=mock_response), \
-             patch("kb.web_ingest.commit") as mock_commit:
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit") as mock_commit,
+        ):
             ingest_url("https://example.com/xss", no_commit=True)
 
         assert not mock_commit.called
@@ -185,8 +197,10 @@ class TestIngestUrl:
         mock_response.text = HTML_SAMPLE
         mock_response.raise_for_status = MagicMock()
 
-        with patch("kb.web_ingest.requests.get", return_value=mock_response), \
-             patch("kb.web_ingest.commit") as mock_commit:
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit") as mock_commit,
+        ):
             ingest_url("https://example.com/xss")
 
         assert mock_commit.called
