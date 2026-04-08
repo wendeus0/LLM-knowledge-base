@@ -1,5 +1,6 @@
 """Compila documentos de raw/ para a wiki em markdown."""
 
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 import re
@@ -312,6 +313,7 @@ def compile_many(
     allow_sensitive: bool = False,
     no_commit: bool = True,
     update_index_enabled: bool = True,
+    on_progress: Callable[[], None] | None = None,
 ) -> CompileBatchResult:
     ordered_targets = [_resolve_raw_path(target) for target in targets]
     if not ordered_targets:
@@ -345,6 +347,8 @@ def compile_many(
                     failures_by_index[index] = CompileFailure(
                         raw_path=raw_path, error=exc
                     )
+                if on_progress is not None:
+                    on_progress()
 
     outputs = []
     for index in range(len(ordered_targets)):
