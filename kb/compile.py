@@ -331,6 +331,8 @@ def compile_many(
                 )
             except Exception as exc:
                 failures_by_index[index] = CompileFailure(raw_path=raw_path, error=exc)
+            if on_progress is not None:
+                on_progress()
     else:
         with ThreadPoolExecutor(max_workers=effective_workers) as executor:
             futures = {
