@@ -12,16 +12,16 @@ Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas 
 
 ## Features
 
-| Feature         | Descrição                                              | Comando                    |
-| --------------- | ------------------------------------------------------ | -------------------------- |
-| **Ingest**      | Adicionar documentos brutos à fila de processamento    | `kb ingest <arquivo>`      |
-| **Book Import** | Importar EPUB/PDF textual em capítulos markdown        | `kb import-book <arquivo>` |
-| **Compile**     | Transformar documentos raw em wiki estruturada via LLM + summary compilado | `kb compile`               |
-| **Q&A**         | Perguntar com routing por fonte nativa (`wiki`, `raw`, `knowledge`, `learnings`) | `kb qa "pergunta"`         |
-| **Search**      | Busca simples por palavras-chave na wiki               | `kb search "termo"`        |
-| **Heal**        | Correção estocástica: links, stubs, timestamps         | `kb heal --n 10`           |
-| **Lint**        | Health checks e auditoria da wiki                      | `kb lint`                  |
-| **Jobs**        | Catálogo de rotinas agendáveis de manutenção           | `kb jobs list` / `kb jobs run compile` |
+| Feature         | Descrição                                                                               | Comando                                |
+| --------------- | --------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Ingest**      | Adicionar documentos brutos à fila de processamento                                     | `kb ingest <arquivo>`                  |
+| **Book Import** | Importar um ou mais EPUB/PDFs em capítulos markdown                                     | `kb import-book <arquivo...>`          |
+| **Compile**     | Transformar `raw/` em wiki estruturada via LLM, por arquivo, diretório ou nome de livro | `kb compile [alvo]`                    |
+| **Q&A**         | Perguntar com routing por fonte nativa (`wiki`, `raw`, `knowledge`, `learnings`)        | `kb qa "pergunta"`                     |
+| **Search**      | Busca simples por palavras-chave na wiki                                                | `kb search "termo"`                    |
+| **Heal**        | Correção estocástica: links, stubs, timestamps                                          | `kb heal --n 10`                       |
+| **Lint**        | Health checks e auditoria da wiki                                                       | `kb lint`                              |
+| **Jobs**        | Catálogo de rotinas agendáveis de manutenção                                            | `kb jobs list` / `kb jobs run compile` |
 
 ## Instalação
 
@@ -35,6 +35,12 @@ pip install -e .
 
 # Instalar com suporte a LLM (compile, qa, heal, lint)
 pip install -e ".[llm]"
+
+# Suporte a PDFs textuais com PyMuPDF
+pip install -e ".[pdf]"
+
+# OCR opcional para PDFs escaneados
+pip install -e ".[ocr]"
 
 # Instalar dependências de desenvolvimento
 pip install -e ".[dev]"
@@ -75,6 +81,9 @@ kb ingest examples/raw/getting-started.md
 # 3. Compilar para wiki (usa LLM para estruturar)
 kb compile
 
+# 3b. Compilar apenas um livro já importado
+kb compile "Mathematics for Machine Learning"
+
 # 4. Fazer perguntas
 kb qa "O que este corpus descreve?"
 
@@ -87,6 +96,12 @@ kb compile --allow-sensitive
 # 7. Health check
 kb heal --n 5 --no-commit
 kb lint
+
+# 8. Importar vários livros e compilar em seguida
+kb import-book ~/Downloads/book-1.epub ~/Downloads/book-2.pdf --compile
+
+# 9. Ativar OCR para PDFs de scan
+kb import-book ~/Downloads/scan.pdf --ocr --chunk-pages 10
 ```
 
 ## Obsidian
@@ -143,7 +158,8 @@ kb/
 ## Convenções
 
 - **Corpus do usuário:** `raw/`, `wiki/`, `outputs/` e `kb_state/` devem ficar preferencialmente fora do repositório principal via `KB_DATA_DIR`
-- **Frontmatter YAML:** Cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `reviewed_at`
+- **Frontmatter YAML:** Cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `translated_by`, `reviewed_at`
+- **Tradução:** artigos compilados são gerados em português e terminam com um disclaimer apontando para a fonte original
 - **Git:** writes no corpus local podem gerar commit automático, exceto quando `--no-commit` é usado explicitamente
 - **LLM:** O LLM nunca escreve a wiki manualmente — tudo é via CLI
 - **Sensibilidade:** operações com provider externo aceitam `--allow-sensitive` para bypass explícito da confirmação interativa

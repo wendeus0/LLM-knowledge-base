@@ -172,6 +172,12 @@ kb qa "Explique multi-agent systems" -f --allow-sensitive --no-commit
 
 ```bash
 kb compile --allow-sensitive --no-commit
+
+# Compilar apenas um livro já importado pelo nome
+kb compile "Mathematics for Machine Learning" --allow-sensitive --no-commit
+
+# Importar e compilar um PDF escaneado com OCR
+kb import-book ~/Downloads/mathematics-for-ml.pdf --ocr --compile --allow-sensitive --no-commit
 ```
 
 ### Heal

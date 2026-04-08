@@ -52,15 +52,19 @@ kb ingest /home/user/docs/artigo.txt
 
 #### `kb import-book`
 
-Importa um livro EPUB ou PDF textual para `raw/books/` em arquivos Markdown por capítulo.
+Importa um ou mais livros EPUB ou PDF textual para `raw/books/` em arquivos Markdown por capítulo.
 
 **Parâmetros:**
 
-| Parâmetro   | Tipo | Obrigatório | Padrão             | Descrição                   |
-| ----------- | ---- | ----------- | ------------------ | --------------------------- |
-| `path`      | Path | Sim         | -                  | Arquivo EPUB ou PDF textual |
-| `--output`  | Path | Não         | `raw/books/<slug>` | Diretório de saída          |
-| `--compile` | Flag | Não         | `False`            | Compilar após importação    |
+| Parâmetro         | Tipo         | Obrigatório | Padrão             | Descrição                                           |
+| ----------------- | ------------ | ----------- | ------------------ | --------------------------------------------------- |
+| `paths`           | `List[Path]` | Sim         | -                  | Um ou mais arquivos EPUB/PDF textual                |
+| `--output`        | Path         | Não         | `raw/books/<slug>` | Diretório de saída; ignorado com múltiplos arquivos |
+| `--compile`       | Flag         | Não         | `False`            | Compilar os capítulos importados após a importação  |
+| `--ocr`           | Flag         | Não         | `False`            | Ativa OCR para PDFs de scan ou com texto corrompido |
+| `--force`         | Flag         | Não         | `False`            | Reimporta livros já existentes em `raw/books/`      |
+| `--workers`, `-j` | int          | Não         | `4`                | Número de livros processados em paralelo            |
+| `--chunk-pages`   | int          | Não         | `15`               | Páginas por chunk no fallback de PDFs sem TOC       |
 
 **Exemplo:**
 
@@ -70,6 +74,12 @@ kb import-book livros/python.epub
 
 # Importar com diretório específico
 kb import-book livros/ia.pdf --output raw/books/inteligencia-artificial
+
+# Importar múltiplos livros em paralelo
+kb import-book livros/python.epub livros/ia.pdf -j 2
+
+# Importar PDF escaneado com OCR
+kb import-book livros/scan.pdf --ocr --chunk-pages 10
 
 # Importar e compilar automaticamente
 kb import-book livros/clean-code.epub --compile
@@ -88,10 +98,12 @@ Compila documentos de `raw/` para a wiki em Markdown usando LLM.
 
 **Parâmetros:**
 
-| Parâmetro        | Tipo | Obrigatório | Padrão         | Descrição                           |
-| ---------------- | ---- | ----------- | -------------- | ----------------------------------- |
-| `file`           | Path | Não         | `None` (todos) | Arquivo específico em `raw/`        |
-| `--update-index` | Flag | Não         | `True`         | Atualizar `_index.md` após compilar |
+| Parâmetro           | Tipo | Obrigatório | Padrão         | Descrição                                                |
+| ------------------- | ---- | ----------- | -------------- | -------------------------------------------------------- |
+| `target`            | str  | Não         | `None` (todos) | Arquivo, diretório ou nome de livro já importado         |
+| `--update-index`    | Flag | Não         | `True`         | Atualizar `_index.md` após compilar                      |
+| `--allow-sensitive` | Flag | Não         | `False`        | Permite envio explícito de conteúdo sensível ao provider |
+| `--no-commit`       | Flag | Não         | `False`        | Escreve localmente sem criar commit git                  |
 
 **Exemplo:**
 
@@ -101,6 +113,12 @@ kb compile
 
 # Compilar arquivo específico
 kb compile raw/notas-reuniao.md
+
+# Compilar um diretório importado em raw/books/
+kb compile raw/books/mathematics-for-machine-learning
+
+# Compilar por nome parcial do livro
+kb compile "Mathematics for Machine Learning"
 
 # Compilar sem atualizar índice
 kb compile --no-update-index
@@ -119,9 +137,9 @@ Responde uma pergunta consultando a wiki.
 
 **Parâmetros:**
 
-| Parâmetro           | Tipo | Obrigatório | Padrão  | Descrição                      |
-| ------------------- | ---- | ----------- | ------- | ------------------------------ |
-| `question`          | str  | Sim         | -       | Pergunta para a knowledge base |
+| Parâmetro           | Tipo | Obrigatório | Padrão  | Descrição                                  |
+| ------------------- | ---- | ----------- | ------- | ------------------------------------------ |
+| `question`          | str  | Sim         | -       | Pergunta para a knowledge base             |
 | `--file-back`, `-f` | Flag | Não         | `False` | Arquivar resposta em `outputs/` por padrão |
 
 **Exemplo:**
@@ -236,18 +254,18 @@ from kb.config import RAW_DIR, WIKI_DIR, API_KEY, BASE_URL, MODEL, TOPICS
 
 **Constantes:**
 
-| Nome       | Tipo      | Descrição                          |
-| ---------- | --------- | ---------------------------------- |
-| `ROOT`        | Path      | Raiz do projeto                               |
+| Nome          | Tipo      | Descrição                                      |
+| ------------- | --------- | ---------------------------------------------- |
+| `ROOT`        | Path      | Raiz do projeto                                |
 | `DATA_DIR`    | Path      | Diretório do corpus do usuário (`KB_DATA_DIR`) |
-| `RAW_DIR`     | Path      | `raw/` - documentos fonte                     |
-| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                  |
-| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                 |
-| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings   |
-| `API_KEY`     | str       | KB_API_KEY do .env                            |
-| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)            |
-| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                |
-| `TOPICS`      | list[str] | Tópicos suportados atualmente                 |
+| `RAW_DIR`     | Path      | `raw/` - documentos fonte                      |
+| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                   |
+| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                  |
+| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings    |
+| `API_KEY`     | str       | KB_API_KEY do .env                             |
+| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)             |
+| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                 |
+| `TOPICS`      | list[str] | Tópicos suportados atualmente                  |
 
 ---
 
@@ -684,15 +702,15 @@ print(resposta)
 
 ### Opcionais
 
-| Variável      | Padrão                          | Descrição            |
-| ------------- | ------------------------------- | -------------------- |
-| `KB_BASE_URL`    | `https://opencode.ai/zen/go/v1` | Endpoint da API LLM                         |
-| `KB_MODEL`       | `kimi-k2.5`                     | Modelo padrão a usar                        |
-| `KB_DATA_DIR`    | `ROOT`                          | Diretório base do corpus do usuário         |
-| `KB_RAW_DIR`     | `KB_DATA_DIR/raw`               | Override opcional para documentos fonte     |
-| `KB_WIKI_DIR`    | `KB_DATA_DIR/wiki`              | Override opcional para wiki compilada       |
-| `KB_OUTPUTS_DIR` | `KB_DATA_DIR/outputs`           | Override opcional para file-backs de QA     |
-| `KB_STATE_DIR`   | `KB_DATA_DIR/kb_state`          | Override opcional para manifesto/estado     |
+| Variável         | Padrão                          | Descrição                               |
+| ---------------- | ------------------------------- | --------------------------------------- |
+| `KB_BASE_URL`    | `https://opencode.ai/zen/go/v1` | Endpoint da API LLM                     |
+| `KB_MODEL`       | `kimi-k2.5`                     | Modelo padrão a usar                    |
+| `KB_DATA_DIR`    | `ROOT`                          | Diretório base do corpus do usuário     |
+| `KB_RAW_DIR`     | `KB_DATA_DIR/raw`               | Override opcional para documentos fonte |
+| `KB_WIKI_DIR`    | `KB_DATA_DIR/wiki`              | Override opcional para wiki compilada   |
+| `KB_OUTPUTS_DIR` | `KB_DATA_DIR/outputs`           | Override opcional para file-backs de QA |
+| `KB_STATE_DIR`   | `KB_DATA_DIR/kb_state`          | Override opcional para manifesto/estado |
 
 ### Arquivo `.env`
 
