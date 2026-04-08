@@ -1,0 +1,33 @@
+tests/unit/test_book_import.py
+  c6191b984208089f 576-633
+tests/unit/test_cli.py
+  c6191b984208089f 1-68,70-209,211-270,272-315,317-650
+kb/book_import_core.py
+  c6191b984208089f 913-915
+features/test-coverage-90/SPEC.md
+  c6191b984208089f 4
+tests/unit/test_client.py
+  c6191b984208089f 2,4-56,72-81,107,109,117-184
+tests/unit/test_git.py
+  c6191b984208089f 1-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "dc6b75b03f1127e478feca89405cd0c3c3a9e22a",
+  "prompts": {
+    "c6191b984208089f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_29324ce69ffep0O3nF4mGl8dtQ",
+        "model": "opencode-go/kimi-k2.5"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1065,
+      "total_deletions": 65,
+      "accepted_lines": 994,
+      "overriden_lines": 4
+    }
+  }
+}
