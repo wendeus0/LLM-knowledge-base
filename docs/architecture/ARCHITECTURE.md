@@ -397,8 +397,8 @@ pip install -e .[llm]     # + OpenAI SDK
 
 # Comandos
 kb ingest <arquivo>                       # Copia para raw/
-kb import-book <livro> [--compile]        # EPUB/PDF → raw/books/
-kb compile [arquivo]                      # raw/ → wiki/
+kb import-book <livro...> [--compile]     # EPUB/PDF → raw/books/
+kb compile [alvo]                         # raw/ → wiki/ (arquivo, diretório ou nome de livro)
 kb qa "pergunta" [-f]                     # Pergunta + file-back opcional
 kb search "termo"                         # Busca keyword
 kb heal -n 10                             # Heal estocástico
