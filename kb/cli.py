@@ -15,7 +15,23 @@ from rich.progress import (
 )
 from rich.table import Table
 
-app = typer.Typer(help="LLM-powered personal knowledge base")
+app = typer.Typer(
+    help="LLM-powered personal knowledge base",
+    epilog=(
+        "Opções por comando:\n\n"
+        "ingest <src...>  [--no-commit] [--compile]\n\n"
+        "import-book <arquivo...>  [--output PATH] [--compile] [--force] [--ocr]"
+        "  [--workers/-j INT] [--chunk-pages INT] [--allow-sensitive] [--no-commit]\n\n"
+        "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
+        "  [--no-update-index]\n\n"
+        "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
+        "  [--allow-sensitive] [--no-commit]\n\n"
+        "search <query>\n\n"
+        "lint  [--allow-sensitive]\n\n"
+        "heal  [--n/-n INT] [--allow-sensitive] [--no-commit]\n\n"
+        "jobs list  |  jobs run <nome>"
+    ),
+)
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
 app.add_typer(jobs_app, name="jobs")
 console = Console()
@@ -262,8 +278,8 @@ def compile(
         help="Arquivo, diretório ou nome de livro (ex: 'Build a Large Language Model'); padrão: todos os arquivos em raw/",
     ),
     update_index: bool = typer.Option(True, help="Atualizar _index.md após compilar"),
-    workers: int = typer.Option(
-        4, "--workers", "-j", min=1, help="Número de arquivos compilados em paralelo"
+    workers: int | None = typer.Option(
+        None, "--workers", "-j", min=1, help="Número de arquivos compilados em paralelo (padrão: automático)"
     ),
     allow_sensitive: bool = typer.Option(
         False,
@@ -309,21 +325,28 @@ def compile(
         console.print("[yellow]Nenhum arquivo em raw/[/]")
         raise typer.Exit()
 
+    if workers is not None:
+        effective_workers = workers
+    elif len(targets) <= 3:
+        effective_workers = 1
+    else:
+        effective_workers = min(len(targets), 4)
+
     compiled_outputs = []
     failures = []
 
-    if workers == 1:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold]Compilando...[/] {task.completed}/{task.total}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TextColumn("{task.fields[current]}", justify="right"),
-            console=console,
-            transient=False,
-        ) as progress:
-            task = progress.add_task("", total=len(targets), current="")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold]Compilando...[/] {task.completed}/{task.total}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TextColumn("{task.fields[current]}", justify="right"),
+        console=console,
+        transient=False,
+    ) as progress:
+        task = progress.add_task("", total=len(targets), current="")
 
+        if effective_workers == 1:
             for t in targets:
                 progress.update(task, current=f"[dim]{t.name}[/]")
                 try:
@@ -343,25 +366,21 @@ def compile(
                     progress.start()
                 compiled_outputs.append(out)
                 progress.advance(task)
+        else:
+            result: CompileBatchResult = compile_many(
+                targets,
+                workers=effective_workers,
+                allow_sensitive=allow_sensitive,
+                no_commit=no_commit,
+                update_index_enabled=False,
+                on_progress=lambda: progress.advance(task),
+            )
+            compiled_outputs = result.outputs
+            failures = result.failures
 
-        if update_index and compiled_outputs:
-            do_update_index(no_commit=no_commit)
-            console.print("[dim]Índice atualizado.[/]")
-    else:
-        console.print(
-            f"[dim]Compilando {len(targets)} arquivo(s) com {workers} worker(s)...[/]"
-        )
-        result: CompileBatchResult = compile_many(
-            targets,
-            workers=workers,
-            allow_sensitive=allow_sensitive,
-            no_commit=no_commit,
-            update_index_enabled=update_index,
-        )
-        compiled_outputs = result.outputs
-        failures = result.failures
-        if update_index and compiled_outputs:
-            console.print("[dim]Índice atualizado.[/]")
+    if update_index and compiled_outputs:
+        do_update_index(no_commit=no_commit)
+        console.print("[dim]Índice atualizado.[/]")
 
     for out in compiled_outputs:
         rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
