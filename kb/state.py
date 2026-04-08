@@ -8,7 +8,6 @@ from pathlib import Path
 
 from kb.config import KNOWLEDGE_PATH, LEARNINGS_PATH, MANIFEST_PATH, STATE_DIR
 
-
 TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
 
 
@@ -25,7 +24,21 @@ def _read_json(path: Path, default):
 
 def _write_json(path: Path, payload) -> None:
     ensure_state_dirs()
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+
+def normalize_source_path(source_path: Path | str) -> str:
+    from kb.config import RAW_DIR
+
+    path = Path(source_path)
+    if not path.is_absolute():
+        return str(path)
+    try:
+        return str(path.resolve().relative_to(RAW_DIR.resolve()))
+    except ValueError:
+        return str(path)
 
 
 def load_manifest() -> list[dict]:
@@ -49,10 +62,12 @@ def record_ingest(source_path: Path, kind: str = "raw") -> dict:
     return entry
 
 
-def mark_compiled(source_path: Path, article_path: Path, summary_path: Path, topic: str, title: str) -> dict:
+def mark_compiled(
+    source_path: Path, article_path: Path, summary_path: Path, topic: str, title: str
+) -> dict:
     entries = load_manifest()
     compiled_entry = {
-        "source": str(source_path),
+        "source": normalize_source_path(source_path),
         "kind": "raw",
         "status": "compiled",
         "article": str(article_path),
@@ -60,10 +75,20 @@ def mark_compiled(source_path: Path, article_path: Path, summary_path: Path, top
         "topic": topic,
         "title": title,
     }
-    entries = [item for item in entries if item.get("source") != compiled_entry["source"]]
+    entries = [
+        item for item in entries if item.get("source") != compiled_entry["source"]
+    ]
     entries.append(compiled_entry)
     save_manifest(entries)
     return compiled_entry
+
+
+def find_compiled_entry(source_path: Path | str) -> dict | None:
+    normalized_source = normalize_source_path(source_path)
+    for entry in load_manifest():
+        if normalize_source_path(entry.get("source", "")) == normalized_source:
+            return entry
+    return None
 
 
 def load_knowledge() -> list[dict]:
@@ -76,7 +101,12 @@ def save_knowledge(entries: list[dict]) -> None:
 
 def upsert_knowledge(entry: dict) -> dict:
     entries = load_knowledge()
-    key = entry.get("article") or entry.get("source") or entry.get("title")
+    source = entry.get("source")
+    key = (
+        normalize_source_path(source)
+        if source is not None
+        else entry.get("article") or entry.get("title")
+    )
 
     if key is None:
         entries.append(entry)
@@ -85,7 +115,12 @@ def upsert_knowledge(entry: dict) -> dict:
 
     filtered = []
     for item in entries:
-        item_key = item.get("article") or item.get("source") or item.get("title")
+        item_source = item.get("source")
+        item_key = (
+            normalize_source_path(item_source)
+            if item_source is not None
+            else item.get("article") or item.get("title")
+        )
         if item_key != key:
             filtered.append(item)
     filtered.append(entry)
@@ -131,7 +166,9 @@ def extract_summary(markdown: str, max_chars: int = 320) -> str:
     return summary[: max_chars - 1].rstrip() + "…"
 
 
-def search_structured_entries(entries: list[dict], query: str, top_k: int = 5) -> list[dict]:
+def search_structured_entries(
+    entries: list[dict], query: str, top_k: int = 5
+) -> list[dict]:
     terms = set(query.lower().split())
     scored: list[tuple[int, dict]] = []
 
@@ -149,5 +186,9 @@ def discover_raw_sources(root: Path) -> list[Path]:
     if not root.exists():
         return []
     return sorted(
-        path for path in root.rglob("*") if path.is_file() and path.suffix.lower() in TEXT_SOURCE_EXTENSIONS and path.name != "metadata.json"
+        path
+        for path in root.rglob("*")
+        if path.is_file()
+        and path.suffix.lower() in TEXT_SOURCE_EXTENSIONS
+        and path.name != "metadata.json"
     )

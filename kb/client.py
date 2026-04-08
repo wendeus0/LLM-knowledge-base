@@ -2,6 +2,11 @@ from kb.config import API_KEY, BASE_URL, MODEL
 
 OPENCODE_GO_BASE_URL_FRAGMENT = "opencode.ai/zen/go"
 OPENCODE_GO_ALLOWED_MODELS = {"kimi-k2.5", "minimax-2.7", "glm-5"}
+RESOURCE_LIMIT_ERROR_MARKERS = (
+    "error 1102",
+    "worker exceeded resource limits",
+    "worker_exceeded_resources",
+)
 
 
 def validate_provider_model_compatibility(base_url: str, model: str) -> None:
@@ -23,6 +28,24 @@ def validate_provider_model_compatibility(base_url: str, model: str) -> None:
             "Modelo não reconhecido para OpenCode Go. "
             f"Modelos validados neste projeto: {allowed}. Valor recebido: `{model}`"
         )
+
+
+def is_provider_resource_limit_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    if any(marker in text for marker in RESOURCE_LIMIT_ERROR_MARKERS):
+        return True
+
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        values = [
+            str(body.get("error_code", "")).lower(),
+            str(body.get("error_name", "")).lower(),
+            str(body.get("detail", "")).lower(),
+            str(body.get("title", "")).lower(),
+        ]
+        return any(any(marker in value for marker in RESOURCE_LIMIT_ERROR_MARKERS) for value in values)
+
+    return False
 
 
 def get_client():

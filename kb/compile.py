@@ -1,35 +1,46 @@
 """Compila documentos de raw/ para a wiki em markdown."""
 
+import re
+import unicodedata
 from pathlib import Path
-from kb.client import chat
+from kb.client import chat, is_provider_resource_limit_error
 from kb.config import RAW_DIR, WIKI_DIR, TOPICS
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
-from kb.state import extract_summary, mark_compiled, upsert_knowledge
+from kb.state import (
+    extract_summary,
+    find_compiled_entry,
+    mark_compiled,
+    upsert_knowledge,
+)
 
-
-SYSTEM = """Você é um compilador de knowledge base. Dado um documento bruto, você:
+SYSTEM = """Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
 1. Identifica o tópico principal (cybersecurity, ai, python, typescript, ou geral)
-2. Extrai conceitos-chave
-3. Gera um artigo wiki em markdown com frontmatter YAML, seções claras e wikilinks [[conceito]]
+2. Extrai e organiza os conceitos-chave
+3. Gera um artigo wiki em PORTUGUÊS em markdown com frontmatter YAML, seções claras e wikilinks [[conceito]]
 4. O artigo deve ser auto-contido mas referenciar outros conceitos relacionados com [[wikilinks]]
+5. Termos técnicos consolidados (ex: LLM, transformer, gradient descent) podem permanecer em inglês
 
 Formato de saída — apenas o markdown bruto, sem explicações e SEM code fences envolvendo o output:
 
 ---
-title: <título>
+title: <título em português>
 topic: <topic>
 tags: [tag1, tag2]
 source: <nome do arquivo original>
+translated_by: ai
 ---
 
 # <título>
 
-<conteúdo>
+<conteúdo em português>
 
 ## Conceitos Relacionados
 - [[conceito1]]
 - [[conceito2]]
+
+---
+> **Nota:** Este artigo foi gerado e traduzido automaticamente por IA a partir de material em inglês. Pode conter imprecisões. Consulte a fonte original para informações definitivas.
 """
 
 
@@ -44,14 +55,62 @@ def _strip_outer_fence(text: str) -> str:
 
 TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
 IGNORED_RAW_FILENAMES = {"metadata.json"}
+NOISE_PATTERNS = [
+    r"^draft \([^\)]*\) of .*feedback: .*",
+    r"^this material is published by cambridge university press.*$",
+    r"^c⃝.*published by cambridge university press.*$",
+    r"^c\(\) ?\d{4}.*$",
+]
 
 
 def _read_raw(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+def _prepare_prompt_content(text: str, aggressive: bool = False) -> str:
+    normalized = (
+        unicodedata.normalize("NFKC", text).replace("\r\n", "\n").replace("\r", "\n")
+    )
+    cleaned_lines = []
+
+    for line in normalized.splitlines():
+        stripped = line.strip()
+        lowered = stripped.lower()
+
+        if any(re.match(pattern, lowered) for pattern in NOISE_PATTERNS):
+            continue
+
+        if aggressive and stripped.startswith("<") and stripped.endswith(">"):
+            continue
+
+        cleaned_lines.append(line.rstrip())
+
+    cleaned = "\n".join(cleaned_lines)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+def _build_prompt(raw_path: Path, content: str, aggressive: bool = False) -> str:
+    label = "Documento pré-processado" if aggressive else "Documento"
+    return f"{label}: {raw_path.name}\n\n{_prepare_prompt_content(content, aggressive=aggressive)}"
+
+
 def _is_compile_target(path: Path) -> bool:
-    return path.is_file() and path.suffix.lower() in TEXT_SOURCE_EXTENSIONS and path.name not in IGNORED_RAW_FILENAMES
+    return (
+        path.is_file()
+        and path.suffix.lower() in TEXT_SOURCE_EXTENSIONS
+        and path.name not in IGNORED_RAW_FILENAMES
+    )
+
+
+def find_book_dirs(name: str) -> list[Path]:
+    from kb.book_import_core import slugify
+
+    books_dir = RAW_DIR / "books"
+    if not books_dir.exists():
+        return []
+    needle = slugify(name)
+    return [d for d in books_dir.iterdir() if d.is_dir() and needle in d.name]
 
 
 def discover_compile_targets(base: Path | None = None) -> list[Path]:
@@ -64,10 +123,23 @@ def discover_compile_targets(base: Path | None = None) -> list[Path]:
 
 
 def _wiki_path(topic: str, title: str) -> Path:
-    slug = title.lower().replace(" ", "-").replace("/", "-")[:60]
+    from kb.book_import_core import slugify
+
+    slug = slugify(title)[:60]
     folder = WIKI_DIR / topic if topic in TOPICS else WIKI_DIR
     folder.mkdir(parents=True, exist_ok=True)
     return folder / f"{slug}.md"
+
+
+def _resolve_output_path(raw_path: Path, topic: str, title: str) -> Path:
+    existing_entry = find_compiled_entry(raw_path)
+    if existing_entry:
+        existing_article = existing_entry.get("article")
+        if existing_article:
+            article_path = Path(existing_article)
+            article_path.parent.mkdir(parents=True, exist_ok=True)
+            return article_path
+    return _wiki_path(topic, title)
 
 
 def _summary_path(article_path: Path) -> Path:
@@ -78,7 +150,9 @@ def _summary_path(article_path: Path) -> Path:
     return target_dir / article_path.name
 
 
-def _write_summary(article_path: Path, topic: str, title: str, source_name: str, compiled_markdown: str) -> Path:
+def _write_summary(
+    article_path: Path, topic: str, title: str, source_name: str, compiled_markdown: str
+) -> Path:
     summary_path = _summary_path(article_path)
     summary_text = extract_summary(compiled_markdown)
     summary_path.write_text(
@@ -97,17 +171,40 @@ def _write_summary(article_path: Path, topic: str, title: str, source_name: str,
     return summary_path
 
 
-def compile_file(raw_path: Path, allow_sensitive: bool = False, no_commit: bool = False) -> Path:
+def compile_file(
+    raw_path: Path, allow_sensitive: bool = False, no_commit: bool = False
+) -> Path:
+    raw_path = raw_path if raw_path.is_absolute() else RAW_DIR / raw_path
     content = _read_raw(raw_path)
-    assert_safe_for_provider(content, source=f"compile:{raw_path.name}", allow_sensitive=allow_sensitive)
-    prompt = f"Documento: {raw_path.name}\n\n{content}"
-
-    response = chat(
-        messages=[
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": prompt},
-        ]
+    assert_safe_for_provider(
+        content, source=f"compile:{raw_path.name}", allow_sensitive=allow_sensitive
     )
+
+    try:
+        response = chat(
+            messages=[
+                {"role": "system", "content": SYSTEM},
+                {"role": "user", "content": _build_prompt(raw_path, content)},
+            ]
+        )
+    except Exception as exc:
+        if not is_provider_resource_limit_error(exc):
+            raise
+
+        response = chat(
+            messages=[
+                {
+                    "role": "system",
+                    "content": SYSTEM
+                    + "\n\nO texto de entrada foi pré-processado para remover ruído de paginação/OCR. "
+                    "Se houver lacunas, preserve apenas o conteúdo semanticamente útil.",
+                },
+                {
+                    "role": "user",
+                    "content": _build_prompt(raw_path, content, aggressive=True),
+                },
+            ]
+        )
     response = _strip_outer_fence(response)
 
     # Extrai frontmatter para determinar topic e title
@@ -121,7 +218,7 @@ def compile_file(raw_path: Path, allow_sensitive: bool = False, no_commit: bool 
         if line.startswith("title:"):
             title = line.split(":", 1)[1].strip()
 
-    out = _wiki_path(topic, title)
+    out = _resolve_output_path(raw_path, topic, title)
     out.write_text(response, encoding="utf-8")
     summary_path = _write_summary(out, topic, title, raw_path.name, response)
 

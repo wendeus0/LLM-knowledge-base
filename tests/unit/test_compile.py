@@ -1,5 +1,10 @@
 from unittest.mock import patch
-from kb.compile import compile_file, discover_compile_targets, update_index
+from kb.compile import (
+    compile_file,
+    discover_compile_targets,
+    update_index,
+    _prepare_prompt_content,
+)
 
 
 class TestCompileFile:
@@ -29,9 +34,7 @@ source: test.md
 
 Conteúdo compilado.
 """
-        with patch("kb.compile.chat") as mock_chat, patch(
-            "kb.compile.commit"
-        ):
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
             mock_chat.return_value = mock_response
 
             result = compile_file(raw_file)
@@ -60,9 +63,7 @@ topic: cybersecurity
 
 # Test
 """
-        with patch("kb.compile.chat") as mock_chat, patch(
-            "kb.compile.commit"
-        ):
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
             mock_chat.return_value = mock_response
 
             result = compile_file(raw_file)
@@ -92,9 +93,7 @@ reviewed_at: 2026-04-03
 
 # XSS Article
 """
-        with patch("kb.compile.chat") as mock_chat, patch(
-            "kb.compile.commit"
-        ):
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
             mock_chat.return_value = mock_response
 
             result = compile_file(raw_file)
@@ -105,9 +104,7 @@ reviewed_at: 2026-04-03
             assert "title:" in content
             assert "topic:" in content
 
-    def test_should_commit_to_git_after_compilation(
-        self, tmp_raw_wiki, sample_xss_md
-    ):
+    def test_should_commit_to_git_after_compilation(self, tmp_raw_wiki, sample_xss_md):
         """
         Dado um arquivo compilado com sucesso,
         Quando commit deve ser feito,
@@ -125,9 +122,10 @@ source: article.md
 
 # Test
 """
-        with patch("kb.compile.chat") as mock_chat, patch(
-            "kb.compile.commit"
-        ) as mock_commit:
+        with (
+            patch("kb.compile.chat") as mock_chat,
+            patch("kb.compile.commit") as mock_commit,
+        ):
             mock_chat.return_value = mock_response
 
             compile_file(raw_file)
@@ -155,11 +153,105 @@ Resumo compilado para security.
 
         assert (wiki / "summaries" / "cybersecurity" / "same-slug.md").exists()
 
+    def test_should_reuse_existing_article_path_for_recompiled_source(
+        self, tmp_raw_wiki
+    ):
+        raw, wiki = tmp_raw_wiki
+        book_dir = raw / "books" / "mml"
+        book_dir.mkdir(parents=True)
+        raw_file = book_dir / "01-introduction.md"
+        raw_file.write_text("# Chapter\nContent")
+
+        first_response = """---
+title: Introdução ao Machine Learning
+topic: ai
+source: 01-introduction.md
+translated_by: ai
+---
+
+# Introdução ao Machine Learning
+
+Conteúdo.
+"""
+        second_response = """---
+title: Introdução ao Aprendizado de Máquina
+topic: ai
+source: 01-introduction.md
+translated_by: ai
+---
+
+# Introdução ao Aprendizado de Máquina
+
+Conteúdo atualizado.
+"""
+
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
+            mock_chat.side_effect = [first_response, second_response]
+
+            first_result = compile_file(raw_file.relative_to(raw), no_commit=True)
+            second_result = compile_file(raw_file, no_commit=True)
+
+        assert first_result == second_result
+        assert second_result.name == "introducao-ao-machine-learning.md"
+        assert "Aprendizado de Máquina" in second_result.read_text()
+
+
+class TestCompilePromptPreparation:
+    def test_should_remove_common_book_noise_from_prompt_content(self):
+        content = """12\nDraft (2021-07-29) of “Mathematics for Machine Learning”. Feedback: https://mml-book.com.\nUseful line\nThis material is published by Cambridge University Press as Mathematics for Machine Learning by authors.\n\nAnother useful line\n"""
+
+        prepared = _prepare_prompt_content(content, aggressive=True)
+
+        assert "Draft (2021-07-29)" not in prepared
+        assert "Cambridge University Press" not in prepared
+        assert "Useful line" in prepared
+        assert "Another useful line" in prepared
+
+    def test_should_retry_with_preprocessed_prompt_after_provider_resource_limit_error(
+        self, tmp_raw_wiki
+    ):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "matrix-exercises.md"
+        raw_file.write_text(
+            "# Exercises\n123\nDraft (2021-07-29) of book. Feedback: https://mml-book.com.\nUseful exercise"
+        )
+
+        class FakeResourceLimitError(Exception):
+            def __init__(self):
+                super().__init__("Error 1102: Worker exceeded resource limits")
+                self.body = {
+                    "error_code": 1102,
+                    "error_name": "worker_exceeded_resources",
+                }
+
+        mock_response = """---
+title: Exercícios de Matrizes
+topic: ai
+---
+
+# Exercícios de Matrizes
+
+Conteúdo compilado.
+"""
+
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
+            mock_chat.side_effect = [FakeResourceLimitError(), mock_response]
+
+            result = compile_file(raw_file, no_commit=True)
+
+            assert result.exists()
+            assert mock_chat.call_count == 2
+            retry_prompt = mock_chat.call_args_list[1].kwargs["messages"][1]["content"]
+            assert "Documento pré-processado" in retry_prompt
+            assert "Draft (2021-07-29)" not in retry_prompt
+
 
 class TestDiscoverCompileTargets:
     """Testes unitários para discovery de arquivos em raw/."""
 
-    def test_should_discover_markdown_files_recursively_and_skip_metadata(self, tmp_raw_wiki):
+    def test_should_discover_markdown_files_recursively_and_skip_metadata(
+        self, tmp_raw_wiki
+    ):
         raw, wiki = tmp_raw_wiki
         (raw / "top.md").write_text("# Top")
         nested = raw / "books" / "livro"
