@@ -14,11 +14,11 @@ type: project
 
 ---
 
-### D2: Git automático em todo write da wiki
+### D2: Commits de mutação são controlados por comando, não implícitos em todo write
 
-**Why:** Mantém rastreabilidade e recuperação simples quando a wiki é mutada por automação.
+**Why:** Rastreabilidade continua importante, mas `compile` já migrou para commit explícito por execução para reduzir side effects e tornar lote paralelo mais seguro.
 
-**How to apply:** `compile`, `heal` e `qa --file-back` continuam chamando `git.commit()`. Falha de git não deve derrubar o fluxo principal.
+**How to apply:** novos fluxos não devem assumir commit automático por default. Preserve flags explícitas por comando (`--commit` ou `--no-commit`) e mantenha falha de git fora do caminho crítico quando possível.
 
 ---
 
@@ -99,3 +99,11 @@ type: project
 **Why:** O LLM pode envolver output em code fences mesmo com instrução explícita. Depender só do prompt é frágil.
 
 **How to apply:** Toda geração de conteúdo via `compile` aplica `_strip_outer_fence()` após a resposta do LLM, além de instruções explícitas no SYSTEM prompt. Belt-and-suspenders é o padrão para outputs de formato estrito.
+
+---
+
+### D13: Paralelismo seguro em `compile` usa geração paralela e persistência serial
+
+**Why:** estado global (`manifest.json`, `knowledge.json`, `_index.md`) não é seguro para escrita concorrente, mas a geração LLM é paralelizável e traz ganho real de throughput.
+
+**How to apply:** `compile_many()` e fluxos derivados como `import-book --compile` devem paralelizar apenas a fase de geração. Toda persistência, atualização de estado e `_index.md` permanece serial e determinística.

@@ -6,10 +6,23 @@ type: project
 
 ## Estrutura
 
-Atualizada: 2026-04-07
+Atualizada: 2026-04-08
 
 ```text
 kb/
+├── kb/               ← pacote Python
+│   ├── client.py, compile.py, qa.py, search.py, heal.py, lint.py
+│   ├── router.py, state.py, guardrails.py, jobs.py, git.py, cli.py, config.py
+│   ├── book_import.py, book_import_core.py, graph.py, outputs.py, web_ingest.py
+├── tests/            ← suíte unit + integration (139 passando)
+├── docs/adr/         ← ADRs 0001–0007, 0010
+├── docs/SENSITIVE_CONTENT_POLICY.md ← política operacional de sensibilidade
+├── features/         ← SPECs de implementação
+├── pyproject.toml    ← pytest-cov configurado; 78% cobertura real da suíte completa
+├── memory/           ← memória distribuída
+└── .git/             ← branch de trabalho: feat/compile-parallel-hardening
+
+<KB_DATA_DIR>/
 ├── raw/              ← documentos fonte
 │   └── books/        ← livros importados em capítulos markdown + metadata.json
 ├── wiki/             ← markdown compilado
@@ -17,36 +30,23 @@ kb/
 │   ├── summaries/
 │   ├── ai/           ← 14 artigos (12 de EPUB "Building Applications with AI Agents")
 │   ├── cybersecurity/, python/, typescript/
-├── kb/               ← pacote Python
-│   ├── client.py, compile.py, qa.py, search.py, heal.py, lint.py
-│   ├── router.py, state.py, guardrails.py, jobs.py, git.py, cli.py, config.py
-│   ├── book_import.py, book_import_core.py, graph.py, outputs.py, web_ingest.py
-├── kb_state/         ← manifesto + stores knowledge/learnings
-├── tests/            ← suíte unit + integration (113 passando, 8 falhando pré-existentes)
-├── docs/adr/         ← ADRs 0001–0007, 0010
-├── docs/SENSITIVE_CONTENT_POLICY.md ← política operacional de sensibilidade
-├── features/         ← SPECs de implementação
-├── pyproject.toml    ← pytest-cov configurado; 80% cobertura baseline
-├── memory/           ← memória distribuída
-└── .git/             ← branch: main (PR#19 aguardando merge)
+└── kb_state/         ← manifesto + stores knowledge/learnings
 ```
 
 ## Status
 
-**Sprint encerrado:** 2026-04-07 — Validação operacional + qualidade + importação de livro real
+**Estado atual:** 2026-04-08 — hardening de compile paralelo seguro + cobertura real da suíte
 
-- ✅ EPUB "Building Applications with AI Agents" importado → 12 artigos em `wiki/ai/`
-- ✅ Smoke test completo: `search`, `lint`, `qa`, `heal`, `import-book --compile` OK com OpenCode Go
-- ✅ Política de conteúdo sensível — `docs/SENSITIVE_CONTENT_POLICY.md`
-- ✅ pytest-cov instalado; 80% cobertura; HTML em `htmlcov/`
-- ✅ ADR-0001 atualizado — A3 (extração de pacote compartilhado) rejeitada formalmente
-- ✅ Root cause de code fence wrapping corrigido — SYSTEM prompt + `_strip_outer_fence()`
-- ✅ 25 artigos wiki corrompidos por fences restaurados manualmente
-- ⏳ PR#19 (feat/wikilink-traversal) aguardando merge
+- ✅ `compile` refatorado para geração pura + persistência serial (`compile_to_artifact`, `persist_artifact`, `compile_many`)
+- ✅ `kb compile` suporta `--workers` e `--commit`, com default sem commit
+- ✅ `import-book --compile` alinhado ao modelo de batch seguro em paralelo
+- ✅ suíte completa verde: `139` testes passando
+- ✅ cobertura real da suíte completa: `78%` (`kb/compile.py` 91%, `kb/cli.py` 60%)
+- ✅ `features/compile-parallel-safe/SPEC.md` e `REPORT.md` atualizados para handoff e PR
 
 ## Branches
 
-`feat/wikilink-traversal` — branch atual; PR#19 aberto aguardando merge para main.
+`feat/compile-parallel-hardening` — branch atual preparada para commits e PR desta frente.
 
 ## Marcos (Milestones)
 
@@ -56,8 +56,9 @@ kb/
 4. **Controles explícitos de execução sensível** ✅
 5. **Expansão funcional** ✅ (outputs store, URL ingest, wikilink traversal, rich book metadata)
 6. **Validação operacional real** ✅ (smoke test real, política sensibilidade, cobertura)
-7. **Qualidade de output LLM** ✅ (fix code fence, 25 artigos restaurados, ADR-0010 pendente)
+7. **Qualidade de output LLM** ✅ (fix code fence, 25 artigos restaurados, ADR-0010)
+8. **Compile paralelo seguro** ✅ (geração paralela, persistência serial, batch seguro para `import-book --compile`)
 
 ## Próximo marco sugerido
 
-8. **Estabilidade de testes** — corrigir 8 falhas pré-existentes em `test_web_ingest.py`
+9. **Cobertura orientada a risco** — subir `kb/cli.py`, `kb/book_import_core.py`, `kb/git.py` e validar concorrência com provider real
