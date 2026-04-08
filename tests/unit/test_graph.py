@@ -10,12 +10,13 @@ Rastreabilidade SPEC:
   REQ-7: traverse retorna apenas arquivos relevantes para a pergunta
 """
 
-from pathlib import Path
-
-import pytest
-
 # RED: falha até wikilink-traversal ser implementada
-from kb.graph import extract_wikilinks, load_frontmatter, resolve_wikilink, traverse  # noqa: E402
+from kb.graph import (
+    extract_wikilinks,
+    load_frontmatter,
+    resolve_wikilink,
+    traverse,
+)  # noqa: E402
 
 
 class TestExtractWikilinks:
@@ -150,7 +151,8 @@ class TestTraverse:
         )
         linked = wiki / "csrf.md"
         linked.write_text(
-            "---\ntitle: CSRF\ntags: [csrf, xss]\n---\n\n# CSRF\n\nConteúdo sobre csrf.\n" + ("y " * 500),
+            "---\ntitle: CSRF\ntags: [csrf, xss]\n---\n\n# CSRF\n\nConteúdo sobre csrf.\n"
+            + ("y " * 500),
             encoding="utf-8",
         )
 

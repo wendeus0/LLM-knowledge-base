@@ -1,7 +1,8 @@
 # kb — LLM-powered Knowledge Base Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-41%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-223%20passing-brightgreen.svg)]()
+[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)]()
 
 Engine de knowledge base mantida por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático.
@@ -166,6 +167,8 @@ kb/
 
 ## Testes
 
+Baseline validada em `2026-04-08`: `223` testes passando, `96%` de cobertura total e `kb/book_import_core.py` em `97%`.
+
 ```bash
 # Todos os testes
 pytest
@@ -180,7 +183,7 @@ pytest tests/unit/
 pytest tests/integration/
 
 # Lint
-ruff check kb
+ruff check kb tests
 ```
 
 ## Documentação

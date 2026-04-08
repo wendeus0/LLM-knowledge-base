@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import posixpath
 import re
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -111,7 +112,7 @@ class _MarkdownHTMLParser(HTMLParser):
             return
         text = re.sub(r"\s+", " ", data)
         if text.strip():
-            self.parts.append(text.strip())
+            self.parts.append(text)
 
 
 class _TitleExtractor(HTMLParser):
@@ -262,14 +263,21 @@ def _resolve_image_reference(
     if not src:
         return None
     normalized_src = _normalize_book_path(unquote(src))
-    candidates = [normalized_src, Path(normalized_src).name]
+    basename = Path(normalized_src).name
+    candidates = [normalized_src]
     if base_href:
         resolved = _normalize_book_path(_resolve_href(base_href, unquote(src)))
         candidates.insert(0, resolved)
-        candidates.insert(1, Path(resolved).name)
     for candidate in candidates:
         if candidate and candidate in image_map:
             return image_map[candidate]
+    basename_matches = []
+    for candidate, target in image_map.items():
+        if Path(candidate).name == basename:
+            basename_matches.append(target)
+    unique_matches = list(dict.fromkeys(basename_matches))
+    if len(unique_matches) == 1:
+        return unique_matches[0]
     return None
 
 
@@ -313,7 +321,7 @@ def _find_rootfile_path(archive: ZipFile, error_cls: type[Exception]) -> str:
     try:
         container_xml = archive.read("META-INF/container.xml")
     except KeyError as exc:
-        raise error_cls("EPUB inválido: container.xml ausente") from exc
+        raise error_cls("EPUB inválido: META-INF/container.xml ausente") from exc
     root = _safe_xml_fromstring(
         container_xml, error_cls, context="META-INF/container.xml"
     )
@@ -452,7 +460,12 @@ def _extract_title(html: str, fallback: str) -> str:
 
 
 def _normalize_book_path(path: str) -> str:
-    return Path(path.split("#", 1)[0].split("?", 1)[0]).as_posix().lstrip("./")
+    normalized = posixpath.normpath(path.split("#", 1)[0].split("?", 1)[0])
+    if normalized == ".":
+        return ""
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized.lstrip("/")
 
 
 def _toc_entry(title: str, href: str, *, children: list[dict] | None = None) -> dict:
@@ -896,6 +909,9 @@ def _extract_chapters_from_pdf(
 
     top_level: list[tuple[str, int]] = []
     overflow_candidates: list[tuple[str, int]] = []
+
+    # Handle toc=None from PDF libraries
+    toc = toc or []
 
     for level in (1, 2):
         candidates = [

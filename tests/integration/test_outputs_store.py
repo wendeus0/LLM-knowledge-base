@@ -7,13 +7,9 @@ Rastreabilidade SPEC:
   REQ-7: --no-commit suprime o commit
 """
 
-from pathlib import Path
-from unittest.mock import call, patch
-
-import pytest
+from unittest.mock import patch
 
 from kb.qa import answer_and_file
-
 
 MOCK_ANSWER = "Resposta gerada pelo LLM."
 MOCK_ARTICLE = """---
@@ -64,7 +60,9 @@ class TestAnswerAndFileOutputsStore:
 
         with patch("kb.qa.chat") as mock_chat, patch("kb.qa.commit"):
             mock_chat.side_effect = [MOCK_ANSWER, MOCK_ARTICLE]
-            _, out_path = answer_and_file("O que é XSS?", allow_sensitive=True, to_wiki=True)
+            _, out_path = answer_and_file(
+                "O que é XSS?", allow_sensitive=True, to_wiki=True
+            )
 
         assert out_path is not None
         assert str(wiki) in str(out_path), f"esperado wiki/, obtido: {out_path}"
@@ -103,4 +101,6 @@ class TestAnswerAndFileOutputsStore:
             mock_chat.side_effect = [MOCK_ANSWER, MOCK_ARTICLE]
             answer_and_file("O que é um LLM?", allow_sensitive=True, no_commit=True)
 
-        assert not mock_commit.called, "commit não deveria ser chamado quando no_commit=True"
+        assert (
+            not mock_commit.called
+        ), "commit não deveria ser chamado quando no_commit=True"

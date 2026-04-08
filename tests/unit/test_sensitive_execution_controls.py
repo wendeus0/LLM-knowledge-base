@@ -2,7 +2,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kb.compile import compile_file, update_index
-from kb.guardrails import SensitiveContentError
 from kb.heal import heal
 from kb.qa import answer, answer_and_file
 
@@ -22,7 +21,10 @@ topic: ai
 Conteúdo compilado.
 """
 
-    with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit") as mock_commit:
+    with (
+        patch("kb.compile.chat") as mock_chat,
+        patch("kb.compile.commit") as mock_commit,
+    ):
         mock_chat.return_value = mock_response
 
         result = compile_file(raw_file, no_commit=True)
@@ -60,7 +62,9 @@ def test_answer_and_file_should_skip_commit_when_no_commit_is_enabled(tmp_raw_wi
     (wiki / "ai" / "base.md").write_text("# Base\nConteúdo base.")
 
     with patch("kb.qa.chat") as mock_chat, patch("kb.qa.commit") as mock_commit:
-        mock_chat.side_effect = ["Resposta breve.", """---
+        mock_chat.side_effect = [
+            "Resposta breve.",
+            """---
 title: Filed Answer
 topic: ai
 ---
@@ -68,7 +72,8 @@ topic: ai
 # Filed Answer
 
 Resposta arquivada.
-"""]
+""",
+        ]
 
         response, saved = answer_and_file("base", allow_sensitive=True, no_commit=True)
 
@@ -90,7 +95,11 @@ title: Test
 Conteúdo substantivo para healing.
 """)
 
-    with patch("kb.heal.chat") as mock_chat, patch("kb.heal.commit") as mock_commit, patch("random.sample") as mock_sample:
+    with (
+        patch("kb.heal.chat") as mock_chat,
+        patch("kb.heal.commit") as mock_commit,
+        patch("random.sample") as mock_sample,
+    ):
         mock_chat.return_value = "Conteúdo ajustado."
         mock_sample.return_value = [article]
 

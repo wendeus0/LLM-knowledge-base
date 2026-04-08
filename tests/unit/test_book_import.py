@@ -75,6 +75,16 @@ def _create_sample_epub(path):
         )
 
 
+def _create_sample_container(rootfile_path):
+    return f"""<?xml version='1.0' encoding='utf-8'?>
+<container version='1.0' xmlns='urn:oasis:names:tc:opendocument:xmlns:container'>
+  <rootfiles>
+    <rootfile full-path='{rootfile_path}' media-type='application/oebps-package+xml'/>
+  </rootfiles>
+</container>
+"""
+
+
 def test_should_decode_url_encoded_image_paths_when_resolving_relative_assets():
     from kb.book_import_core import html_to_markdown
 
@@ -131,6 +141,171 @@ def test_should_raise_clear_error_when_epub_is_invalid(tmp_path):
         assert "epub" in str(exc).lower()
     else:
         raise AssertionError("Esperava ValueError para EPUB inválido")
+
+
+def test_should_ignore_empty_spine_entries_when_other_epub_content_is_extractable(
+    tmp_path,
+):
+    from kb.book_import import import_epub
+
+    source = tmp_path / "spine-partial.epub"
+    output_dir = tmp_path / "raw" / "books" / "spine-partial"
+
+    with ZipFile(source, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "META-INF/container.xml", _create_sample_container("OPS/content.opf")
+        )
+        archive.writestr(
+            "OPS/content.opf",
+            """<?xml version='1.0' encoding='utf-8'?>
+<package version='3.0' xmlns='http://www.idpf.org/2007/opf' xmlns:dc='http://purl.org/dc/elements/1.1/'>
+  <metadata><dc:title>Spine parcial</dc:title></metadata>
+  <manifest>
+    <item id='chap1' href='empty.xhtml' media-type='application/xhtml+xml'/>
+    <item id='chap2' href='useful.xhtml' media-type='application/xhtml+xml'/>
+  </manifest>
+  <spine>
+    <itemref idref='chap1'/>
+    <itemref idref='chap2'/>
+  </spine>
+</package>
+""",
+        )
+        archive.writestr(
+            "OPS/empty.xhtml",
+            "<html><body><script>boom()</script><style>.x{display:none}</style></body></html>",
+        )
+        archive.writestr(
+            "OPS/useful.xhtml",
+            "<html><body><h1>Capítulo útil</h1><p>Conteúdo aproveitável.</p></body></html>",
+        )
+
+    written_files, metadata_path = import_epub(source, output_dir)
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    assert len(written_files) == 1
+    assert "capitulo-util" in written_files[0].name
+    assert payload["chapter_count"] == 1
+    assert payload["chapter_source"] == "spine"
+
+
+def test_should_fallback_to_manifest_when_spine_does_not_reference_html_chapters(
+    tmp_path,
+):
+    from kb.book_import import import_epub
+
+    source = tmp_path / "manifest-fallback.epub"
+    output_dir = tmp_path / "raw" / "books" / "manifest-fallback"
+
+    with ZipFile(source, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "META-INF/container.xml", _create_sample_container("OPS/content.opf")
+        )
+        archive.writestr(
+            "OPS/content.opf",
+            """<?xml version='1.0' encoding='utf-8'?>
+<package version='3.0' xmlns='http://www.idpf.org/2007/opf' xmlns:dc='http://purl.org/dc/elements/1.1/'>
+  <metadata><dc:title>Manifest fallback</dc:title></metadata>
+  <manifest>
+    <item id='nav' href='nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>
+    <item id='chap1' href='chapter.xhtml' media-type='application/xhtml+xml'/>
+  </manifest>
+  <spine></spine>
+</package>
+""",
+        )
+        archive.writestr(
+            "OPS/nav.xhtml",
+            "<html><body><nav epub:type='toc'><ol><li><a href='chapter.xhtml'>Capítulo fallback</a></li></ol></nav></body></html>",
+        )
+        archive.writestr(
+            "OPS/chapter.xhtml",
+            "<html><body><h1>Capítulo fallback</h1><p>Texto útil.</p></body></html>",
+        )
+
+    written_files, metadata_path = import_epub(source, output_dir)
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    assert len(written_files) == 1
+    assert payload["chapter_source"] == "manifest_fallback"
+    assert payload["toc_source"] == "nav"
+
+
+def test_should_raise_stable_error_when_ocr_runs_but_extracts_no_content(
+    tmp_path, monkeypatch
+):
+    from kb.book_import import BookImportError, import_epub
+
+    source = tmp_path / "scan.pdf"
+    output_dir = tmp_path / "raw" / "books" / "scan"
+    source.write_bytes(b"%PDF-1.4")
+
+    class FakeDoc:
+        def get_toc(self):
+            return []
+
+        def close(self):
+            return None
+
+    monkeypatch.setitem(
+        sys.modules, "fitz", types.SimpleNamespace(open=lambda _: FakeDoc())
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "pdf2image",
+        types.SimpleNamespace(convert_from_path=lambda _: ["img-1"]),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "pytesseract",
+        types.SimpleNamespace(image_to_string=lambda image, lang: "  \n  "),
+    )
+
+    with pytest.raises(
+        BookImportError, match="Nenhum conteúdo extraível encontrado no PDF"
+    ):
+        import_epub(source, output_dir, use_ocr=True)
+
+
+def test_should_import_pdf_with_ocr_when_text_is_extracted(tmp_path, monkeypatch):
+    from kb.book_import import import_epub
+
+    source = tmp_path / "ocr.pdf"
+    output_dir = tmp_path / "raw" / "books" / "ocr"
+    source.write_bytes(b"%PDF-1.4")
+
+    class FakeDoc:
+        def get_toc(self):
+            return []
+
+        def close(self):
+            return None
+
+    monkeypatch.setitem(
+        sys.modules, "fitz", types.SimpleNamespace(open=lambda _: FakeDoc())
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "pdf2image",
+        types.SimpleNamespace(convert_from_path=lambda _: ["img-1"]),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "pytesseract",
+        types.SimpleNamespace(
+            image_to_string=lambda image, lang: "Capítulo OCR\nTexto reconhecido"
+        ),
+    )
+
+    written_files, metadata_path = import_epub(source, output_dir, use_ocr=True)
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    assert len(written_files) == 1
+    assert "Texto reconhecido" in written_files[0].read_text(encoding="utf-8")
+    assert payload["chapter_source"] == "page_chunks"
+    assert payload["source_format"] == "pdf"
 
 
 def test_should_reject_epub_with_unsafe_xml_entities(tmp_path):
@@ -398,3 +573,61 @@ def test_should_split_textual_pdf_into_multiple_chapters_when_heading_markers_ar
     assert "Segundo paragrafo." in written_files[1].read_text(encoding="utf-8")
     assert payload["chapter_count"] == 2
     assert payload["book_title"] == "livro-fragmentado"
+
+
+def test_should_fallback_to_empty_toc_when_toc_is_none(tmp_path, monkeypatch):
+    from kb.book_import import import_epub
+
+    source = tmp_path / "doc.pdf"
+    output_dir = tmp_path / "out"
+    source.write_bytes(b"%PDF-1.4")
+    _mock_fitz(monkeypatch, toc=None, pages=["Content"])
+
+    written_files, metadata_path = import_epub(source, output_dir)
+
+    assert len(written_files) == 1
+    assert written_files[0].name == "01-paginas-1-1.md"
+
+
+def test_should_handle_empty_pdf_pages(tmp_path, monkeypatch):
+    from kb.book_import import import_epub, BookImportError
+
+    source = tmp_path / "empty.pdf"
+    output_dir = tmp_path / "out"
+    source.write_bytes(b"%PDF-1.4")
+    _mock_fitz(monkeypatch, toc=[], pages=[])
+
+    with pytest.raises(BookImportError, match="PDF sem texto extraível"):
+        import_epub(source, output_dir)
+
+
+def test_should_handle_epub_with_missing_toc_reference(tmp_path):
+    from kb.book_import import import_epub, BookImportError
+
+    source = tmp_path / "bad.epub"
+    output_dir = tmp_path / "out"
+
+    with ZipFile(source, "w", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "META-INF/container.xml",
+            "<?xml version='1.0'?><container><rootfiles><rootfile full-path='OEBPS/content.opf'/></rootfiles></container>",
+        )
+        archive.writestr(
+            "OEBPS/content.opf",
+            '<?xml version="1.0"?><package><manifest><item id="ncx" href="toc.ncx"/></manifest><spine toc="ncx"></spine></package>',
+        )
+
+    with pytest.raises(BookImportError):
+        import_epub(source, output_dir)
+
+
+def test_should_raise_for_unsupported_file_format(tmp_path):
+    from kb.book_import import import_epub, BookImportError
+
+    source = tmp_path / "document.txt"
+    source.write_text("Plain text content")
+    output_dir = tmp_path / "out"
+
+    with pytest.raises(BookImportError):
+        import_epub(source, output_dir)

@@ -107,3 +107,11 @@ type: project
 **Why:** estado global (`manifest.json`, `knowledge.json`, `_index.md`) não é seguro para escrita concorrente, mas a geração LLM é paralelizável e traz ganho real de throughput.
 
 **How to apply:** `compile_many()` e fluxos derivados como `import-book --compile` devem paralelizar apenas a fase de geração. Toda persistência, atualização de estado e `_index.md` permanece serial e determinística.
+
+---
+
+### D14: Contratos de `book_import_core` favorecem precedência explícita e erro estável
+
+**Why:** importação de EPUB/PDF ficou mais confiável quando as heurísticas ambíguas foram reduzidas e os estados de erro passaram a ser distinguíveis em teste.
+
+**How to apply:** em EPUB, `nav` é a fonte canônica de TOC antes de `ncx`; resolução de imagem deve preferir caminho completo/normalizado e devolver `None` em basename ambíguo; em PDF com OCR, sucesso sem texto deve manter o erro estável `Nenhum conteúdo extraível encontrado no PDF`.
