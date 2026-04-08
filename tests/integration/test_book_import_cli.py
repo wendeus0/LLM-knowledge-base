@@ -108,13 +108,105 @@ def test_should_compile_imported_chapters_to_wiki_when_flag_is_enabled(tmp_path)
         ]
 
         result = runner.invoke(
-            app, ["import-book", str(source), "--output", str(output_dir), "--compile"]
+            app,
+            [
+                "import-book",
+                str(source),
+                "--output",
+                str(output_dir),
+                "--compile",
+                "--workers",
+                "1",
+            ],
         )
 
     assert result.exit_code == 0
     assert mock_compile_file.call_count == 2
     mock_update_index.assert_called_once()
     assert "capítulos compilados" in result.stdout
+
+
+def test_should_compile_imported_chapters_in_parallel_when_workers_gt_one(tmp_path):
+    source = tmp_path / "livro.epub"
+    output_dir = tmp_path / "raw" / "books" / "livro"
+    _create_sample_epub(source)
+
+    fake_result = type(
+        "CompileBatchResult",
+        (),
+        {
+            "outputs": [
+                tmp_path / "wiki" / "chapter-1.md",
+                tmp_path / "wiki" / "chapter-2.md",
+            ],
+            "failures": [],
+        },
+    )()
+
+    with patch("kb.compile.compile_many") as mock_compile_many:
+        mock_compile_many.return_value = fake_result
+
+        result = runner.invoke(
+            app,
+            [
+                "import-book",
+                str(source),
+                "--output",
+                str(output_dir),
+                "--compile",
+                "--workers",
+                "4",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert mock_compile_many.call_count == 1
+    assert mock_compile_many.call_args.kwargs["workers"] == 4
+    assert len(mock_compile_many.call_args.args[0]) == 2
+    assert "capítulos compilados" in result.stdout
+
+
+def test_should_report_partial_compile_failures_after_import(tmp_path):
+    source = tmp_path / "livro.epub"
+    output_dir = tmp_path / "raw" / "books" / "livro"
+    _create_sample_epub(source)
+
+    failure = type(
+        "CompileFailure",
+        (),
+        {
+            "raw_path": output_dir / "02-capitulo-1.md",
+            "error": RuntimeError("provider failed"),
+        },
+    )()
+    fake_result = type(
+        "CompileBatchResult",
+        (),
+        {
+            "outputs": [tmp_path / "wiki" / "chapter-1.md"],
+            "failures": [failure],
+        },
+    )()
+
+    with patch("kb.compile.compile_many") as mock_compile_many:
+        mock_compile_many.return_value = fake_result
+
+        result = runner.invoke(
+            app,
+            [
+                "import-book",
+                str(source),
+                "--output",
+                str(output_dir),
+                "--compile",
+                "--workers",
+                "4",
+            ],
+        )
+
+    assert result.exit_code == 1
+    assert "FALHAS DE COMPILAÇÃO" in result.stdout
+    assert "provider failed" in result.stdout
 
 
 def test_should_continue_batch_import_when_one_book_raises_unexpected_exception(
@@ -159,7 +251,7 @@ def test_should_compile_nested_imported_book_chapters_when_running_compile_comma
         patch("kb.compile.update_index") as mock_update_index,
     ):
         mock_compile_file.return_value = tmp_path / "wiki" / "introducao.md"
-        result = runner.invoke(app, ["compile"])
+        result = runner.invoke(app, ["compile", "--workers", "1"])
 
     assert result.exit_code == 0
     mock_compile_file.assert_called_once()

@@ -9,17 +9,21 @@ def test_should_list_canonical_jobs():
     assert {job.name for job in jobs} == {"compile", "lint", "review"}
 
 
-
 def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
-    with patch("kb.compile.discover_compile_targets") as mock_targets, patch("kb.compile.compile_file") as mock_compile, patch(
-        "kb.compile.update_index"
-    ) as mock_update_index, patch("kb.lint.lint_wiki") as mock_lint, patch("kb.heal.heal") as mock_heal:
+    fake_result = type("CompileBatchResult", (), {"outputs": [], "failures": []})()
+
+    with (
+        patch("kb.compile.discover_compile_targets") as mock_targets,
+        patch("kb.compile.compile_many") as mock_compile_many,
+        patch("kb.lint.lint_wiki") as mock_lint,
+        patch("kb.heal.heal") as mock_heal,
+    ):
         mock_targets.return_value = []
+        mock_compile_many.return_value = fake_result
         mock_heal.return_value = []
 
         assert "compile" in run_job("compile")
-        assert mock_compile.call_count == 0
-        assert mock_update_index.called
+        mock_compile_many.assert_called_once_with([])
 
         mock_lint.return_value = "## Report\n- ok"
         lint_result = run_job("lint")

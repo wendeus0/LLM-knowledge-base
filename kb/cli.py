@@ -188,36 +188,70 @@ def import_book(
     if failed:
         console.print(f"\n[bold red]FALHAS: {len(failed)}/{len(paths)}[/]")
 
+    compile_failures = []
     if compile_imported and all_written:
-        from kb.compile import compile_file, update_index as do_update_index
+        from kb.compile import CompileBatchResult, compile_file, compile_many
         from kb.guardrails import SensitiveContentError, summarize_findings
 
         compiled_outputs = []
-        for chapter_path in all_written:
-            try:
-                compiled_outputs.append(
-                    compile_file(
-                        chapter_path,
-                        allow_sensitive=allow_sensitive,
-                        no_commit=no_commit,
-                    )
-                )
-            except SensitiveContentError as exc:
-                typer.echo(summarize_findings(exc))
-                if allow_sensitive or typer.confirm(
-                    "Continuar mesmo assim e enviar ao provider externo?", default=False
-                ):
+        if workers == 1:
+            for chapter_path in all_written:
+                try:
                     compiled_outputs.append(
                         compile_file(
-                            chapter_path, allow_sensitive=True, no_commit=no_commit
+                            chapter_path,
+                            allow_sensitive=allow_sensitive,
+                            no_commit=no_commit,
                         )
                     )
-                else:
-                    raise typer.Exit(code=1)
-        do_update_index(no_commit=no_commit)
+                except SensitiveContentError as exc:
+                    typer.echo(summarize_findings(exc))
+                    if allow_sensitive or typer.confirm(
+                        "Continuar mesmo assim e enviar ao provider externo?",
+                        default=False,
+                    ):
+                        compiled_outputs.append(
+                            compile_file(
+                                chapter_path,
+                                allow_sensitive=True,
+                                no_commit=no_commit,
+                            )
+                        )
+                    else:
+                        raise typer.Exit(code=1)
+
+            if compiled_outputs:
+                from kb.compile import update_index as do_update_index
+
+                do_update_index(no_commit=no_commit)
+        else:
+            console.print(
+                f"[dim]Compilando {len(all_written)} capítulo(s) com {workers} worker(s)...[/]"
+            )
+            result: CompileBatchResult = compile_many(
+                all_written,
+                workers=workers,
+                allow_sensitive=allow_sensitive,
+                no_commit=no_commit,
+                update_index_enabled=True,
+            )
+            compiled_outputs = result.outputs
+            compile_failures = result.failures
+
         typer.echo(f"{len(compiled_outputs)} capítulos compilados para wiki/")
 
-    if failed:
+        if compile_failures:
+            console.print(
+                f"\n[bold red]FALHAS DE COMPILAÇÃO: {len(compile_failures)}/{len(all_written)}[/]"
+            )
+            for failure in compile_failures:
+                if isinstance(failure.error, SensitiveContentError):
+                    detail = summarize_findings(failure.error)
+                else:
+                    detail = str(failure.error) or type(failure.error).__name__
+                console.print(f"  [red]- {failure.raw_path.name}:[/] {detail}")
+
+    if failed or (compile_imported and all_written and compile_failures):
         raise typer.Exit(code=1)
 
 
@@ -228,18 +262,25 @@ def compile(
         help="Arquivo, diretório ou nome de livro (ex: 'Build a Large Language Model'); padrão: todos os arquivos em raw/",
     ),
     update_index: bool = typer.Option(True, help="Atualizar _index.md após compilar"),
+    workers: int = typer.Option(
+        4, "--workers", "-j", min=1, help="Número de arquivos compilados em paralelo"
+    ),
     allow_sensitive: bool = typer.Option(
         False,
         "--allow-sensitive",
         help="Permite processar conteúdo sensível sem confirmação adicional",
     ),
     no_commit: bool = typer.Option(
-        False, "--no-commit", help="Escreve arquivos localmente sem criar commit git"
+        True,
+        "--no-commit/--commit",
+        help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
 ):
     """Compila raw/ → wiki/ usando LLM."""
     from kb.compile import (
+        CompileBatchResult,
         compile_file,
+        compile_many,
         discover_compile_targets,
         find_book_dirs,
         update_index as do_update_index,
@@ -269,43 +310,72 @@ def compile(
         raise typer.Exit()
 
     compiled_outputs = []
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[bold]Compilando...[/] {task.completed}/{task.total}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TextColumn("{task.fields[current]}", justify="right"),
-        console=console,
-        transient=False,
-    ) as progress:
-        task = progress.add_task("", total=len(targets), current="")
+    failures = []
 
-        for t in targets:
-            progress.update(task, current=f"[dim]{t.name}[/]")
-            try:
-                out = compile_file(
-                    t, allow_sensitive=allow_sensitive, no_commit=no_commit
-                )
-            except SensitiveContentError as exc:
-                progress.stop()
-                console.print(f"[yellow]{summarize_findings(exc)}[/]")
-                if allow_sensitive or typer.confirm(
-                    "Continuar mesmo assim e enviar ao provider externo?", default=False
-                ):
-                    out = compile_file(t, allow_sensitive=True, no_commit=no_commit)
-                else:
-                    raise typer.Exit(code=1)
-                progress.start()
-            compiled_outputs.append(out)
-            progress.advance(task)
+    if workers == 1:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold]Compilando...[/] {task.completed}/{task.total}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TextColumn("{task.fields[current]}", justify="right"),
+            console=console,
+            transient=False,
+        ) as progress:
+            task = progress.add_task("", total=len(targets), current="")
+
+            for t in targets:
+                progress.update(task, current=f"[dim]{t.name}[/]")
+                try:
+                    out = compile_file(
+                        t, allow_sensitive=allow_sensitive, no_commit=no_commit
+                    )
+                except SensitiveContentError as exc:
+                    progress.stop()
+                    console.print(f"[yellow]{summarize_findings(exc)}[/]")
+                    if allow_sensitive or typer.confirm(
+                        "Continuar mesmo assim e enviar ao provider externo?",
+                        default=False,
+                    ):
+                        out = compile_file(t, allow_sensitive=True, no_commit=no_commit)
+                    else:
+                        raise typer.Exit(code=1)
+                    progress.start()
+                compiled_outputs.append(out)
+                progress.advance(task)
+
+        if update_index and compiled_outputs:
+            do_update_index(no_commit=no_commit)
+            console.print("[dim]Índice atualizado.[/]")
+    else:
+        console.print(
+            f"[dim]Compilando {len(targets)} arquivo(s) com {workers} worker(s)...[/]"
+        )
+        result: CompileBatchResult = compile_many(
+            targets,
+            workers=workers,
+            allow_sensitive=allow_sensitive,
+            no_commit=no_commit,
+            update_index_enabled=update_index,
+        )
+        compiled_outputs = result.outputs
+        failures = result.failures
+        if update_index and compiled_outputs:
+            console.print("[dim]Índice atualizado.[/]")
 
     for out in compiled_outputs:
         rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
         console.print(f"  → [green]{rel}[/]")
 
-    if update_index:
-        do_update_index(no_commit=no_commit)
-        console.print("[dim]Índice atualizado.[/]")
+    if failures:
+        console.print(f"\n[bold red]Falhas: {len(failures)}/{len(targets)}[/]")
+        for failure in failures:
+            if isinstance(failure.error, SensitiveContentError):
+                detail = summarize_findings(failure.error)
+            else:
+                detail = str(failure.error) or type(failure.error).__name__
+            console.print(f"  [red]- {failure.raw_path.name}:[/] {detail}")
+        raise typer.Exit(code=1)
 
 
 @app.command()
