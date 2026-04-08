@@ -72,10 +72,7 @@ class TestGetClient:
     def test_should_raise_when_openai_import_fails(self, monkeypatch):
         monkeypatch.setattr("kb.client.API_KEY", "test-key")
 
-        # Simulate ImportError when trying to import openai
-        with patch(
-            "builtins.__import__", side_effect=ImportError("No module named 'openai'")
-        ):
+        with patch.dict("sys.modules", {"openai": None}):
             with pytest.raises(RuntimeError, match="openai"):
                 get_client()
 

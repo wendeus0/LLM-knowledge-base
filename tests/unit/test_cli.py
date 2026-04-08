@@ -608,7 +608,7 @@ class TestImportBookCommand:
         )
         assert table_printed, "Expected table with skip status to be printed"
 
-    def should_import_multiple_books(self, tmp_path):
+    def test_should_import_multiple_books(self, tmp_path):
         book1 = tmp_path / "book1.epub"
         book2 = tmp_path / "book2.epub"
         book1.write_text("content1")

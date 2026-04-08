@@ -6,23 +6,25 @@ from kb.git import commit, _run
 
 
 class TestRun:
-    def test_should_execute_git_command_with_correct_arguments(self):
-        with patch("kb.git.subprocess.run") as mock_run:
-            _run("status")
-            mock_run.assert_called_once_with(
-                ["git", "-C", str(Path.cwd()), "status"],
-                check=True,
-                capture_output=True,
-            )
+    def test_should_execute_git_command_with_correct_arguments(self, tmp_path):
+        with patch("kb.git.ROOT", tmp_path):
+            with patch("kb.git.subprocess.run") as mock_run:
+                _run("status")
+                mock_run.assert_called_once_with(
+                    ["git", "-C", str(tmp_path), "status"],
+                    check=True,
+                    capture_output=True,
+                )
 
-    def test_should_pass_multiple_arguments_to_git(self):
-        with patch("kb.git.subprocess.run") as mock_run:
-            _run("add", "file1.txt", "file2.txt")
-            mock_run.assert_called_once_with(
-                ["git", "-C", str(Path.cwd()), "add", "file1.txt", "file2.txt"],
-                check=True,
-                capture_output=True,
-            )
+    def test_should_pass_multiple_arguments_to_git(self, tmp_path):
+        with patch("kb.git.ROOT", tmp_path):
+            with patch("kb.git.subprocess.run") as mock_run:
+                _run("add", "file1.txt", "file2.txt")
+                mock_run.assert_called_once_with(
+                    ["git", "-C", str(tmp_path), "add", "file1.txt", "file2.txt"],
+                    check=True,
+                    capture_output=True,
+                )
 
 
 class TestCommit:
