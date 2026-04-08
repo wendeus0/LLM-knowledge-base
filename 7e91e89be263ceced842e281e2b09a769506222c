@@ -1,0 +1,27 @@
+kb/book_import.py
+  d43de9d8961b3813 8,25,32,39-40,47
+pyproject.toml
+  d43de9d8961b3813 22-29
+kb/book_import_core.py
+  d43de9d8961b3813 153-177,677-683,685-717,719-724,735,737-799,873,879
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "7e91e89be263ceced842e281e2b09a769506222c",
+  "prompts": {
+    "d43de9d8961b3813": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cd5a190a-9f52-4448-8ab6-930a6dda9672",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 347,
+      "total_deletions": 200,
+      "accepted_lines": 274,
+      "overriden_lines": 6
+    }
+  }
+}
