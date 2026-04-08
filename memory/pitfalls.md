@@ -84,6 +84,14 @@ type: project
 
 ---
 
+### P10: Overfitting de testes em parser/helper interno
+
+**Problema:** testes de `book_import_core` ficam frágeis quando fixam whitespace exato, ordem incidental ou estruturas intermediárias do parser.
+
+**Solução:** para EPUB/PDF, teste contrato observável: `toc_source`, `chapter_source`, categorias de erro estáveis, precedência entre fontes e presença de fragmentos relevantes de conteúdo.
+
+---
+
 ## Padrões que funcionam
 
 ✓ Ingest → compile 1:N (um documento pode gerar vários artigos)

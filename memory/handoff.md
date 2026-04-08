@@ -4,6 +4,37 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
+## Sessão — 2026-04-08 (Coverage 90 close)
+
+**O que foi feito:**
+
+- frente `test-coverage-90` fechada localmente com foco em `kb/cli.py`, `kb/client.py`, `kb/git.py` e `kb/book_import_core.py`
+- `kb/book_import_core.py` teve contratos estabilizados para precedência `nav`/`ncx`, resolução de imagens e erros estáveis de EPUB/PDF/OCR
+- README, logs operacionais e memória distribuída atualizados com o novo baseline
+- quality gate local concluído com `QUALITY_PASS`
+- security review local concluído com `SECURITY_PASS`
+
+**O que falta:**
+
+- rerodar `feature-scope-guard` e `enforce-workflow`
+- então seguir para `git-flow-manager` com ação explícita de commit/push/PR
+- validar `compile_many()` com provider real em lote pequeno
+
+**Métricas da sessão:**
+
+- suíte completa: `223` testes passando
+- cobertura total real: `96%`
+- `kb/cli.py`: `98%`
+- `kb/client.py`: `97%`
+- `kb/git.py`: `100%`
+- `kb/book_import_core.py`: `97%`
+
+**Prompt de retomada:**
+
+> Retome o projeto `kb` na branch `feat/test-coverage-90`. A frente `test-coverage-90` está pronta do ponto de vista técnico: `223` testes passam, a cobertura total está em `96%`, `kb/cli.py` está em `98%`, `kb/client.py` em `97%`, `kb/git.py` em `100%` e `kb/book_import_core.py` em `97%`; quality gate e security review locais passaram, e a branch está alinhada com `origin/main` (`0/0`). O próximo passo não é código: emitir `feature-scope-guard` e `enforce-workflow`, e só então seguir para commit/push/PR.
+
+---
+
 ## Sessão — 2026-04-08 (Compile parallel hardening close)
 
 **O que foi feito:**

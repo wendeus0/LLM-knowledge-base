@@ -41,19 +41,36 @@ type: project
 
 ### F8: Aumentar cobertura dos módulos mais fracos
 
-**Status:** Aberto
+**Status:** Concluído (2026-04-08)
 
-**Problema:** a suíte está verde, mas a cobertura ainda está concentrada em poucos fluxos.
+**Problema:** a suíte estava verde, mas a cobertura ainda estava concentrada em poucos fluxos.
 
-**Impacto:** `kb/cli.py` (`60%`), `kb/book_import_core.py` (`68%`) e `kb/git.py` (`31%`) continuam como gaps prioritários.
+**Resultado resumido:**
 
-**Próximo passo:** atacar branches de erro, fallbacks e fluxos pouco exercitados nesses módulos.
-
-**Por que agora:** a baseline está estável (`139` testes passando), então este é o momento de aumentar a proteção contra regressão.
+- `223` testes passando e `96%` de cobertura total
+- `kb/cli.py` em `98%`
+- `kb/client.py` em `97%`
+- `kb/git.py` em `100%`
+- `kb/book_import_core.py` em `97%`
+- contratos de EPUB/PDF consolidados por testes de helper + integração
 
 ---
 
-### F9: Validar concorrência com provider real
+### F9: Finalizar a frente atual em branch dedicada
+
+**Status:** Em fechamento
+
+**Problema:** a frente já está em branch dedicada, mas ainda faltam os gates formais de escopo/workflow antes do fechamento Git.
+
+**Impacto:** `git-flow-manager` ainda não deve avançar para commit/PR sem `feature-scope-guard` e `enforce-workflow`.
+
+**Próximo passo:** emitir `feature-scope-guard` e `enforce-workflow` na branch `feat/test-coverage-90`, então seguir para commit/push/PR quando solicitado.
+
+**Atualização:** branch `feat/test-coverage-90` criada e alinhada com `origin/main` (`0/0`).
+
+---
+
+### F10: Validar concorrência com provider real
 
 **Status:** Aberto
 
