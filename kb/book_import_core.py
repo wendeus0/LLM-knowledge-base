@@ -150,6 +150,31 @@ class _NavDocParser(HTMLParser):
                 self.current_text.append(cleaned)
 
 
+_CLEAN_SLUG_PATTERNS = [
+    (re.compile(r'\b[a-f0-9]{32}\b', re.IGNORECASE), ''),
+    (re.compile(r'\b97[89][\d -]{10,}'), ''),
+    (re.compile(r'\(?(?:z-library[\w.]*|z-lib[\w.]*|1lib[\w.]*|libgen[\w.]*)[,\s]*\)?', re.IGNORECASE), ''),
+    (re.compile(r"[\-–]\s*anna'?s?\s*archive", re.IGNORECASE), ''),
+    (re.compile(r'--\s*\d+,?\s*\d{4}\s*--'), ' '),
+    (re.compile(r'--\s*(?:O\'Reilly|Cambridge|Packt|Springer|Wiley|Manning|No\s*Starch|Apress|Addison)[^-]*(?:--|$)', re.IGNORECASE), ''),
+    (re.compile(r'\s*--\s*'), ' '),
+    (re.compile(r'\(\s*\)'), ''),
+    (re.compile(r'\s+'), ' '),
+]
+
+
+def clean_book_slug(stem: str) -> str:
+    result = stem
+    for pattern, replacement in _CLEAN_SLUG_PATTERNS:
+        result = pattern.sub(replacement, result)
+    result = result.strip(' -_.,;')
+    if len(result) > 60:
+        truncated = result[:60]
+        last_space = truncated.rfind(' ')
+        result = truncated[:last_space] if last_space > 30 else truncated
+    return slugify(result)
+
+
 def slugify(value: str) -> str:
     normalized = value.lower()
     replacements = {"á": "a", "à": "a", "â": "a", "ã": "a", "ä": "a", "é": "e", "è": "e", "ê": "e", "ë": "e", "í": "i", "ì": "i", "î": "i", "ï": "i", "ó": "o", "ò": "o", "ô": "o", "õ": "o", "ö": "o", "ú": "u", "ù": "u", "û": "u", "ü": "u", "ç": "c"}
@@ -633,18 +658,6 @@ def _extract_chapters_from_epub(source: Path, error_cls: type[Exception], *, inc
     return chapters, book_metadata
 
 
-_PDF_TEXT_RE = re.compile(r"\((.*?)(?<!\\)\)\s*Tj", re.DOTALL)
-_PDF_ARRAY_TEXT_RE = re.compile(r"\[(.*?)\]\s*TJ", re.DOTALL)
-_PDF_STRING_RE = re.compile(r"\((.*?)(?<!\\)\)", re.DOTALL)
-_PDF_HEADING_RE = re.compile(
-    r"^(?:cap[ií]tulo|chapter|parte|part|section|se[cç][aã]o)\s+(?:[0-9]+|[ivxlcdm]+)\b(?:\s*[-–—:]?\s*.+)?$",
-    re.IGNORECASE,
-)
-
-
-def _decode_pdf_literal(value: str) -> str:
-    return value.replace(r"\n", "\n").replace(r"\r", "\n").replace(r"\t", " ").replace(r"\(", "(").replace(r"\)", ")").replace(r"\\", "\\")
-
 
 def _normalize_pdf_text(text: str) -> str:
     normalized_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()]
@@ -661,75 +674,54 @@ def _normalize_pdf_text(text: str) -> str:
     return "\n".join(kept_lines).strip()
 
 
-def _extract_text_from_pdf(source: Path, error_cls: type[Exception]) -> str:
-    raw_bytes = source.read_bytes()
-    if not raw_bytes.startswith(b"%PDF"):
-        raise error_cls(f"PDF inválido ou corrompido: {source.name}")
-    decoded = raw_bytes.decode("latin-1", errors="ignore")
-    chunks = [_decode_pdf_literal(m.group(1)) for m in _PDF_TEXT_RE.finditer(decoded)]
-    for match in _PDF_ARRAY_TEXT_RE.finditer(decoded):
-        fragments = [_decode_pdf_literal(piece) for piece in _PDF_STRING_RE.findall(match.group(1))]
-        if fragments:
-            chunks.append(" ".join(fragments))
-    text = _normalize_pdf_text("\n".join(chunks))
-    if not text:
-        raise error_cls("PDF sem texto extraível. O suporte inicial cobre apenas PDFs textuais, não scans/imagens")
-    return text
+def _is_garbled(text: str) -> bool:
+    if len(text) < 50:
+        return False
+    ctrl = sum(1 for c in text if ord(c) < 32 and c not in '\n\r\t')
+    return ctrl / len(text) > 0.05
 
 
-def _is_pdf_heading_line(line: str) -> bool:
-    return bool(_PDF_HEADING_RE.match(line.strip()))
+
+_PDF_PAGES_PER_CHUNK = 15
 
 
-def _build_pdf_chapters_from_lines(lines: list[str], source: Path) -> tuple[list[dict], str | None]:
-    heading_indexes = [index for index, line in enumerate(lines) if _is_pdf_heading_line(line)]
-    document_title = None
+def _get_pdf_pages(source: Path, error_cls: type[Exception], *, use_ocr: bool = False) -> tuple[list[str], list]:
+    import fitz
 
-    if lines and (not heading_indexes or heading_indexes[0] > 0):
-        document_title = lines[0][:120]
+    try:
+        doc = fitz.open(str(source))
+    except Exception as exc:
+        raise error_cls(f"PDF inválido ou corrompido: {source.name} ({exc})")
 
-    if len(heading_indexes) >= 2:
-        chapters: list[dict] = []
-        for chapter_number, start_index in enumerate(heading_indexes, start=1):
-            end_index = heading_indexes[chapter_number] if chapter_number < len(heading_indexes) else len(lines)
-            title = lines[start_index].strip() or f"Capítulo {chapter_number}"
-            body_lines = [line for line in lines[start_index + 1 : end_index] if line.strip()]
-            content = "\n\n".join(body_lines).strip() or title
-            chapters.append({"index": chapter_number, "title": title[:120], "content": content})
-        return chapters, document_title
+    toc = doc.get_toc()  # [[level, title, page_1based], ...]
 
-    return [], document_title
+    if use_ocr:
+        try:
+            from pdf2image import convert_from_path
+            import pytesseract
+        except ImportError:
+            raise error_cls("OCR requer dependências adicionais. Execute: pip install 'kb[ocr]'")
+        try:
+            images = convert_from_path(str(source))
+        except Exception as exc:
+            raise error_cls(f"Erro ao converter PDF para imagens: {exc}")
+        pages = [pytesseract.image_to_string(img, lang="por+eng") for img in images]
+        doc.close()
+    else:
+        pages = [page.get_text() for page in doc]
+        doc.close()
+        combined = _normalize_pdf_text("\n".join(pages))
+        if not combined:
+            raise error_cls("PDF sem texto extraível — arquivo pode ser scan. Tente: kb import-book --ocr")
+        if _is_garbled(combined):
+            raise error_cls("PDF com encoding de fonte inválido — texto corrompido. Tente: kb import-book --ocr")
+
+    return pages, toc
 
 
-def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception]) -> tuple[list[dict], dict]:
-    text = _extract_text_from_pdf(source, error_cls)
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    segmented_chapters, document_title = _build_pdf_chapters_from_lines(lines, source)
-    if segmented_chapters:
-        return segmented_chapters, {
-            "title": document_title or source.stem,
-            "author": None,
-            "authors": [],
-            "language": None,
-            "description": None,
-            "publisher": None,
-            "date": None,
-            "identifiers": [],
-            "subjects": [],
-            "toc": [],
-            "toc_source": "none",
-            "chapter_source": "heading_split",
-            "assets": [],
-        }
-
-    paragraphs = [part.strip() for part in re.split(r"\n\s*\n+", text) if part.strip()]
-    title = paragraphs[0].splitlines()[0].strip() if paragraphs else source.stem
-    title = (title or source.stem)[:120]
-    content = text[len(title):].strip() if text.startswith(title) else text
-    if not content:
-        content = text
-    return ([{"index": 1, "title": title, "content": content}], {
-        "title": document_title or source.stem,
+def _build_metadata(source: Path, chapter_source: str) -> dict:
+    return {
+        "title": source.stem,
         "author": None,
         "authors": [],
         "language": None,
@@ -740,9 +732,71 @@ def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception]) -> tupl
         "subjects": [],
         "toc": [],
         "toc_source": "none",
-        "chapter_source": "single_document",
+        "chapter_source": chapter_source,
         "assets": [],
-    })
+    }
+
+
+def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception], *, use_ocr: bool = False, chunk_pages: int = _PDF_PAGES_PER_CHUNK) -> tuple[list[dict], dict]:
+    pages, toc = _get_pdf_pages(source, error_cls, use_ocr=use_ocr)
+
+    max_toc_chapters = max(5, len(pages) // 8)
+
+    top_level: list[tuple[str, int]] = []
+    overflow_candidates: list[tuple[str, int]] = []
+
+    for level in (1, 2):
+        candidates = [(title, page - 1) for lvl, title, page in toc if lvl == level and title.strip()]
+        enough = len(candidates) >= 5 or (len(candidates) >= 2 and len(pages) <= 30)
+        not_too_many = len(candidates) <= max_toc_chapters
+        if enough and not_too_many:
+            top_level = candidates
+            break
+        if enough and not overflow_candidates:
+            overflow_candidates = candidates
+
+    if len(top_level) >= 2:
+        chapters = []
+        for i, (title, start_page) in enumerate(top_level):
+            start_page = max(0, start_page)
+            end_page = max(start_page + 1, top_level[i + 1][1] if i + 1 < len(top_level) else len(pages))
+            content = _normalize_pdf_text("\n".join(pages[start_page:end_page]))
+            if content:
+                chapters.append({"index": len(chapters) + 1, "title": title[:120], "content": content})
+        if chapters:
+            return chapters, _build_metadata(source, "toc")
+
+    if overflow_candidates:
+        chapters = []
+        i = 0
+        while i < len(overflow_candidates):
+            title, start = overflow_candidates[i]
+            start = max(0, start)
+            j = i + 1
+            while j < len(overflow_candidates) and overflow_candidates[j][1] - start < chunk_pages:
+                j += 1
+            end = overflow_candidates[j][1] if j < len(overflow_candidates) else len(pages)
+            content = _normalize_pdf_text("\n".join(pages[start:end]))
+            if content:
+                chapters.append({"index": len(chapters) + 1, "title": title[:120], "content": content})
+            i = j
+        if chapters:
+            return chapters, _build_metadata(source, "toc_merged")
+
+    chapters = []
+    for i in range(0, len(pages), chunk_pages):
+        chunk = pages[i:i + chunk_pages]
+        content = _normalize_pdf_text("\n".join(chunk))
+        if content:
+            start = i + 1
+            end = min(i + chunk_pages, len(pages))
+            title = f"Páginas {start}–{end}"
+            chapters.append({"index": len(chapters) + 1, "title": title, "content": content})
+
+    if not chapters:
+        raise error_cls("Nenhum conteúdo extraível encontrado no PDF")
+
+    return chapters, _build_metadata(source, "page_chunks")
 
 
 def write_assets(output_dir: Path, assets: list[dict]) -> list[Path]:
@@ -816,13 +870,13 @@ def write_metadata(source: Path, output_dir: Path, chapters: list[dict], written
     return metadata_path
 
 
-def convert_book(source: Path, output_dir: Path, *, error_cls: type[Exception] = BookConversionError, unsupported_message: str = "Formato não suportado. Use EPUB ou PDF textual", include_images: bool = False) -> tuple[list[Path], Path]:
+def convert_book(source: Path, output_dir: Path, *, error_cls: type[Exception] = BookConversionError, unsupported_message: str = "Formato não suportado. Use EPUB ou PDF textual", include_images: bool = False, use_ocr: bool = False, chunk_pages: int = _PDF_PAGES_PER_CHUNK) -> tuple[list[Path], Path]:
     if not source.exists():
         raise error_cls(f"Arquivo de entrada não existe: {source}")
     if source.suffix.lower() == ".epub":
         chapters, book_metadata = _extract_chapters_from_epub(source, error_cls, include_images=include_images)
     elif source.suffix.lower() == ".pdf":
-        chapters, book_metadata = _extract_chapters_from_pdf(source, error_cls)
+        chapters, book_metadata = _extract_chapters_from_pdf(source, error_cls, use_ocr=use_ocr, chunk_pages=chunk_pages)
     else:
         raise error_cls(unsupported_message)
     written_files = write_chapters(chapters, output_dir, error_cls=error_cls)
