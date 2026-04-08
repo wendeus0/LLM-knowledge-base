@@ -133,6 +133,9 @@ def import_book(
             return path, "ok", written_files
         except (BookImportError, PermissionError) as exc:
             return path, "fail", str(exc)
+        except Exception as exc:
+            detail = str(exc) or type(exc).__name__
+            return path, "fail", f"Erro inesperado ({type(exc).__name__}): {detail}"
 
     with Progress(
         SpinnerColumn(),
@@ -161,7 +164,11 @@ def import_book(
         label = path.name[:60] + "..." if len(path.name) > 60 else path.name
         if status == "ok":
             all_written.extend(detail)
-            table.add_row("[green]OK[/]", label, f"[dim]{len(detail)} capítulos[/]")
+            output_dir = detail[0].parent if detail else None
+            detail_label = f"[dim]{len(detail)} capítulos[/]"
+            if output_dir is not None:
+                detail_label = f"{detail_label} [dim]{output_dir}[/]"
+            table.add_row("[green]OK[/]", label, detail_label)
         elif status == "skip":
             table.add_row("[dim]PULADO[/]", label, "[dim]já importado[/]")
         else:
@@ -169,6 +176,13 @@ def import_book(
 
     console.print()
     console.print(table)
+
+    if len(paths) == 1:
+        status, detail = results_map[paths[0]]
+        if status == "ok" and detail:
+            typer.echo(str(detail[0].parent))
+        elif status == "skip":
+            typer.echo(str(detail))
 
     failed = [p for p in paths if results_map[p][0] == "fail"]
     if failed:
@@ -202,6 +216,9 @@ def import_book(
                     raise typer.Exit(code=1)
         do_update_index(no_commit=no_commit)
         typer.echo(f"{len(compiled_outputs)} capítulos compilados para wiki/")
+
+    if failed:
+        raise typer.Exit(code=1)
 
 
 @app.command()

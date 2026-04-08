@@ -5,7 +5,6 @@ from typer.testing import CliRunner
 
 from kb.cli import app
 
-
 runner = CliRunner()
 
 
@@ -57,19 +56,25 @@ def test_should_import_book_via_cli_and_create_chapter_files(tmp_path):
     output_dir = tmp_path / "raw" / "books" / "livro"
     _create_sample_epub(source)
 
-    result = runner.invoke(app, ["import-book", str(source), "--output", str(output_dir)])
+    result = runner.invoke(
+        app, ["import-book", str(source), "--output", str(output_dir)]
+    )
 
     assert result.exit_code == 0
     assert (output_dir / "01-introducao.md").exists()
     assert (output_dir / "metadata.json").exists()
 
 
-def test_should_report_generated_chapter_count_and_output_path_when_cli_import_succeeds(tmp_path):
+def test_should_report_generated_chapter_count_and_output_path_when_cli_import_succeeds(
+    tmp_path,
+):
     source = tmp_path / "livro.epub"
     output_dir = tmp_path / "raw" / "books" / "livro"
     _create_sample_epub(source)
 
-    result = runner.invoke(app, ["import-book", str(source), "--output", str(output_dir)])
+    result = runner.invoke(
+        app, ["import-book", str(source), "--output", str(output_dir)]
+    )
 
     assert result.exit_code == 0
     assert "2" in result.stdout
@@ -80,7 +85,9 @@ def test_should_fail_with_clear_message_when_cli_receives_missing_file(tmp_path)
     source = tmp_path / "ausente.epub"
     output_dir = tmp_path / "raw" / "books" / "livro"
 
-    result = runner.invoke(app, ["import-book", str(source), "--output", str(output_dir)])
+    result = runner.invoke(
+        app, ["import-book", str(source), "--output", str(output_dir)]
+    )
 
     assert result.exit_code != 0
     assert "não existe" in result.stdout.lower() or "not found" in result.stdout.lower()
@@ -91,10 +98,18 @@ def test_should_compile_imported_chapters_to_wiki_when_flag_is_enabled(tmp_path)
     output_dir = tmp_path / "raw" / "books" / "livro"
     _create_sample_epub(source)
 
-    with patch("kb.compile.compile_file") as mock_compile_file, patch("kb.compile.update_index") as mock_update_index:
-        mock_compile_file.side_effect = [tmp_path / "wiki" / "chapter-1.md", tmp_path / "wiki" / "chapter-2.md"]
+    with (
+        patch("kb.compile.compile_file") as mock_compile_file,
+        patch("kb.compile.update_index") as mock_update_index,
+    ):
+        mock_compile_file.side_effect = [
+            tmp_path / "wiki" / "chapter-1.md",
+            tmp_path / "wiki" / "chapter-2.md",
+        ]
 
-        result = runner.invoke(app, ["import-book", str(source), "--output", str(output_dir), "--compile"])
+        result = runner.invoke(
+            app, ["import-book", str(source), "--output", str(output_dir), "--compile"]
+        )
 
     assert result.exit_code == 0
     assert mock_compile_file.call_count == 2
@@ -102,7 +117,35 @@ def test_should_compile_imported_chapters_to_wiki_when_flag_is_enabled(tmp_path)
     assert "capítulos compilados" in result.stdout
 
 
-def test_should_compile_nested_imported_book_chapters_when_running_compile_command(tmp_path, monkeypatch):
+def test_should_continue_batch_import_when_one_book_raises_unexpected_exception(
+    tmp_path,
+):
+    source_ok = tmp_path / "ok.epub"
+    source_fail = tmp_path / "broken.epub"
+    source_ok.write_text("stub")
+    source_fail.write_text("stub")
+    chapter = tmp_path / "raw" / "books" / "ok" / "01-intro.md"
+
+    def fake_import(source, output_dir, **kwargs):
+        if source.name == "broken.epub":
+            raise RuntimeError("boom")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        chapter.parent.mkdir(parents=True, exist_ok=True)
+        chapter.write_text("# Intro", encoding="utf-8")
+        return [chapter], output_dir / "metadata.json"
+
+    with patch("kb.book_import.import_epub", side_effect=fake_import):
+        result = runner.invoke(app, ["import-book", str(source_ok), str(source_fail)])
+
+    assert result.exit_code == 1
+    assert "OK" in result.stdout
+    assert "FALHOU" in result.stdout
+    assert "boom" in result.stdout
+
+
+def test_should_compile_nested_imported_book_chapters_when_running_compile_command(
+    tmp_path, monkeypatch
+):
     raw_dir = tmp_path / "raw"
     nested = raw_dir / "books" / "livro"
     nested.mkdir(parents=True)
@@ -111,7 +154,10 @@ def test_should_compile_nested_imported_book_chapters_when_running_compile_comma
 
     monkeypatch.setattr("kb.compile.RAW_DIR", raw_dir)
 
-    with patch("kb.compile.compile_file") as mock_compile_file, patch("kb.compile.update_index") as mock_update_index:
+    with (
+        patch("kb.compile.compile_file") as mock_compile_file,
+        patch("kb.compile.update_index") as mock_update_index,
+    ):
         mock_compile_file.return_value = tmp_path / "wiki" / "introducao.md"
         result = runner.invoke(app, ["compile"])
 

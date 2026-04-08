@@ -52,11 +52,15 @@ def save_manifest(entries: list[dict]) -> None:
 def record_ingest(source_path: Path, kind: str = "raw") -> dict:
     entries = load_manifest()
     entry = {
-        "source": str(source_path),
+        "source": normalize_source_path(source_path),
         "kind": kind,
         "status": "ingested",
     }
-    entries = [item for item in entries if item.get("source") != entry["source"]]
+    entries = [
+        item
+        for item in entries
+        if normalize_source_path(item.get("source", "")) != entry["source"]
+    ]
     entries.append(entry)
     save_manifest(entries)
     return entry
@@ -76,7 +80,9 @@ def mark_compiled(
         "title": title,
     }
     entries = [
-        item for item in entries if item.get("source") != compiled_entry["source"]
+        item
+        for item in entries
+        if normalize_source_path(item.get("source", "")) != compiled_entry["source"]
     ]
     entries.append(compiled_entry)
     save_manifest(entries)

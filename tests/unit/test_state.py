@@ -56,6 +56,29 @@ def test_should_mark_compiled_entry(tmp_raw_wiki):
     assert entry["article"].endswith("doc.md")
 
 
+def test_should_replace_ingested_entry_when_compiling_same_source_with_different_path_style(
+    tmp_raw_wiki,
+):
+    raw, wiki = tmp_raw_wiki
+    source = raw / "books" / "mml" / "01-intro.md"
+    source.parent.mkdir(parents=True)
+    source.write_text("# Doc")
+    article = wiki / "ai" / "intro.md"
+    article.write_text("# Compiled")
+    summary = wiki / "summaries" / "ai" / "intro.md"
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    summary.write_text("# Summary")
+
+    record_ingest(source)
+    mark_compiled(source.relative_to(raw), article, summary, "ai", "Intro")
+
+    entry = find_compiled_entry(source)
+
+    assert entry is not None
+    assert entry["status"] == "compiled"
+    assert entry["article"].endswith("intro.md")
+
+
 def test_should_not_drop_entries_without_dedup_key(tmp_raw_wiki):
     upsert_knowledge({"summary_text": "Entry 1"})
     upsert_knowledge({"summary_text": "Entry 2"})

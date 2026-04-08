@@ -1,7 +1,35 @@
 import json
+import sys
+import types
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
+
+
+def _mock_fitz(monkeypatch, *, toc, pages):
+    class FakePage:
+        def __init__(self, text):
+            self.text = text
+
+        def get_text(self):
+            return self.text
+
+    class FakeDoc:
+        def __init__(self):
+            self.closed = False
+
+        def get_toc(self):
+            return toc
+
+        def __iter__(self):
+            return iter([FakePage(text) for text in pages])
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setitem(
+        sys.modules, "fitz", types.SimpleNamespace(open=lambda _: FakeDoc())
+    )
 
 
 def _create_sample_epub(path):
@@ -60,7 +88,6 @@ def test_should_decode_url_encoded_image_paths_when_resolving_relative_assets():
     )
 
     assert "![Capa final](images/capa-final.png)" in markdown
-
 
 
 def test_should_export_epub_to_markdown_chapters_inside_output_directory(tmp_path):
@@ -185,6 +212,44 @@ def test_should_fallback_to_empty_toc_when_ncx_manifest_entry_is_missing(tmp_pat
     assert written_files[0].name == "01-chapter1.md"
 
 
+def test_should_close_pdf_document_when_ocr_dependencies_are_missing(
+    tmp_path, monkeypatch
+):
+    from kb.book_import import BookImportError
+    from kb.book_import_core import _get_pdf_pages
+
+    source = tmp_path / "scan.pdf"
+    source.write_bytes(b"%PDF-1.4")
+    closed = False
+
+    class FakeDoc:
+        def get_toc(self):
+            return []
+
+        def close(self):
+            nonlocal closed
+            closed = True
+
+    monkeypatch.setitem(
+        sys.modules, "fitz", types.SimpleNamespace(open=lambda _: FakeDoc())
+    )
+    monkeypatch.delitem(sys.modules, "pdf2image", raising=False)
+
+    real_import = __import__
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "pdf2image":
+            raise ImportError("missing pdf2image")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr("builtins.__import__", fake_import)
+
+    with pytest.raises(BookImportError):
+        _get_pdf_pages(source, BookImportError, use_ocr=True)
+
+    assert closed is True
+
+
 def test_should_use_complex_toc_label_when_epub_chapter_has_no_h1(tmp_path):
     from kb.book_import import import_epub
 
@@ -282,16 +347,16 @@ def test_should_fallback_to_h2_and_ignore_dirty_xhtml_noise(tmp_path):
     assert "display:none" not in content
 
 
-def test_should_support_initial_textual_pdf_import(tmp_path):
+def test_should_support_initial_textual_pdf_import(tmp_path, monkeypatch):
     from kb.book_import import import_epub
 
     source = tmp_path / "relatorio.pdf"
     output_dir = tmp_path / "raw" / "books" / "relatorio"
-    source.write_bytes(
-        b"%PDF-1.4\n"
-        b"1 0 obj<</Length 72>>stream\n"
-        b"BT\n/F1 12 Tf\n72 720 Td\n(Relatorio Mensal) Tj\n0 -24 Td\n(Primeira linha do PDF.) Tj\n0 -24 Td\n[(Item) 120 ( A)] TJ\nET\n"
-        b"endstream\nendobj\n"
+    source.write_bytes(b"%PDF-1.4")
+    _mock_fitz(
+        monkeypatch,
+        toc=[],
+        pages=["Relatorio Mensal\nPrimeira linha do PDF.\nItem A"],
     )
 
     written_files, metadata_path = import_epub(source, output_dir)
@@ -299,27 +364,25 @@ def test_should_support_initial_textual_pdf_import(tmp_path):
     content = written_files[0].read_text(encoding="utf-8")
 
     assert len(written_files) == 1
-    assert written_files[0].name == "01-relatorio-mensal.md"
-    assert content.startswith("# Relatorio Mensal")
+    assert written_files[0].name == "01-paginas-1-1.md"
+    assert content.startswith("# Páginas 1–1")
     assert "Primeira linha do PDF." in content
     assert "Item A" in content
     assert payload["source_format"] == "pdf"
 
 
-def test_should_split_textual_pdf_into_multiple_chapters_when_heading_markers_are_present(tmp_path):
+def test_should_split_textual_pdf_into_multiple_chapters_when_heading_markers_are_present(
+    tmp_path, monkeypatch
+):
     from kb.book_import import import_epub
 
     source = tmp_path / "livro-fragmentado.pdf"
     output_dir = tmp_path / "raw" / "books" / "livro-fragmentado"
-    source.write_bytes(
-        b"%PDF-1.4\n"
-        b"1 0 obj<</Length 180>>stream\n"
-        b"BT\n/F1 12 Tf\n72 720 Td\n(Meu Livro) Tj\n"
-        b"0 -24 Td\n(Capitulo 1 - Comeco) Tj\n"
-        b"0 -24 Td\n(Primeiro paragrafo.) Tj\n"
-        b"0 -24 Td\n(Capitulo 2 - Fim) Tj\n"
-        b"0 -24 Td\n(Segundo paragrafo.) Tj\nET\n"
-        b"endstream\nendobj\n"
+    source.write_bytes(b"%PDF-1.4")
+    _mock_fitz(
+        monkeypatch,
+        toc=[(1, "Capitulo 1 - Comeco", 1), (1, "Capitulo 2 - Fim", 2)],
+        pages=["Primeiro paragrafo.", "Segundo paragrafo."],
     )
 
     written_files, metadata_path = import_epub(source, output_dir)
@@ -328,8 +391,10 @@ def test_should_split_textual_pdf_into_multiple_chapters_when_heading_markers_ar
     assert len(written_files) == 2
     assert written_files[0].name == "01-capitulo-1-comeco.md"
     assert written_files[1].name == "02-capitulo-2-fim.md"
-    assert written_files[0].read_text(encoding="utf-8").startswith("# Capitulo 1 - Comeco")
+    assert (
+        written_files[0].read_text(encoding="utf-8").startswith("# Capitulo 1 - Comeco")
+    )
     assert "Primeiro paragrafo." in written_files[0].read_text(encoding="utf-8")
     assert "Segundo paragrafo." in written_files[1].read_text(encoding="utf-8")
     assert payload["chapter_count"] == 2
-    assert payload["book_title"] == "Meu Livro"
+    assert payload["book_title"] == "livro-fragmentado"

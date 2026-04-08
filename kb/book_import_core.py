@@ -25,7 +25,9 @@ class BookConversionError(ValueError):
 
 
 class _MarkdownHTMLParser(HTMLParser):
-    def __init__(self, *, image_map: dict[str, str] | None = None, base_href: str | None = None):
+    def __init__(
+        self, *, image_map: dict[str, str] | None = None, base_href: str | None = None
+    ):
         super().__init__()
         self.parts: list[str] = []
         self.list_depth = 0
@@ -40,7 +42,19 @@ class _MarkdownHTMLParser(HTMLParser):
         if self.skip_depth:
             return
         attrs_dict = dict(attrs)
-        if tag in {"h1", "h2", "h3", "h4", "h5", "h6", "p", "div", "section", "article", "blockquote"}:
+        if tag in {
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "p",
+            "div",
+            "section",
+            "article",
+            "blockquote",
+        }:
             self.parts.append("\n\n")
         elif tag in {"ul", "ol"}:
             self.list_depth += 1
@@ -58,7 +72,10 @@ class _MarkdownHTMLParser(HTMLParser):
             src = (attrs_dict.get("src") or "").strip()
             resolved = _resolve_image_reference(self.base_href, src, self.image_map)
             if resolved:
-                alt = re.sub(r"\s+", " ", attrs_dict.get("alt") or "imagem").strip() or "imagem"
+                alt = (
+                    re.sub(r"\s+", " ", attrs_dict.get("alt") or "imagem").strip()
+                    or "imagem"
+                )
                 self.parts.append(f"\n\n![{alt}]({resolved})\n\n")
 
     def handle_endtag(self, tag):
@@ -67,7 +84,19 @@ class _MarkdownHTMLParser(HTMLParser):
             return
         if self.skip_depth:
             return
-        if tag in {"h1", "h2", "h3", "h4", "h5", "h6", "p", "div", "section", "article", "blockquote"}:
+        if tag in {
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "p",
+            "div",
+            "section",
+            "article",
+            "blockquote",
+        }:
             self.parts.append("\n\n")
         elif tag in {"ul", "ol"}:
             self.list_depth = max(self.list_depth - 1, 0)
@@ -124,7 +153,9 @@ class _NavDocParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs_dict = dict(attrs)
         if tag == "nav":
-            nav_type = (attrs_dict.get("epub:type") or attrs_dict.get("type") or "").lower()
+            nav_type = (
+                attrs_dict.get("epub:type") or attrs_dict.get("type") or ""
+            ).lower()
             if nav_type == "toc" or attrs_dict.get("role") == "doc-toc":
                 self.in_nav = True
         elif self.in_nav and tag == "a":
@@ -151,15 +182,27 @@ class _NavDocParser(HTMLParser):
 
 
 _CLEAN_SLUG_PATTERNS = [
-    (re.compile(r'\b[a-f0-9]{32}\b', re.IGNORECASE), ''),
-    (re.compile(r'\b97[89][\d -]{10,}'), ''),
-    (re.compile(r'\(?(?:z-library[\w.]*|z-lib[\w.]*|1lib[\w.]*|libgen[\w.]*)[,\s]*\)?', re.IGNORECASE), ''),
-    (re.compile(r"[\-–]\s*anna'?s?\s*archive", re.IGNORECASE), ''),
-    (re.compile(r'--\s*\d+,?\s*\d{4}\s*--'), ' '),
-    (re.compile(r'--\s*(?:O\'Reilly|Cambridge|Packt|Springer|Wiley|Manning|No\s*Starch|Apress|Addison)[^-]*(?:--|$)', re.IGNORECASE), ''),
-    (re.compile(r'\s*--\s*'), ' '),
-    (re.compile(r'\(\s*\)'), ''),
-    (re.compile(r'\s+'), ' '),
+    (re.compile(r"\b[a-f0-9]{32}\b", re.IGNORECASE), ""),
+    (re.compile(r"\b97[89][\d -]{10,}"), ""),
+    (
+        re.compile(
+            r"\(?(?:z-library[\w.]*|z-lib[\w.]*|1lib[\w.]*|libgen[\w.]*)[,\s]*\)?",
+            re.IGNORECASE,
+        ),
+        "",
+    ),
+    (re.compile(r"[\-–]\s*anna'?s?\s*archive", re.IGNORECASE), ""),
+    (re.compile(r"--\s*\d+,?\s*\d{4}\s*--"), " "),
+    (
+        re.compile(
+            r"--\s*(?:O\'Reilly|Cambridge|Packt|Springer|Wiley|Manning|No\s*Starch|Apress|Addison)[^-]*(?:--|$)",
+            re.IGNORECASE,
+        ),
+        "",
+    ),
+    (re.compile(r"\s*--\s*"), " "),
+    (re.compile(r"\(\s*\)"), ""),
+    (re.compile(r"\s+"), " "),
 ]
 
 
@@ -167,17 +210,41 @@ def clean_book_slug(stem: str) -> str:
     result = stem
     for pattern, replacement in _CLEAN_SLUG_PATTERNS:
         result = pattern.sub(replacement, result)
-    result = result.strip(' -_.,;')
+    result = result.strip(" -_.,;")
     if len(result) > 60:
         truncated = result[:60]
-        last_space = truncated.rfind(' ')
+        last_space = truncated.rfind(" ")
         result = truncated[:last_space] if last_space > 30 else truncated
     return slugify(result)
 
 
 def slugify(value: str) -> str:
     normalized = value.lower()
-    replacements = {"á": "a", "à": "a", "â": "a", "ã": "a", "ä": "a", "é": "e", "è": "e", "ê": "e", "ë": "e", "í": "i", "ì": "i", "î": "i", "ï": "i", "ó": "o", "ò": "o", "ô": "o", "õ": "o", "ö": "o", "ú": "u", "ù": "u", "û": "u", "ü": "u", "ç": "c"}
+    replacements = {
+        "á": "a",
+        "à": "a",
+        "â": "a",
+        "ã": "a",
+        "ä": "a",
+        "é": "e",
+        "è": "e",
+        "ê": "e",
+        "ë": "e",
+        "í": "i",
+        "ì": "i",
+        "î": "i",
+        "ï": "i",
+        "ó": "o",
+        "ò": "o",
+        "ô": "o",
+        "õ": "o",
+        "ö": "o",
+        "ú": "u",
+        "ù": "u",
+        "û": "u",
+        "ü": "u",
+        "ç": "c",
+    }
     for old, new in replacements.items():
         normalized = normalized.replace(old, new)
     normalized = re.sub(r"[^a-z0-9]+", "-", normalized)
@@ -189,7 +256,9 @@ def build_chapter_filename(index: int, title: str) -> str:
     return f"{index:02d}-{slugify(title)}.md"
 
 
-def _resolve_image_reference(base_href: str | None, src: str, image_map: dict[str, str]) -> str | None:
+def _resolve_image_reference(
+    base_href: str | None, src: str, image_map: dict[str, str]
+) -> str | None:
     if not src:
         return None
     normalized_src = _normalize_book_path(unquote(src))
@@ -204,7 +273,9 @@ def _resolve_image_reference(base_href: str | None, src: str, image_map: dict[st
     return None
 
 
-def html_to_markdown(html: str, *, image_map: dict[str, str] | None = None, base_href: str | None = None) -> str:
+def html_to_markdown(
+    html: str, *, image_map: dict[str, str] | None = None, base_href: str | None = None
+) -> str:
     parser = _MarkdownHTMLParser(image_map=image_map, base_href=base_href)
     parser.feed(html)
     parser.close()
@@ -224,14 +295,18 @@ def _local_name(tag: str) -> str:
     return tag.split("}", 1)[-1]
 
 
-def _safe_xml_fromstring(xml_bytes: bytes, error_cls: type[Exception], *, context: str) -> SafeET.Element:
+def _safe_xml_fromstring(
+    xml_bytes: bytes, error_cls: type[Exception], *, context: str
+) -> SafeET.Element:
     lowered = xml_bytes.lower()
     if b"<!doctype" in lowered or b"<!entity" in lowered:
         raise error_cls(f"EPUB inválido: XML inseguro ou malformado em {context}")
     try:
         return SafeET.fromstring(xml_bytes)
     except (DefusedXmlException, SafeET.ParseError) as exc:
-        raise error_cls(f"EPUB inválido: XML inseguro ou malformado em {context}") from exc
+        raise error_cls(
+            f"EPUB inválido: XML inseguro ou malformado em {context}"
+        ) from exc
 
 
 def _find_rootfile_path(archive: ZipFile, error_cls: type[Exception]) -> str:
@@ -239,7 +314,9 @@ def _find_rootfile_path(archive: ZipFile, error_cls: type[Exception]) -> str:
         container_xml = archive.read("META-INF/container.xml")
     except KeyError as exc:
         raise error_cls("EPUB inválido: container.xml ausente") from exc
-    root = _safe_xml_fromstring(container_xml, error_cls, context="META-INF/container.xml")
+    root = _safe_xml_fromstring(
+        container_xml, error_cls, context="META-INF/container.xml"
+    )
     for element in root.iter():
         if _local_name(element.tag) == "rootfile":
             full_path = element.attrib.get("full-path")
@@ -252,20 +329,28 @@ def _resolve_href(base_path: str, href: str) -> str:
     return str((Path(base_path).parent / href).as_posix())
 
 
-def _parse_package_document(archive: ZipFile, error_cls: type[Exception]) -> tuple[str, SafeET.Element]:
+def _parse_package_document(
+    archive: ZipFile, error_cls: type[Exception]
+) -> tuple[str, SafeET.Element]:
     rootfile_path = _find_rootfile_path(archive, error_cls)
-    package_root = _safe_xml_fromstring(archive.read(rootfile_path), error_cls, context=rootfile_path)
+    package_root = _safe_xml_fromstring(
+        archive.read(rootfile_path), error_cls, context=rootfile_path
+    )
     return rootfile_path, package_root
 
 
 def _text_or_none(element: SafeET.Element | None) -> str | None:
     if element is None:
         return None
-    text = " ".join(part.strip() for part in element.itertext() if part and part.strip()).strip()
+    text = " ".join(
+        part.strip() for part in element.itertext() if part and part.strip()
+    ).strip()
     return text or None
 
 
-def _extract_metadata_from_package_root(package_root: SafeET.Element, fallback_title: str) -> dict:
+def _extract_metadata_from_package_root(
+    package_root: SafeET.Element, fallback_title: str
+) -> dict:
     metadata = {
         "title": None,
         "author": None,
@@ -314,7 +399,9 @@ def _safe_asset_name(path: str) -> str:
     return sanitized or "asset"
 
 
-def _extract_epub_assets(archive: ZipFile, rootfile_path: str, package_root: SafeET.Element) -> tuple[list[dict], dict[str, str]]:
+def _extract_epub_assets(
+    archive: ZipFile, rootfile_path: str, package_root: SafeET.Element
+) -> tuple[list[dict], dict[str, str]]:
     assets: list[dict] = []
     image_map: dict[str, str] = {}
     used_names: set[str] = set()
@@ -339,12 +426,14 @@ def _extract_epub_assets(archive: ZipFile, rootfile_path: str, package_root: Saf
             safe_name = f"{stem}-{counter}{suffix}"
         used_names.add(safe_name)
         relative_path = f"images/{safe_name}"
-        assets.append({
-            "source_href": _normalize_book_path(resolved_href),
-            "file": relative_path,
-            "media_type": media_type,
-            "content": content,
-        })
+        assets.append(
+            {
+                "source_href": _normalize_book_path(resolved_href),
+                "file": relative_path,
+                "media_type": media_type,
+                "content": content,
+            }
+        )
         image_map[_normalize_book_path(resolved_href)] = relative_path
         image_map[Path(resolved_href).name] = relative_path
     return assets, image_map
@@ -384,7 +473,9 @@ def _flatten_toc_map(entries: list[dict]) -> dict[str, str]:
     while stack:
         entry = stack.pop(0)
         title = (entry.get("title") or "").strip()
-        file_href = _normalize_book_path(entry.get("file_href") or entry.get("href") or "")
+        file_href = _normalize_book_path(
+            entry.get("file_href") or entry.get("href") or ""
+        )
         if title and file_href and file_href not in toc_map:
             toc_map[file_href] = title
         stack[0:0] = entry.get("children", [])
@@ -412,7 +503,9 @@ def _parse_ncx_navpoint(nav_point: SafeET.Element, href: str) -> dict | None:
 
 def _parse_ncx_toc_tree(archive: ZipFile, href: str) -> list[dict]:
     try:
-        root = _safe_xml_fromstring(archive.read(href), BookConversionError, context=href)
+        root = _safe_xml_fromstring(
+            archive.read(href), BookConversionError, context=href
+        )
     except (KeyError, BookConversionError):
         return []
     nav_map = None
@@ -471,13 +564,17 @@ def _parse_nav_list(list_element: SafeET.Element, href: str) -> list[dict]:
         if not raw_href or not title:
             continue
         children = _parse_nav_list(nested_list, href) if nested_list is not None else []
-        entries.append(_toc_entry(title, _resolve_href(href, raw_href), children=children))
+        entries.append(
+            _toc_entry(title, _resolve_href(href, raw_href), children=children)
+        )
     return entries
 
 
 def _parse_nav_document_toc_tree(archive: ZipFile, href: str) -> list[dict]:
     try:
-        root = _safe_xml_fromstring(archive.read(href), BookConversionError, context=href)
+        root = _safe_xml_fromstring(
+            archive.read(href), BookConversionError, context=href
+        )
     except BookConversionError:
         try:
             html = archive.read(href).decode("utf-8", errors="replace")
@@ -486,7 +583,10 @@ def _parse_nav_document_toc_tree(archive: ZipFile, href: str) -> list[dict]:
         parser = _NavDocParser()
         parser.feed(html)
         parser.close()
-        return [_toc_entry(label, _resolve_href(href, link_href)) for link_href, label in parser.links]
+        return [
+            _toc_entry(label, _resolve_href(href, link_href))
+            for link_href, label in parser.links
+        ]
     except KeyError:
         return []
 
@@ -508,10 +608,16 @@ def _parse_nav_document_toc_tree(archive: ZipFile, href: str) -> list[dict]:
 
 
 def _build_fallback_toc(chapters: list[dict]) -> list[dict]:
-    return [_toc_entry(chapter["title"], chapter["source_href"]) for chapter in chapters if chapter.get("source_href")]
+    return [
+        _toc_entry(chapter["title"], chapter["source_href"])
+        for chapter in chapters
+        if chapter.get("source_href")
+    ]
 
 
-def _build_toc_data(archive: ZipFile, rootfile_path: str, package_root: SafeET.Element) -> tuple[list[dict], dict[str, str], str]:
+def _build_toc_data(
+    archive: ZipFile, rootfile_path: str, package_root: SafeET.Element
+) -> tuple[list[dict], dict[str, str], str]:
     manifest: dict[str, dict[str, str]] = {}
     toc_id: str | None = package_root.attrib.get("toc")
     for element in package_root.iter():
@@ -564,7 +670,9 @@ def _build_toc_data(archive: ZipFile, rootfile_path: str, package_root: SafeET.E
     return toc_tree, _flatten_toc_map(toc_tree), toc_source
 
 
-def extract_book_metadata(source: Path, *, error_cls: type[Exception] = BookConversionError) -> dict:
+def extract_book_metadata(
+    source: Path, *, error_cls: type[Exception] = BookConversionError
+) -> dict:
     if not source.exists():
         raise error_cls(f"Arquivo de entrada não existe: {source}")
     suffix = source.suffix.lower()
@@ -591,13 +699,23 @@ def extract_book_metadata(source: Path, *, error_cls: type[Exception] = BookConv
     raise error_cls("Formato não suportado. Use EPUB ou PDF textual")
 
 
-def _extract_chapters_from_epub(source: Path, error_cls: type[Exception], *, include_images: bool = False) -> tuple[list[dict], dict]:
+def _extract_chapters_from_epub(
+    source: Path, error_cls: type[Exception], *, include_images: bool = False
+) -> tuple[list[dict], dict]:
     try:
         with ZipFile(source) as archive:
             rootfile_path, package_root = _parse_package_document(archive, error_cls)
-            book_metadata = _extract_metadata_from_package_root(package_root, source.stem)
-            toc_tree, toc_map, toc_source = _build_toc_data(archive, rootfile_path, package_root)
-            assets, image_map = _extract_epub_assets(archive, rootfile_path, package_root) if include_images else ([], {})
+            book_metadata = _extract_metadata_from_package_root(
+                package_root, source.stem
+            )
+            toc_tree, toc_map, toc_source = _build_toc_data(
+                archive, rootfile_path, package_root
+            )
+            assets, image_map = (
+                _extract_epub_assets(archive, rootfile_path, package_root)
+                if include_images
+                else ([], {})
+            )
             manifest: dict[str, dict[str, str]] = {}
             spine: list[str] = []
             for element in package_root.iter():
@@ -607,8 +725,16 @@ def _extract_chapters_from_epub(source: Path, error_cls: type[Exception], *, inc
                     href = element.attrib.get("href")
                     media_type = element.attrib.get("media-type", "")
                     properties = element.attrib.get("properties", "")
-                    if item_id and href and ("html" in media_type or "xhtml" in media_type) and "nav" not in f" {properties} ":
-                        manifest[item_id] = {"href": _resolve_href(rootfile_path, href), "media_type": media_type}
+                    if (
+                        item_id
+                        and href
+                        and ("html" in media_type or "xhtml" in media_type)
+                        and "nav" not in f" {properties} "
+                    ):
+                        manifest[item_id] = {
+                            "href": _resolve_href(rootfile_path, href),
+                            "media_type": media_type,
+                        }
                 elif name == "itemref":
                     idref = element.attrib.get("idref")
                     if idref:
@@ -628,17 +754,26 @@ def _extract_chapters_from_epub(source: Path, error_cls: type[Exception], *, inc
                 href = manifest_entry["href"]
                 html = archive.read(href).decode("utf-8", errors="replace")
                 normalized_href = _normalize_book_path(href)
-                fallback_title = toc_map.get(normalized_href) or Path(normalized_href).stem.replace("_", " ").replace("-", " ").strip() or f"Capítulo {chapter_index}"
+                fallback_title = (
+                    toc_map.get(normalized_href)
+                    or Path(normalized_href)
+                    .stem.replace("_", " ")
+                    .replace("-", " ")
+                    .strip()
+                    or f"Capítulo {chapter_index}"
+                )
                 title = _extract_title(html, fallback_title)
                 content = html_to_markdown(html, image_map=image_map, base_href=href)
                 if not content:
                     continue
-                chapters.append({
-                    "index": chapter_index,
-                    "title": title,
-                    "content": content,
-                    "source_href": normalized_href,
-                })
+                chapters.append(
+                    {
+                        "index": chapter_index,
+                        "title": title,
+                        "content": content,
+                        "source_href": normalized_href,
+                    }
+                )
     except BadZipFile as exc:
         raise error_cls(f"EPUB inválido ou corrompido: {source.name}") from exc
 
@@ -649,18 +784,21 @@ def _extract_chapters_from_epub(source: Path, error_cls: type[Exception], *, inc
         toc_tree = _build_fallback_toc(chapters)
         toc_source = "spine_fallback"
 
-    book_metadata.update({
-        "toc": toc_tree,
-        "toc_source": toc_source,
-        "chapter_source": chapter_source,
-        "assets": assets,
-    })
+    book_metadata.update(
+        {
+            "toc": toc_tree,
+            "toc_source": toc_source,
+            "chapter_source": chapter_source,
+            "assets": assets,
+        }
+    )
     return chapters, book_metadata
 
 
-
 def _normalize_pdf_text(text: str) -> str:
-    normalized_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()]
+    normalized_lines = [
+        re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()
+    ]
     kept_lines: list[str] = []
     blank_streak = 0
     for line in normalized_lines:
@@ -677,15 +815,16 @@ def _normalize_pdf_text(text: str) -> str:
 def _is_garbled(text: str) -> bool:
     if len(text) < 50:
         return False
-    ctrl = sum(1 for c in text if ord(c) < 32 and c not in '\n\r\t')
+    ctrl = sum(1 for c in text if ord(c) < 32 and c not in "\n\r\t")
     return ctrl / len(text) > 0.05
-
 
 
 _PDF_PAGES_PER_CHUNK = 15
 
 
-def _get_pdf_pages(source: Path, error_cls: type[Exception], *, use_ocr: bool = False) -> tuple[list[str], list]:
+def _get_pdf_pages(
+    source: Path, error_cls: type[Exception], *, use_ocr: bool = False
+) -> tuple[list[str], list]:
     import fitz
 
     try:
@@ -693,30 +832,37 @@ def _get_pdf_pages(source: Path, error_cls: type[Exception], *, use_ocr: bool = 
     except Exception as exc:
         raise error_cls(f"PDF inválido ou corrompido: {source.name} ({exc})")
 
-    toc = doc.get_toc()  # [[level, title, page_1based], ...]
+    try:
+        toc = doc.get_toc()  # [[level, title, page_1based], ...]
 
-    if use_ocr:
-        try:
-            from pdf2image import convert_from_path
-            import pytesseract
-        except ImportError:
-            raise error_cls("OCR requer dependências adicionais. Execute: pip install 'kb[ocr]'")
-        try:
-            images = convert_from_path(str(source))
-        except Exception as exc:
-            raise error_cls(f"Erro ao converter PDF para imagens: {exc}")
-        pages = [pytesseract.image_to_string(img, lang="por+eng") for img in images]
-        doc.close()
-    else:
-        pages = [page.get_text() for page in doc]
-        doc.close()
-        combined = _normalize_pdf_text("\n".join(pages))
-        if not combined:
-            raise error_cls("PDF sem texto extraível — arquivo pode ser scan. Tente: kb import-book --ocr")
-        if _is_garbled(combined):
-            raise error_cls("PDF com encoding de fonte inválido — texto corrompido. Tente: kb import-book --ocr")
+        if use_ocr:
+            try:
+                from pdf2image import convert_from_path
+                import pytesseract
+            except ImportError:
+                raise error_cls(
+                    "OCR requer dependências adicionais. Execute: pip install 'kb[ocr]'"
+                )
+            try:
+                images = convert_from_path(str(source))
+            except Exception as exc:
+                raise error_cls(f"Erro ao converter PDF para imagens: {exc}")
+            pages = [pytesseract.image_to_string(img, lang="por+eng") for img in images]
+        else:
+            pages = [page.get_text() for page in doc]
+            combined = _normalize_pdf_text("\n".join(pages))
+            if not combined:
+                raise error_cls(
+                    "PDF sem texto extraível — arquivo pode ser scan. Tente: kb import-book --ocr"
+                )
+            if _is_garbled(combined):
+                raise error_cls(
+                    "PDF com encoding de fonte inválido — texto corrompido. Tente: kb import-book --ocr"
+                )
 
-    return pages, toc
+        return pages, toc
+    finally:
+        doc.close()
 
 
 def _build_metadata(source: Path, chapter_source: str) -> dict:
@@ -737,7 +883,13 @@ def _build_metadata(source: Path, chapter_source: str) -> dict:
     }
 
 
-def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception], *, use_ocr: bool = False, chunk_pages: int = _PDF_PAGES_PER_CHUNK) -> tuple[list[dict], dict]:
+def _extract_chapters_from_pdf(
+    source: Path,
+    error_cls: type[Exception],
+    *,
+    use_ocr: bool = False,
+    chunk_pages: int = _PDF_PAGES_PER_CHUNK,
+) -> tuple[list[dict], dict]:
     pages, toc = _get_pdf_pages(source, error_cls, use_ocr=use_ocr)
 
     max_toc_chapters = max(5, len(pages) // 8)
@@ -746,7 +898,11 @@ def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception], *, use_
     overflow_candidates: list[tuple[str, int]] = []
 
     for level in (1, 2):
-        candidates = [(title, page - 1) for lvl, title, page in toc if lvl == level and title.strip()]
+        candidates = [
+            (title, page - 1)
+            for lvl, title, page in toc
+            if lvl == level and title.strip()
+        ]
         enough = len(candidates) >= 5 or (len(candidates) >= 2 and len(pages) <= 30)
         not_too_many = len(candidates) <= max_toc_chapters
         if enough and not_too_many:
@@ -759,10 +915,19 @@ def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception], *, use_
         chapters = []
         for i, (title, start_page) in enumerate(top_level):
             start_page = max(0, start_page)
-            end_page = max(start_page + 1, top_level[i + 1][1] if i + 1 < len(top_level) else len(pages))
+            end_page = max(
+                start_page + 1,
+                top_level[i + 1][1] if i + 1 < len(top_level) else len(pages),
+            )
             content = _normalize_pdf_text("\n".join(pages[start_page:end_page]))
             if content:
-                chapters.append({"index": len(chapters) + 1, "title": title[:120], "content": content})
+                chapters.append(
+                    {
+                        "index": len(chapters) + 1,
+                        "title": title[:120],
+                        "content": content,
+                    }
+                )
         if chapters:
             return chapters, _build_metadata(source, "toc")
 
@@ -773,25 +938,40 @@ def _extract_chapters_from_pdf(source: Path, error_cls: type[Exception], *, use_
             title, start = overflow_candidates[i]
             start = max(0, start)
             j = i + 1
-            while j < len(overflow_candidates) and overflow_candidates[j][1] - start < chunk_pages:
+            while (
+                j < len(overflow_candidates)
+                and overflow_candidates[j][1] - start < chunk_pages
+            ):
                 j += 1
-            end = overflow_candidates[j][1] if j < len(overflow_candidates) else len(pages)
+            end = (
+                overflow_candidates[j][1]
+                if j < len(overflow_candidates)
+                else len(pages)
+            )
             content = _normalize_pdf_text("\n".join(pages[start:end]))
             if content:
-                chapters.append({"index": len(chapters) + 1, "title": title[:120], "content": content})
+                chapters.append(
+                    {
+                        "index": len(chapters) + 1,
+                        "title": title[:120],
+                        "content": content,
+                    }
+                )
             i = j
         if chapters:
             return chapters, _build_metadata(source, "toc_merged")
 
     chapters = []
     for i in range(0, len(pages), chunk_pages):
-        chunk = pages[i:i + chunk_pages]
+        chunk = pages[i : i + chunk_pages]
         content = _normalize_pdf_text("\n".join(chunk))
         if content:
             start = i + 1
             end = min(i + chunk_pages, len(pages))
             title = f"Páginas {start}–{end}"
-            chapters.append({"index": len(chapters) + 1, "title": title, "content": content})
+            chapters.append(
+                {"index": len(chapters) + 1, "title": title, "content": content}
+            )
 
     if not chapters:
         raise error_cls("Nenhum conteúdo extraível encontrado no PDF")
@@ -811,7 +991,12 @@ def write_assets(output_dir: Path, assets: list[dict]) -> list[Path]:
     return written_assets
 
 
-def write_chapters(chapters: list[dict], output_dir: Path, *, error_cls: type[Exception] = BookConversionError) -> list[Path]:
+def write_chapters(
+    chapters: list[dict],
+    output_dir: Path,
+    *,
+    error_cls: type[Exception] = BookConversionError,
+) -> list[Path]:
     if not chapters:
         raise error_cls("Nenhum capítulo foi detectado no documento")
     ensure_output_dir(output_dir)
@@ -827,17 +1012,25 @@ def write_chapters(chapters: list[dict], output_dir: Path, *, error_cls: type[Ex
     return written_files
 
 
-def write_metadata(source: Path, output_dir: Path, chapters: list[dict], written_files: list[Path], book_metadata: dict | None = None) -> Path:
+def write_metadata(
+    source: Path,
+    output_dir: Path,
+    chapters: list[dict],
+    written_files: list[Path],
+    book_metadata: dict | None = None,
+) -> Path:
     ensure_output_dir(output_dir)
     book_metadata = book_metadata or {}
     metadata_path = output_dir / "metadata.json"
     payload = {
         "source_file": source.name,
         "source_format": source.suffix.lower().lstrip("."),
-        "processed_at": book_metadata.get("processed_at") or datetime.now(timezone.utc).isoformat(),
+        "processed_at": book_metadata.get("processed_at")
+        or datetime.now(timezone.utc).isoformat(),
         "book_title": book_metadata.get("title") or source.stem,
         "book_author": book_metadata.get("author"),
-        "book_authors": book_metadata.get("authors") or ([book_metadata["author"]] if book_metadata.get("author") else []),
+        "book_authors": book_metadata.get("authors")
+        or ([book_metadata["author"]] if book_metadata.get("author") else []),
         "book_language": book_metadata.get("language"),
         "book_description": book_metadata.get("description"),
         "book_publisher": book_metadata.get("publisher"),
@@ -866,20 +1059,37 @@ def write_metadata(source: Path, output_dir: Path, chapters: list[dict], written
             for chapter, written_file in zip(chapters, written_files, strict=False)
         ],
     }
-    metadata_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    metadata_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return metadata_path
 
 
-def convert_book(source: Path, output_dir: Path, *, error_cls: type[Exception] = BookConversionError, unsupported_message: str = "Formato não suportado. Use EPUB ou PDF textual", include_images: bool = False, use_ocr: bool = False, chunk_pages: int = _PDF_PAGES_PER_CHUNK) -> tuple[list[Path], Path]:
+def convert_book(
+    source: Path,
+    output_dir: Path,
+    *,
+    error_cls: type[Exception] = BookConversionError,
+    unsupported_message: str = "Formato não suportado. Use EPUB ou PDF textual",
+    include_images: bool = False,
+    use_ocr: bool = False,
+    chunk_pages: int = _PDF_PAGES_PER_CHUNK,
+) -> tuple[list[Path], Path]:
     if not source.exists():
         raise error_cls(f"Arquivo de entrada não existe: {source}")
     if source.suffix.lower() == ".epub":
-        chapters, book_metadata = _extract_chapters_from_epub(source, error_cls, include_images=include_images)
+        chapters, book_metadata = _extract_chapters_from_epub(
+            source, error_cls, include_images=include_images
+        )
     elif source.suffix.lower() == ".pdf":
-        chapters, book_metadata = _extract_chapters_from_pdf(source, error_cls, use_ocr=use_ocr, chunk_pages=chunk_pages)
+        chapters, book_metadata = _extract_chapters_from_pdf(
+            source, error_cls, use_ocr=use_ocr, chunk_pages=chunk_pages
+        )
     else:
         raise error_cls(unsupported_message)
     written_files = write_chapters(chapters, output_dir, error_cls=error_cls)
     write_assets(output_dir, book_metadata.get("assets") or [])
-    metadata_path = write_metadata(source, output_dir, chapters, written_files, book_metadata)
+    metadata_path = write_metadata(
+        source, output_dir, chapters, written_files, book_metadata
+    )
     return written_files, metadata_path
