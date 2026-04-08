@@ -3,6 +3,7 @@ import time
 from unittest.mock import patch
 from kb.compile import (
     CompileArtifact,
+    _write_summary,
     compile_many,
     compile_to_artifact,
     compile_file,
@@ -345,6 +346,25 @@ Resumo persistido.
         assert "Persisted Article" in manifest
         assert "Persisted Article" in knowledge
         mock_commit.assert_not_called()
+
+    def test_should_preserve_explicit_empty_summary_text(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        article_path = wiki / "ai" / "empty-summary.md"
+        article_path.parent.mkdir(parents=True, exist_ok=True)
+
+        summary_path = _write_summary(
+            article_path=article_path,
+            topic="ai",
+            title="Empty Summary",
+            source_name="empty-summary.md",
+            compiled_markdown="---\ntitle: Empty Summary\ntopic: ai\n---\n\n# Empty Summary\n\nFallback body.",
+            summary_text="",
+        )
+
+        summary_content = summary_path.read_text()
+
+        assert "Fallback body." not in summary_content
+        assert summary_content.endswith("# Summary — Empty Summary\n\n\n")
 
 
 class TestCompileMany:

@@ -202,7 +202,8 @@ def _write_summary(
     summary_text: str | None = None,
 ) -> Path:
     summary_path = _summary_path(article_path)
-    summary_text = summary_text or extract_summary(compiled_markdown)
+    if summary_text is None:
+        summary_text = extract_summary(compiled_markdown)
     summary_path.write_text(
         (
             f"---\n"
