@@ -49,7 +49,6 @@ addopts = "--cov=kb --cov-report=term-missing --cov-report=html"
 
 [tool.coverage.run]
 source = ["kb"]
-omit = ["kb/cli.py"]
 
 [tool.coverage.report]
 show_missing = true
