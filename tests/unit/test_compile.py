@@ -1,7 +1,14 @@
+import threading
+import time
 from unittest.mock import patch
 from kb.compile import (
+    CompileArtifact,
+    _write_summary,
+    compile_many,
+    compile_to_artifact,
     compile_file,
     discover_compile_targets,
+    persist_artifact,
     update_index,
     _prepare_prompt_content,
 )
@@ -128,10 +135,35 @@ source: article.md
         ):
             mock_chat.return_value = mock_response
 
-            compile_file(raw_file)
+            compile_file(raw_file, no_commit=False)
 
             # RED: falha se commit não foi chamado
             mock_commit.assert_called()
+
+    def test_should_not_commit_to_git_after_compilation_by_default(
+        self, tmp_raw_wiki, sample_xss_md
+    ):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "default-no-commit.md"
+        raw_file.write_text(sample_xss_md)
+
+        mock_response = """---
+title: Default Safe
+topic: ai
+---
+
+# Default Safe
+"""
+
+        with (
+            patch("kb.compile.chat") as mock_chat,
+            patch("kb.compile.commit") as mock_commit,
+        ):
+            mock_chat.return_value = mock_response
+
+            compile_file(raw_file)
+
+            mock_commit.assert_not_called()
 
     def test_should_store_summaries_with_topic_hierarchy(self, tmp_raw_wiki):
         raw, wiki = tmp_raw_wiki
@@ -237,13 +269,229 @@ Conteúdo compilado.
         with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
             mock_chat.side_effect = [FakeResourceLimitError(), mock_response]
 
-            result = compile_file(raw_file, no_commit=True)
+            artifact = compile_to_artifact(raw_file, allow_sensitive=False)
 
-            assert result.exists()
+            assert artifact.title == "Exercícios de Matrizes"
             assert mock_chat.call_count == 2
             retry_prompt = mock_chat.call_args_list[1].kwargs["messages"][1]["content"]
             assert "Documento pré-processado" in retry_prompt
             assert "Draft (2021-07-29)" not in retry_prompt
+
+
+class TestCompileArtifacts:
+    def test_should_build_pure_artifact_without_persisting_files(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "artifact.md"
+        raw_file.write_text("# Artifact\nConteúdo")
+
+        mock_response = """---
+title: Artifact Title
+topic: ai
+---
+
+# Artifact Title
+
+Conteúdo compilado.
+"""
+
+        with patch("kb.compile.chat") as mock_chat, patch("kb.compile.commit"):
+            mock_chat.return_value = mock_response
+
+            artifact = compile_to_artifact(raw_file)
+
+        assert artifact == CompileArtifact(
+            raw_path=raw_file,
+            source_name="artifact.md",
+            compiled_markdown=mock_response,
+            topic="ai",
+            title="Artifact Title",
+            summary_text="Conteúdo compilado.",
+        )
+        assert not (wiki / "ai" / "artifact-title.md").exists()
+        assert not (wiki / "summaries" / "ai" / "artifact-title.md").exists()
+
+    def test_should_persist_artifact_and_update_state(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        artifact = CompileArtifact(
+            raw_path=raw / "persist.md",
+            source_name="persist.md",
+            compiled_markdown="""---
+title: Persisted Article
+topic: cybersecurity
+---
+
+# Persisted Article
+
+Resumo persistido.
+""",
+            topic="cybersecurity",
+            title="Persisted Article",
+            summary_text="Resumo persistido.",
+        )
+
+        with patch("kb.compile.commit") as mock_commit:
+            result = persist_artifact(artifact)
+
+        assert result.exists()
+        assert result == wiki / "cybersecurity" / "persisted-article.md"
+        assert (wiki / "summaries" / "cybersecurity" / "persisted-article.md").exists()
+        assert (
+            "Persisted Article"
+            in (
+                wiki / "summaries" / "cybersecurity" / "persisted-article.md"
+            ).read_text()
+        )
+        manifest = (raw.parent / "kb_state" / "manifest.json").read_text()
+        knowledge = (raw.parent / "kb_state" / "knowledge.json").read_text()
+        assert "Persisted Article" in manifest
+        assert "Persisted Article" in knowledge
+        mock_commit.assert_not_called()
+
+    def test_should_preserve_explicit_empty_summary_text(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        article_path = wiki / "ai" / "empty-summary.md"
+        article_path.parent.mkdir(parents=True, exist_ok=True)
+
+        summary_path = _write_summary(
+            article_path=article_path,
+            topic="ai",
+            title="Empty Summary",
+            source_name="empty-summary.md",
+            compiled_markdown="---\ntitle: Empty Summary\ntopic: ai\n---\n\n# Empty Summary\n\nFallback body.",
+            summary_text="",
+        )
+
+        summary_content = summary_path.read_text()
+
+        assert "Fallback body." not in summary_content
+        assert summary_content.endswith("# Summary — Empty Summary\n\n\n")
+
+
+class TestCompileMany:
+    def test_should_compile_multiple_files_and_persist_in_stable_order(
+        self, tmp_raw_wiki
+    ):
+        raw, wiki = tmp_raw_wiki
+        first = raw / "b-second.md"
+        second = raw / "a-first.md"
+        first.write_text("# Second\nConteúdo")
+        second.write_text("# First\nConteúdo")
+
+        def fake_chat(*, messages):
+            prompt = messages[1]["content"]
+            if "b-second.md" in prompt:
+                return """---
+title: Second Article
+topic: ai
+---
+
+# Second Article
+
+Conteúdo do segundo arquivo.
+"""
+            return """---
+title: First Article
+topic: cybersecurity
+---
+
+# First Article
+
+Conteúdo do primeiro arquivo.
+"""
+
+        result = None
+        with (
+            patch("kb.compile.chat", side_effect=fake_chat),
+            patch("kb.compile.commit"),
+            patch("kb.compile.update_index", wraps=update_index) as mock_update_index,
+        ):
+            result = compile_many([second, first], workers=2)
+
+        assert [path.name for path in result.outputs] == [
+            "first-article.md",
+            "second-article.md",
+        ]
+        assert mock_update_index.call_count == 1
+        manifest = (raw.parent / "kb_state" / "manifest.json").read_text()
+        assert manifest.index("a-first.md") < manifest.index("b-second.md")
+        assert (wiki / "_index.md").exists()
+
+    def test_should_collect_partial_failures_without_aborting_batch(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        good = raw / "good.md"
+        bad = raw / "bad.md"
+        good.write_text("# Good\nConteúdo")
+        bad.write_text("# Bad\nConteúdo")
+
+        def fake_chat(*, messages):
+            prompt = messages[1]["content"]
+            if "bad.md" in prompt:
+                raise RuntimeError("provider failed")
+            return """---
+title: Good Article
+topic: ai
+---
+
+# Good Article
+
+Conteúdo bom.
+"""
+
+        with (
+            patch("kb.compile.chat", side_effect=fake_chat),
+            patch("kb.compile.commit"),
+        ):
+            result = compile_many([good, bad], workers=2)
+
+        assert [path.name for path in result.outputs] == ["good-article.md"]
+        assert len(result.failures) == 1
+        assert result.failures[0].raw_path == bad
+        assert isinstance(result.failures[0].error, RuntimeError)
+        assert (wiki / "ai" / "good-article.md").exists()
+        assert (wiki / "_index.md").exists()
+
+    def test_should_run_generation_concurrently_while_persisting_in_input_order(
+        self, tmp_raw_wiki
+    ):
+        raw, wiki = tmp_raw_wiki
+        targets = []
+        for name in ["03-third.md", "01-first.md", "02-second.md"]:
+            path = raw / name
+            path.write_text(f"# {name}\nConteúdo")
+            targets.append(path)
+
+        active_calls = 0
+        max_active_calls = 0
+        lock = threading.Lock()
+
+        def fake_chat(*, messages):
+            nonlocal active_calls, max_active_calls
+            prompt = messages[1]["content"]
+            source_name = prompt.splitlines()[0].split(":", 1)[1].strip()
+            title = source_name.replace(".md", "").replace("-", " ").title()
+            with lock:
+                active_calls += 1
+                max_active_calls = max(max_active_calls, active_calls)
+            time.sleep(0.03 if "03-third" in source_name else 0.01)
+            with lock:
+                active_calls -= 1
+            return f"---\ntitle: {title}\ntopic: ai\n---\n\n# {title}\n\nConteúdo {source_name}.\n"
+
+        with (
+            patch("kb.compile.chat", side_effect=fake_chat),
+            patch("kb.compile.commit"),
+        ):
+            result = compile_many(targets, workers=3)
+
+        assert max_active_calls > 1
+        assert [path.name for path in result.outputs] == [
+            "03-third.md",
+            "01-first.md",
+            "02-second.md",
+        ]
+        manifest = (raw.parent / "kb_state" / "manifest.json").read_text()
+        assert manifest.index("03-third.md") < manifest.index("01-first.md")
+        assert manifest.index("01-first.md") < manifest.index("02-second.md")
 
 
 class TestDiscoverCompileTargets:

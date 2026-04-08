@@ -1,6 +1,15 @@
 import pytest
 
 
+def pytest_addoption(parser):
+    try:
+        import pytest_cov.plugin  # noqa: F401
+    except ImportError:
+        group = parser.getgroup("cov-compat")
+        group.addoption("--cov", action="append", default=[])
+        group.addoption("--cov-report", action="append", default=[])
+
+
 @pytest.fixture
 def tmp_raw_wiki(tmp_path, monkeypatch):
     """Setup raw/, wiki/ e outputs/ temporários para testes com monkeypatch global"""

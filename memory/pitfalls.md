@@ -40,9 +40,9 @@ type: project
 
 ### P5: Git push sem branch
 
-**Problema:** Tudo é commitado em `main` sem branches.
+**Problema:** trabalho local feito em `main` vira tentação de commitar/pushar direto e dificulta revisão.
 
-**Solução:** Para kb em solo mode, tudo em main é OK. Se colab, criar branches de feature.
+**Solução:** crie branch de feature antes de commitar qualquer frente relevante. Mesmo em fluxo solo, use branch + PR quando houver diff não trivial.
 
 ---
 
@@ -64,13 +64,13 @@ type: project
 
 ### P8: LLM envolvendo output em code fences
 
-**Problema:** LLM retorna conteúdo de `compile` envolvido em `` ```markdown `` ou `` ``` ``, corrompendo o frontmatter YAML dos artigos da wiki.
+**Problema:** LLM retorna conteúdo de `compile` envolvido em ` ```markdown ` ou ` ``` `, corrompendo o frontmatter YAML dos artigos da wiki.
 
-**Causa raiz:** Exemplos de formato no SYSTEM prompt que usam `` ``` `` ensinam o modelo a envolver a resposta em fences.
+**Causa raiz:** Exemplos de formato no SYSTEM prompt que usam ` ``` ` ensinam o modelo a envolver a resposta em fences.
 
 **Solução (dupla):** (1) SYSTEM prompt explicitamente instrui "SEM code fences"; (2) `_strip_outer_fence()` em `compile.py` remove fences defensivamente após cada chamada.
 
-**Sinal de alerta:** Artigos que começam com `` ```markdown `` em vez de `---` no frontmatter.
+**Sinal de alerta:** Artigos que começam com ` ```markdown ` em vez de `---` no frontmatter.
 
 ---
 

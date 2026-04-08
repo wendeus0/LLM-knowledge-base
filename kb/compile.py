@@ -1,5 +1,7 @@
 """Compila documentos de raw/ para a wiki em markdown."""
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 import re
 import unicodedata
 from pathlib import Path
@@ -63,8 +65,34 @@ NOISE_PATTERNS = [
 ]
 
 
+@dataclass(frozen=True)
+class CompileArtifact:
+    raw_path: Path
+    source_name: str
+    compiled_markdown: str
+    topic: str
+    title: str
+    summary_text: str
+
+
+@dataclass(frozen=True)
+class CompileFailure:
+    raw_path: Path
+    error: Exception
+
+
+@dataclass(frozen=True)
+class CompileBatchResult:
+    outputs: list[Path]
+    failures: list[CompileFailure]
+
+
 def _read_raw(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _resolve_raw_path(raw_path: Path) -> Path:
+    return raw_path if raw_path.is_absolute() else RAW_DIR / raw_path
 
 
 def _prepare_prompt_content(text: str, aggressive: bool = False) -> str:
@@ -150,11 +178,32 @@ def _summary_path(article_path: Path) -> Path:
     return target_dir / article_path.name
 
 
+def _extract_topic_and_title(
+    compiled_markdown: str, fallback_title: str
+) -> tuple[str, str]:
+    topic = "general"
+    title = fallback_title
+    for line in compiled_markdown.splitlines():
+        if line.startswith("topic:"):
+            candidate = line.split(":", 1)[1].strip()
+            if candidate in TOPICS:
+                topic = candidate
+        if line.startswith("title:"):
+            title = line.split(":", 1)[1].strip()
+    return topic, title
+
+
 def _write_summary(
-    article_path: Path, topic: str, title: str, source_name: str, compiled_markdown: str
+    article_path: Path,
+    topic: str,
+    title: str,
+    source_name: str,
+    compiled_markdown: str,
+    summary_text: str | None = None,
 ) -> Path:
     summary_path = _summary_path(article_path)
-    summary_text = extract_summary(compiled_markdown)
+    if summary_text is None:
+        summary_text = extract_summary(compiled_markdown)
     summary_path.write_text(
         (
             f"---\n"
@@ -171,10 +220,10 @@ def _write_summary(
     return summary_path
 
 
-def compile_file(
-    raw_path: Path, allow_sensitive: bool = False, no_commit: bool = False
-) -> Path:
-    raw_path = raw_path if raw_path.is_absolute() else RAW_DIR / raw_path
+def compile_to_artifact(
+    raw_path: Path, allow_sensitive: bool = False
+) -> CompileArtifact:
+    raw_path = _resolve_raw_path(raw_path)
     content = _read_raw(raw_path)
     assert_safe_for_provider(
         content, source=f"compile:{raw_path.name}", allow_sensitive=allow_sensitive
@@ -205,41 +254,113 @@ def compile_file(
                 },
             ]
         )
-    response = _strip_outer_fence(response)
 
-    # Extrai frontmatter para determinar topic e title
-    topic = "general"
-    title = raw_path.stem
-    for line in response.splitlines():
-        if line.startswith("topic:"):
-            t = line.split(":", 1)[1].strip()
-            if t in TOPICS:
-                topic = t
-        if line.startswith("title:"):
-            title = line.split(":", 1)[1].strip()
+    compiled_markdown = _strip_outer_fence(response)
+    topic, title = _extract_topic_and_title(compiled_markdown, raw_path.stem)
+    return CompileArtifact(
+        raw_path=raw_path,
+        source_name=raw_path.name,
+        compiled_markdown=compiled_markdown,
+        topic=topic,
+        title=title,
+        summary_text=extract_summary(compiled_markdown),
+    )
 
-    out = _resolve_output_path(raw_path, topic, title)
-    out.write_text(response, encoding="utf-8")
-    summary_path = _write_summary(out, topic, title, raw_path.name, response)
 
-    mark_compiled(raw_path, out, summary_path, topic, title)
+def persist_artifact(artifact: CompileArtifact, no_commit: bool = True) -> Path:
+    out = _resolve_output_path(artifact.raw_path, artifact.topic, artifact.title)
+    out.write_text(artifact.compiled_markdown, encoding="utf-8")
+    summary_path = _write_summary(
+        out,
+        artifact.topic,
+        artifact.title,
+        artifact.source_name,
+        artifact.compiled_markdown,
+        summary_text=artifact.summary_text,
+    )
+
+    mark_compiled(artifact.raw_path, out, summary_path, artifact.topic, artifact.title)
     upsert_knowledge(
         {
-            "title": title,
-            "topic": topic,
-            "source": str(raw_path),
+            "title": artifact.title,
+            "topic": artifact.topic,
+            "source": str(artifact.raw_path),
             "article": str(out),
             "summary": str(summary_path),
-            "summary_text": extract_summary(response),
+            "summary_text": artifact.summary_text,
         }
     )
 
     if not no_commit:
-        commit(f"feat(wiki): compile {raw_path.name} → {out.name}", [out, summary_path])
+        commit(
+            f"feat(wiki): compile {artifact.source_name} → {out.name}",
+            [out, summary_path],
+        )
     return out
 
 
-def update_index(no_commit: bool = False) -> None:
+def compile_file(
+    raw_path: Path, allow_sensitive: bool = False, no_commit: bool = True
+) -> Path:
+    artifact = compile_to_artifact(raw_path, allow_sensitive=allow_sensitive)
+    return persist_artifact(artifact, no_commit=no_commit)
+
+
+def compile_many(
+    targets: list[Path],
+    workers: int = 4,
+    allow_sensitive: bool = False,
+    no_commit: bool = True,
+    update_index_enabled: bool = True,
+) -> CompileBatchResult:
+    ordered_targets = [_resolve_raw_path(target) for target in targets]
+    if not ordered_targets:
+        return CompileBatchResult(outputs=[], failures=[])
+
+    artifacts_by_index: dict[int, CompileArtifact] = {}
+    failures_by_index: dict[int, CompileFailure] = {}
+    effective_workers = max(1, min(workers, len(ordered_targets)))
+
+    if effective_workers == 1:
+        for index, raw_path in enumerate(ordered_targets):
+            try:
+                artifacts_by_index[index] = compile_to_artifact(
+                    raw_path, allow_sensitive=allow_sensitive
+                )
+            except Exception as exc:
+                failures_by_index[index] = CompileFailure(raw_path=raw_path, error=exc)
+    else:
+        with ThreadPoolExecutor(max_workers=effective_workers) as executor:
+            futures = {
+                executor.submit(
+                    compile_to_artifact, raw_path, allow_sensitive=allow_sensitive
+                ): (index, raw_path)
+                for index, raw_path in enumerate(ordered_targets)
+            }
+            for future in as_completed(futures):
+                index, raw_path = futures[future]
+                try:
+                    artifacts_by_index[index] = future.result()
+                except Exception as exc:
+                    failures_by_index[index] = CompileFailure(
+                        raw_path=raw_path, error=exc
+                    )
+
+    outputs = []
+    for index in range(len(ordered_targets)):
+        artifact = artifacts_by_index.get(index)
+        if artifact is None:
+            continue
+        outputs.append(persist_artifact(artifact, no_commit=no_commit))
+
+    if outputs and update_index_enabled:
+        update_index(no_commit=no_commit)
+
+    failures = [failures_by_index[index] for index in sorted(failures_by_index)]
+    return CompileBatchResult(outputs=outputs, failures=failures)
+
+
+def update_index(no_commit: bool = True) -> None:
     """Regenera _index.md listando todos os artigos da wiki."""
     articles: list[str] = []
     for md in sorted(WIKI_DIR.rglob("*.md")):

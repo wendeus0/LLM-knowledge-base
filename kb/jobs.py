@@ -13,7 +13,11 @@ class JobSpec:
 
 
 JOBS = [
-    JobSpec("compile", "0 9 * * *", "Compilar novos documentos de raw/ para wiki/ e atualizar o índice."),
+    JobSpec(
+        "compile",
+        "0 9 * * *",
+        "Compilar novos documentos de raw/ para wiki/ e atualizar o índice.",
+    ),
     JobSpec("lint", "0 8 * * 0", "Auditar a wiki e relatar inconsistências."),
     JobSpec("review", "0 18 * * 5", "Executar heal amostrado para manutenção da wiki."),
 ]
@@ -27,13 +31,14 @@ def run_job(name: str) -> str:
     normalized = name.strip().lower()
 
     if normalized == "compile":
-        from kb.compile import compile_file, discover_compile_targets, update_index
+        from kb.compile import compile_many, discover_compile_targets
 
         targets = discover_compile_targets()
-        for target in targets:
-            compile_file(target)
-        update_index()
-        return f"Job compile executado ({len(targets)} alvo(s))."
+        result = compile_many(targets)
+        return (
+            f"Job compile executado ({len(result.outputs)} alvo(s) compilado(s), "
+            f"{len(result.failures)} falha(s))."
+        )
 
     if normalized == "lint":
         from kb.lint import lint_wiki
