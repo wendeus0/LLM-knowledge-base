@@ -29,11 +29,14 @@ app = typer.Typer(
         "search <query>\n\n"
         "lint  [--allow-sensitive]\n\n"
         "heal  [--n/-n INT] [--allow-sensitive] [--no-commit]\n\n"
-        "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron"
+        "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron  |  jobs doc-gate\n\n"
+        "handoff create --scope <texto> [--summary] [--next-steps] [--evidence] [--decisions]"
     ),
 )
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
+handoff_app = typer.Typer(help="Handoff operacional de sessão")
 app.add_typer(jobs_app, name="jobs")
+app.add_typer(handoff_app, name="handoff")
 console = Console()
 
 
@@ -598,3 +601,68 @@ def jobs_cron(
         disputed_max_pct=disputed_max_pct,
     ):
         console.print(line)
+
+
+@jobs_app.command("doc-gate")
+def jobs_doc_gate(
+    base_ref: str = typer.Option(
+        "origin/main",
+        "--base-ref",
+        help="Ref base para calcular arquivos alterados.",
+    ),
+):
+    """Falha se houver mudança em kb/*.py sem SPEC ou Handoff no diff."""
+    from subprocess import run
+    from kb.doc_gate import evaluate_doc_gate
+
+    proc = run(
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    changed = [line.strip() for line in (proc.stdout or "").splitlines() if line.strip()]
+    result = evaluate_doc_gate(changed)
+
+    if result.ok:
+        console.print(f"[green]{result.reason}[/]")
+        return
+
+    console.print(f"[red]{result.reason}[/]")
+    raise typer.Exit(code=1)
+
+
+@handoff_app.command("create")
+def handoff_create(
+    scope: str = typer.Option(..., "--scope", help="Escopo da sessão."),
+    summary: str = typer.Option("", "--summary", help="Resumo das entregas."),
+    next_steps: str = typer.Option("", "--next-steps", help="Próximos passos."),
+    evidence: str = typer.Option("", "--evidence", help="Evidências executadas."),
+    decisions: str = typer.Option("", "--decisions", help="Decisões tomadas."),
+):
+    """Cria handoff estruturado em docs/handoffs/YYYY-MM-DD-HHMM.md."""
+    from subprocess import run
+    from kb.handoff import create_handoff
+
+    branch = ""
+    try:
+        proc = run(
+            ["git", "branch", "--show-current"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        branch = (proc.stdout or "").strip()
+    except Exception:
+        branch = ""
+
+    path = create_handoff(
+        scope=scope,
+        summary=summary,
+        branch=branch,
+        next_steps=next_steps,
+        evidence=evidence,
+        decisions=decisions,
+    )
+    console.print(f"[green]Handoff criado:[/] {path}")
