@@ -29,6 +29,7 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     knowledge_path = state_dir / "knowledge.json"
     learnings_path = state_dir / "learnings.json"
     manifest_path = state_dir / "manifest.json"
+    claims_path = state_dir / "claims.jsonl"
 
     # Monkeypatch das variáveis globais
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
@@ -49,6 +50,8 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     monkeypatch.setattr("kb.state.KNOWLEDGE_PATH", knowledge_path)
     monkeypatch.setattr("kb.state.LEARNINGS_PATH", learnings_path)
     monkeypatch.setattr("kb.state.MANIFEST_PATH", manifest_path)
+    monkeypatch.setattr("kb.config.CLAIMS_PATH", claims_path)
+    monkeypatch.setattr("kb.claims.CLAIMS_PATH", claims_path)
 
     return raw, wiki
 

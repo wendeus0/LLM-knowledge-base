@@ -12,6 +12,7 @@ from kb.compile import (
     update_index,
     _prepare_prompt_content,
 )
+from kb.claims import list_claims
 
 
 class TestCompileFile:
@@ -345,6 +346,10 @@ Resumo persistido.
         knowledge = (raw.parent / "kb_state" / "knowledge.json").read_text()
         assert "Persisted Article" in manifest
         assert "Persisted Article" in knowledge
+        claims = list_claims()
+        assert claims
+        assert claims[0]["status"] == "active"
+        assert claims[0]["confidence"] > 0
         mock_commit.assert_not_called()
 
     def test_should_preserve_explicit_empty_summary_text(self, tmp_raw_wiki):

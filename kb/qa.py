@@ -8,6 +8,7 @@ from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.outputs import write_output as _write_output
 from kb.router import build_context
+from kb.claims import find_relevant_claims
 from kb.state import add_learning
 
 
@@ -48,7 +49,26 @@ def answer(
         return "Nenhum contexto relevante encontrado. Use `kb compile` para adicionar conteúdo ou registre learnings/knowledge."
 
     context = "\n\n---\n\n".join(context_parts)
-    assert_safe_for_provider(f"Pergunta: {question}\n\n{context}", source=f"qa:{decision.route}", allow_sensitive=allow_sensitive)
+    claims = find_relevant_claims(question, top_k=3)
+    claims_block = ""
+    if claims:
+        lines = ["Claims relevantes (lifecycle):"]
+        for claim in claims:
+            confidence = claim.get("confidence", 0)
+            lines.append(
+                f"- [{claim.get('status', 'active')}] confidence={confidence:.2f} :: {claim.get('text', '')}"
+            )
+        claims_block = "\n".join(lines)
+
+    full_context = context if not claims_block else f"{context}\n\n---\n\n{claims_block}"
+    claims_suffix = ""
+    if claims_block:
+        claims_suffix = claims_block + "\n\n"
+    assert_safe_for_provider(
+        f"Pergunta: {question}\n\n{full_context}",
+        source=f"qa:{decision.route}",
+        allow_sensitive=allow_sensitive,
+    )
     response = chat(
         messages=[
             {"role": "system", "content": SYSTEM},
@@ -57,7 +77,9 @@ def answer(
                 "content": (
                     f"Fonte selecionada: {decision.route}\n"
                     f"Motivo do roteamento: {decision.reason}\n\n"
-                    f"Contexto relevante:\n\n{context}\n\nPergunta: {question}"
+                    f"Contexto relevante:\n\n{context}\n\n"
+                    f"{claims_suffix}"
+                    f"Pergunta: {question}"
                 ),
             },
         ]

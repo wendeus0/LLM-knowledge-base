@@ -165,7 +165,7 @@ class TestJobsCommand:
             result = runner.invoke(app, ["jobs", "run", "compile"])
 
         assert result.exit_code == 0
-        mock_run.assert_called_once_with("compile")
+        mock_run.assert_called_once_with("compile", stale_max_pct=None, disputed_max_pct=None)
         mock_print.assert_called_once_with("Job completed")
 
 

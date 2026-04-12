@@ -19,8 +19,10 @@ def command_category(command_name: str) -> str:
 def classify_job_command(job_name: str) -> str:
     """Classifica jobs a partir do comando principal associado."""
     normalized = job_name.strip().lower()
-    if normalized == "review":
+    if normalized in {"review", "decay", "contradiction-check"}:
         return command_category("heal")
-    if normalized == "metrics":
+    if normalized in {"metrics", "health"}:
         return command_category("jobs")
+    if normalized == "index-refresh":
+        return command_category("compile")
     return command_category(normalized)

@@ -29,11 +29,14 @@ app = typer.Typer(
         "search <query>\n\n"
         "lint  [--allow-sensitive]\n\n"
         "heal  [--n/-n INT] [--allow-sensitive] [--no-commit]\n\n"
-        "jobs list  |  jobs run <nome>"
+        "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron  |  jobs doc-gate\n\n"
+        "handoff create --scope <texto> [--summary] [--next-steps] [--evidence] [--decisions]"
     ),
 )
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
+handoff_app = typer.Typer(help="Handoff operacional de sessão")
 app.add_typer(jobs_app, name="jobs")
+app.add_typer(handoff_app, name="handoff")
 console = Console()
 
 
@@ -488,19 +491,190 @@ def heal(
 
 
 @jobs_app.command("list")
-def jobs_list():
+def jobs_list(
+    show_cron: bool = typer.Option(
+        True,
+        "--show-cron/--hide-cron",
+        help="Mostra comandos cron operacionais sugeridos.",
+    ),
+):
     """Lista jobs canônicos e seus cron hints."""
-    from kb.jobs import list_jobs
+    from kb.jobs import (
+        build_operational_cron_lines,
+        get_jobs_list_rows,
+        get_recommended_cron_chain,
+    )
 
-    for job in list_jobs():
+    for row in get_jobs_list_rows():
+        extra = f" [dim]| {row['extra']}[/]" if row.get("extra") else ""
         console.print(
-            f"[bold]{job.name}[/] [dim]({job.schedule})[/] — {job.description}"
+            f"[bold]{row['name']}[/] [dim]({row['schedule']})[/] — {row['description']}{extra}"
         )
+
+    console.print("\n[bold]Cadeia sugerida (Fase 3):[/]")
+    for item in get_recommended_cron_chain():
+        console.print(
+            f"  • [bold]{item['name']}[/] [dim]({item['schedule']})[/] — {item['purpose']}"
+        )
+
+    if show_cron:
+        console.print("\n[bold]Cron operacional sugerido:[/]")
+        for line in build_operational_cron_lines(
+            executable="kb",
+            stale_max_pct=20.0,
+            disputed_max_pct=8.0,
+        ):
+            console.print(f"  {line}")
 
 
 @jobs_app.command("run")
-def jobs_run(name: str = typer.Argument(..., help="Nome do job a executar")):
+def jobs_run(
+    name: str = typer.Argument(..., help="Nome do job a executar"),
+    stale_max_pct: float = typer.Option(
+        None,
+        "--stale-max-pct",
+        help="Falha o job health se stale_pct ultrapassar este limite.",
+    ),
+    disputed_max_pct: float = typer.Option(
+        None,
+        "--disputed-max-pct",
+        help="Falha o job health se disputed_pct ultrapassar este limite.",
+    ),
+):
     """Executa um job canônico por nome."""
-    from kb.jobs import run_job
+    from kb.jobs import HealthGateError, run_job
 
-    console.print(run_job(name))
+    try:
+        console.print(
+            run_job(
+                name,
+                stale_max_pct=stale_max_pct,
+                disputed_max_pct=disputed_max_pct,
+            )
+        )
+    except HealthGateError as exc:
+        console.print(str(exc))
+        raise typer.Exit(code=1)
+
+
+@jobs_app.command("gate")
+def jobs_gate(
+    stale_max_pct: float = typer.Option(
+        20.0,
+        "--stale-max-pct",
+        help="Limite máximo de stale_pct para gate.",
+    ),
+    disputed_max_pct: float = typer.Option(
+        8.0,
+        "--disputed-max-pct",
+        help="Limite máximo de disputed_pct para gate.",
+    ),
+):
+    """Executa gate estrito de saúde para CI/pipeline (exit != 0 quando viola)."""
+    from kb.jobs import run_health_gate
+
+    code, message = run_health_gate(
+        stale_max_pct=stale_max_pct,
+        disputed_max_pct=disputed_max_pct,
+    )
+    if code != 0:
+        console.print(f"[red]{message}[/]")
+        raise typer.Exit(code=code)
+    console.print(f"[green]{message}[/]")
+
+
+@jobs_app.command("cron")
+def jobs_cron(
+    stale_max_pct: float = typer.Option(
+        20.0,
+        "--stale-max-pct",
+        help="Limite de stale_pct embutido no comando health.",
+    ),
+    disputed_max_pct: float = typer.Option(
+        8.0,
+        "--disputed-max-pct",
+        help="Limite de disputed_pct embutido no comando health.",
+    ),
+):
+    """Imprime bloco de cron pronto para colar no crontab."""
+    from kb.jobs import build_operational_cron_lines
+
+    for line in build_operational_cron_lines(
+        executable="python -m kb.cli",
+        stale_max_pct=stale_max_pct,
+        disputed_max_pct=disputed_max_pct,
+    ):
+        console.print(line)
+
+
+@jobs_app.command("doc-gate")
+def jobs_doc_gate(
+    base_ref: str = typer.Option(
+        "origin/main",
+        "--base-ref",
+        help="Ref base para calcular arquivos alterados.",
+    ),
+):
+    """Falha se houver mudança em kb/*.py sem SPEC ou Handoff no diff."""
+    from subprocess import run
+    from kb.doc_gate import evaluate_doc_gate
+
+    proc = run(
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        message = "Falha ao calcular diff para doc-gate"
+        if stderr:
+            message = f"{message}: {stderr}"
+        console.print(f"[red]{message}[/]")
+        raise typer.Exit(code=1)
+
+    changed = [line.strip() for line in (proc.stdout or "").splitlines() if line.strip()]
+    result = evaluate_doc_gate(changed)
+
+    if result.ok:
+        console.print(f"[green]{result.reason}[/]")
+        return
+
+    console.print(f"[red]{result.reason}[/]")
+    raise typer.Exit(code=1)
+
+
+@handoff_app.command("create")
+def handoff_create(
+    scope: str = typer.Option(..., "--scope", help="Escopo da sessão."),
+    summary: str = typer.Option("", "--summary", help="Resumo das entregas."),
+    next_steps: str = typer.Option("", "--next-steps", help="Próximos passos."),
+    evidence: str = typer.Option("", "--evidence", help="Evidências executadas."),
+    decisions: str = typer.Option("", "--decisions", help="Decisões tomadas."),
+):
+    """Cria handoff estruturado em docs/handoffs/YYYY-MM-DD-HHMM.md."""
+    from subprocess import run
+    from kb.handoff import create_handoff
+
+    branch = ""
+    try:
+        proc = run(
+            ["git", "branch", "--show-current"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        branch = (proc.stdout or "").strip()
+    except Exception:
+        branch = ""
+
+    path = create_handoff(
+        scope=scope,
+        summary=summary,
+        branch=branch,
+        next_steps=next_steps,
+        evidence=evidence,
+        decisions=decisions,
+    )
+    console.print(f"[green]Handoff criado:[/] {path}")

@@ -10,6 +10,7 @@ from kb.client import chat, is_provider_resource_limit_error
 from kb.config import RAW_DIR, WIKI_DIR, TOPICS
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
+from kb.claims import record_compiled_claims
 from kb.state import (
     extract_summary,
     find_compiled_entry,
@@ -290,6 +291,12 @@ def persist_artifact(artifact: CompileArtifact, no_commit: bool = True) -> Path:
             "summary": str(summary_path),
             "summary_text": artifact.summary_text,
         }
+    )
+    record_compiled_claims(
+        source_path=artifact.raw_path,
+        article_path=out,
+        topic=artifact.topic,
+        summary_text=artifact.summary_text,
     )
 
     if not no_commit:

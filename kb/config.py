@@ -13,6 +13,7 @@ STATE_DIR = Path(os.getenv("KB_STATE_DIR", DATA_DIR / "kb_state")).expanduser()
 KNOWLEDGE_PATH = STATE_DIR / "knowledge.json"
 LEARNINGS_PATH = STATE_DIR / "learnings.json"
 MANIFEST_PATH = STATE_DIR / "manifest.json"
+CLAIMS_PATH = STATE_DIR / "claims.jsonl"
 
 API_KEY = os.getenv("KB_API_KEY")
 BASE_URL = os.getenv("KB_BASE_URL", "https://opencode.ai/zen/go/v1")
