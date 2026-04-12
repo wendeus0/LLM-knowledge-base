@@ -279,7 +279,11 @@ def compile(
     ),
     update_index: bool = typer.Option(True, help="Atualizar _index.md após compilar"),
     workers: int | None = typer.Option(
-        None, "--workers", "-j", min=1, help="Número de arquivos compilados em paralelo (padrão: automático)"
+        None,
+        "--workers",
+        "-j",
+        min=1,
+        help="Número de arquivos compilados em paralelo (padrão: automático)",
     ),
     allow_sensitive: bool = typer.Option(
         False,
@@ -293,108 +297,45 @@ def compile(
     ),
 ):
     """Compila raw/ → wiki/ usando LLM."""
-    from kb.compile import (
-        CompileBatchResult,
-        compile_file,
-        compile_many,
-        discover_compile_targets,
-        find_book_dirs,
-        update_index as do_update_index,
-    )
+    from kb.cmds.compile.run import execute_compile_command
     from kb.guardrails import SensitiveContentError, summarize_findings
 
-    if target is None:
-        targets = discover_compile_targets()
-    else:
-        path = Path(target)
-        if path.exists():
-            targets = discover_compile_targets(path)
-        else:
-            book_dirs = find_book_dirs(target)
-            if not book_dirs:
-                console.print(f"[red]Nenhum livro encontrado para:[/] {target}")
-                raise typer.Exit(code=1)
-            targets = []
-            for d in book_dirs:
-                targets.extend(discover_compile_targets(d))
-            console.print(
-                f"[dim]{len(book_dirs)} livro(s), {len(targets)} arquivo(s) a compilar[/]"
-            )
+    def _confirm_sensitive() -> bool:
+        return typer.confirm(
+            "Continuar mesmo assim e enviar ao provider externo?",
+            default=False,
+        )
 
-    if not targets:
-        console.print("[yellow]Nenhum arquivo em raw/[/]")
-        raise typer.Exit()
+    result = execute_compile_command(
+        target=target,
+        update_index=update_index,
+        workers=workers,
+        allow_sensitive=allow_sensitive,
+        no_commit=no_commit,
+        interactive_sensitive=True,
+        confirm_sensitive=_confirm_sensitive,
+    )
 
-    if workers is not None:
-        effective_workers = workers
-    elif len(targets) <= 3:
-        effective_workers = 1
-    else:
-        effective_workers = min(len(targets), 4)
+    for line in result.message_lines:
+        if line:
+            console.print(line)
 
-    compiled_outputs = []
-    failures = []
-
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[bold]Compilando...[/] {task.completed}/{task.total}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TextColumn("{task.fields[current]}", justify="right"),
-        console=console,
-        transient=False,
-    ) as progress:
-        task = progress.add_task("", total=len(targets), current="")
-
-        if effective_workers == 1:
-            for t in targets:
-                progress.update(task, current=f"[dim]{t.name}[/]")
-                try:
-                    out = compile_file(
-                        t, allow_sensitive=allow_sensitive, no_commit=no_commit
-                    )
-                except SensitiveContentError as exc:
-                    progress.stop()
-                    console.print(f"[yellow]{summarize_findings(exc)}[/]")
-                    if allow_sensitive or typer.confirm(
-                        "Continuar mesmo assim e enviar ao provider externo?",
-                        default=False,
-                    ):
-                        out = compile_file(t, allow_sensitive=True, no_commit=no_commit)
-                    else:
-                        raise typer.Exit(code=1)
-                    progress.start()
-                compiled_outputs.append(out)
-                progress.advance(task)
-        else:
-            result: CompileBatchResult = compile_many(
-                targets,
-                workers=effective_workers,
-                allow_sensitive=allow_sensitive,
-                no_commit=no_commit,
-                update_index_enabled=False,
-                on_progress=lambda: progress.advance(task),
-            )
-            compiled_outputs = result.outputs
-            failures = result.failures
-
-    if update_index and compiled_outputs:
-        do_update_index(no_commit=no_commit)
-        console.print("[dim]Índice atualizado.[/]")
-
-    for out in compiled_outputs:
+    for out in result.compiled_outputs:
         rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
         console.print(f"  → [green]{rel}[/]")
 
-    if failures:
-        console.print(f"\n[bold red]Falhas: {len(failures)}/{len(targets)}[/]")
-        for failure in failures:
-            if isinstance(failure.error, SensitiveContentError):
-                detail = summarize_findings(failure.error)
-            else:
-                detail = str(failure.error) or type(failure.error).__name__
-            console.print(f"  [red]- {failure.raw_path.name}:[/] {detail}")
-        raise typer.Exit(code=1)
+    if result.failures:
+        sensitive = [f for f in result.failures if isinstance(f.error, SensitiveContentError)]
+        for failure in sensitive:
+            console.print(
+                f"[yellow]{failure.raw_path.name}:[/] {summarize_findings(failure.error)}"
+            )
+
+    if result.exit_code != 0:
+        raise typer.Exit(code=result.exit_code)
+
+    if not result.compiled_outputs:
+        raise typer.Exit()
 
 
 @app.command()
@@ -431,41 +372,24 @@ def qa(
     ),
 ):
     """Responde uma pergunta consultando as fontes do kb."""
+    from kb.cmds.qa.run import execute_qa_command
     from kb.guardrails import SensitiveContentError, summarize_findings
 
     console.print("[dim]Pesquisando nas fontes do kb...[/]\n")
 
     def _run_qa(allow_sensitive_flag: bool) -> None:
-        traverse = not no_traverse
-
-        if file_back:
-            from kb.qa import answer_and_file
-
-            response, saved = answer_and_file(
-                question,
-                allow_sensitive=allow_sensitive_flag,
-                no_commit=no_commit,
-                to_wiki=to_wiki,
-                traverse=traverse,
-                depth=depth,
-            )
-            console.print(Markdown(response))
-            if saved:
-                console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
-            return
-
-        from kb.qa import answer
-
-        console.print(
-            Markdown(
-                answer(
-                    question,
-                    allow_sensitive=allow_sensitive_flag,
-                    traverse=traverse,
-                    depth=depth,
-                )
-            )
+        response, saved = execute_qa_command(
+            question=question,
+            file_back=file_back,
+            to_wiki=to_wiki,
+            allow_sensitive=allow_sensitive_flag,
+            no_commit=no_commit,
+            no_traverse=no_traverse,
+            depth=depth,
         )
+        console.print(Markdown(response))
+        if saved:
+            console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
 
     try:
         _run_qa(allow_sensitive)

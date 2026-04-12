@@ -18,6 +18,7 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
             id INTEGER PRIMARY KEY,
             timestamp TEXT NOT NULL,
             command TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'unknown',
             exit_code INTEGER NOT NULL,
             input_chars INTEGER NOT NULL,
             output_chars INTEGER NOT NULL,
@@ -28,6 +29,15 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
         )
         """
     )
+
+    # Migração leve para bases antigas sem coluna de categoria.
+    columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(commands)").fetchall()
+    }
+    if "category" not in columns:
+        conn.execute(
+            "ALTER TABLE commands ADD COLUMN category TEXT NOT NULL DEFAULT 'unknown'"
+        )
 
 
 def _count_tokens_estimate(text: str) -> int:
@@ -43,6 +53,7 @@ def track_command(
     raw_output: str,
     filtered_output: str,
     duration_ms: int,
+    category: str = "unknown",
 ) -> None:
     """Registra uma execução para analytics de economia."""
     STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -57,14 +68,15 @@ def track_command(
         conn.execute(
             """
             INSERT INTO commands (
-                timestamp, command, exit_code, input_chars, output_chars,
+                timestamp, command, category, exit_code, input_chars, output_chars,
                 saved_chars, savings_pct, duration_ms, project_path
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 datetime.now(timezone.utc).isoformat(),
                 command,
+                category,
                 int(exit_code),
                 in_chars,
                 out_chars,
@@ -87,13 +99,14 @@ def get_gain_summary(limit: int = 20) -> dict:
         }
 
     with sqlite3.connect(DB_PATH) as conn:
+        _ensure_schema(conn)
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*), COALESCE(AVG(savings_pct),0) FROM commands")
         total_runs, avg_savings = cur.fetchone()
 
         cur.execute(
             """
-            SELECT timestamp, command, savings_pct, exit_code, duration_ms
+            SELECT timestamp, command, category, savings_pct, exit_code, duration_ms
             FROM commands
             ORDER BY id DESC
             LIMIT ?
@@ -104,11 +117,12 @@ def get_gain_summary(limit: int = 20) -> dict:
             {
                 "timestamp": ts,
                 "command": cmd,
+                "category": category,
                 "savings_pct": pct,
                 "exit_code": code,
                 "duration_ms": ms,
             }
-            for ts, cmd, pct, code, ms in cur.fetchall()
+            for ts, cmd, category, pct, code, ms in cur.fetchall()
         ]
 
     return {

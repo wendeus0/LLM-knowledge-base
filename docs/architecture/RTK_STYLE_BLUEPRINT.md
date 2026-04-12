@@ -140,6 +140,7 @@ Mensagem sugerida:
 ## 8) Próximas ações recomendadas
 
 1. [x] Migrar `lint` para `kb/cmds/lint/run.py` mantendo semântica atual.
-2. [ ] Migrar `jobs` para consumir `discover.registry` (classificação central).
-3. [ ] Introduzir `kb/analytics/history.py` para consultas históricas por comando/período.
-4. [ ] Migrar `qa` e `compile` por último (maior acoplamento/guardrails).
+2. [x] Migrar `jobs` para consumir `discover.registry` (classificação central).
+3. [x] Introduzir `kb/analytics/history.py` para consultas históricas por comando/período.
+4. [x] Migrar `qa` e `compile` por último (maior acoplamento/guardrails).
+5. [x] Unificar instrumentação por comando com `category` no tracking + jobs + analytics.

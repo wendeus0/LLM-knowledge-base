@@ -190,11 +190,15 @@ ruff check kb tests
 
 | Documento                                                            | Descrição                            |
 | -------------------------------------------------------------------- | ------------------------------------ |
-| [AGENTS.md](AGENTS.md)                                               | Convenções e contexto do projeto     |
+| [CONTEXT.md](CONTEXT.md)                                             | Contexto macro, princípios e fluxo SDD+TDD |
+| [AGENTS.md](AGENTS.md)                                               | Convenções e contexto operacional    |
+| [docs/architecture/SDD.md](docs/architecture/SDD.md)                 | Metodologia Spec Driven Development  |
 | [docs/architecture/TDD.md](docs/architecture/TDD.md)                 | Convenções de teste                  |
 | [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md) | Formato de especificação de features |
+| [features/_template/SPEC.md](features/_template/SPEC.md)             | Template base de SPEC por feature    |
 | [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                 | Guia oficial de uso com Obsidian     |
 | [docs/adr/](docs/adr/)                                               | Architectural Decision Records       |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                   | Regras de contribuição e gates SDD+TDD |
 
 ## Roadmap
 

@@ -29,9 +29,9 @@ pr: <link PR quando mergear>
 - <decisão arquitetural 1>
 - <decisão arquitetural 2>
 
-## Mudanças de API
+## Mudanças de API/CLI
 
-Se público: descrever novo CLI, novo módulo público, breaking changes, etc.
+Se público: descrever novo CLI, novo módulo público, contratos de flags, compatibilidade e possíveis breaking changes.
 
 ## Testes
 

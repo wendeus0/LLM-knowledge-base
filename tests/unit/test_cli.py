@@ -173,7 +173,7 @@ class TestCompileCommand:
     def test_should_exit_when_no_targets_found(self, tmp_path):
         with (
             patch("kb.cli.console.print") as mock_print,
-            patch("kb.compile.discover_compile_targets") as mock_targets,
+            patch("kb.cmds.compile.run.discover_compile_targets") as mock_targets,
         ):
             mock_targets.return_value = []
 
@@ -185,7 +185,7 @@ class TestCompileCommand:
     def test_should_exit_with_error_when_book_not_found(self):
         with (
             patch("kb.cli.console.print") as mock_print,
-            patch("kb.compile.find_book_dirs") as mock_find,
+            patch("kb.cmds.compile.run.find_book_dirs") as mock_find,
         ):
             mock_find.return_value = []
 
@@ -205,9 +205,9 @@ class TestCompileCommand:
         with (
             patch("kb.cli.Path.cwd", return_value=tmp_path),
             patch("kb.cli.console.print"),
-            patch("kb.compile.find_book_dirs") as mock_find,
-            patch("kb.compile.discover_compile_targets") as mock_targets,
-            patch("kb.compile.compile_many") as mock_compile,
+            patch("kb.cmds.compile.run.find_book_dirs") as mock_find,
+            patch("kb.cmds.compile.run.discover_compile_targets") as mock_targets,
+            patch("kb.cmds.compile.run.compile_many") as mock_compile,
         ):
             mock_find.return_value = [book_dir]
             mock_targets.return_value = [chapter]
@@ -231,8 +231,8 @@ class TestCompileCommand:
         with (
             patch("kb.cli.Path.cwd", return_value=tmp_path),
             patch("kb.cli.console.print") as mock_print,
-            patch("kb.compile.discover_compile_targets") as mock_targets,
-            patch("kb.compile.compile_many") as mock_compile,
+            patch("kb.cmds.compile.run.discover_compile_targets") as mock_targets,
+            patch("kb.cmds.compile.run.compile_many") as mock_compile,
         ):
             mock_targets.return_value = [source]
 
@@ -263,8 +263,8 @@ class TestCompileCommand:
             patch("kb.cli.Path.cwd", return_value=tmp_path),
             patch("kb.cli.console.print"),
             patch("kb.cli.typer.confirm") as mock_confirm,
-            patch("kb.compile.discover_compile_targets") as mock_targets,
-            patch("kb.compile.compile_file") as mock_compile,
+            patch("kb.cmds.compile.run.discover_compile_targets") as mock_targets,
+            patch("kb.cmds.compile.run.compile_file") as mock_compile,
             patch("kb.compile.update_index"),
         ):
             mock_targets.return_value = [source]
@@ -292,8 +292,8 @@ class TestCompileCommand:
             patch("kb.cli.Path.cwd", return_value=tmp_path),
             patch("kb.cli.console.print"),
             patch("kb.cli.typer.confirm") as mock_confirm,
-            patch("kb.compile.discover_compile_targets") as mock_targets,
-            patch("kb.compile.compile_file") as mock_compile,
+            patch("kb.cmds.compile.run.discover_compile_targets") as mock_targets,
+            patch("kb.cmds.compile.run.compile_file") as mock_compile,
         ):
             mock_targets.return_value = [source]
             mock_compile.side_effect = SensitiveContentError(
@@ -460,17 +460,20 @@ class TestQaCommand:
     def test_should_answer_without_file_back(self):
         with (
             patch("kb.cli.console.print"),
-            patch("kb.qa.answer") as mock_answer,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = "This is the answer"
+            mock_answer.return_value = ("This is the answer", None)
 
             result = runner.invoke(app, ["qa", "What is AI?"])
 
         assert result.exit_code == 0
         mock_answer.assert_called_once_with(
-            "What is AI?",
+            question="What is AI?",
+            file_back=False,
+            to_wiki=False,
             allow_sensitive=False,
-            traverse=True,
+            no_commit=False,
+            no_traverse=False,
             depth=1,
         )
 
@@ -479,7 +482,7 @@ class TestQaCommand:
 
         with (
             patch("kb.cli.console.print"),
-            patch("kb.qa.answer") as mock_answer,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
             patch("kb.cli.typer.confirm") as mock_confirm,
         ):
             mock_answer.side_effect = [
@@ -487,7 +490,7 @@ class TestQaCommand:
                     [SensitiveFinding(label="secret", sample="[redacted]")],
                     "qa",
                 ),
-                "Answer after confirmation",
+                ("Answer after confirmation", None),
             ]
             mock_confirm.return_value = True
 
@@ -497,13 +500,14 @@ class TestQaCommand:
         assert mock_answer.call_count == 2
         # Second call should have allow_sensitive=True
         assert mock_answer.call_args_list[1].kwargs["allow_sensitive"] is True
+        assert mock_answer.call_args_list[1].kwargs["question"] == "Question?"
 
     def test_should_exit_when_sensitive_rejected(self):
         from kb.guardrails import SensitiveContentError, SensitiveFinding
 
         with (
             patch("kb.cli.console.print"),
-            patch("kb.qa.answer") as mock_answer,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
             patch("kb.cli.typer.confirm") as mock_confirm,
         ):
             mock_answer.side_effect = SensitiveContentError(
@@ -519,7 +523,7 @@ class TestQaCommand:
     def test_should_file_back_answer(self, tmp_path):
         with (
             patch("kb.cli.console.print") as mock_print,
-            patch("kb.qa.answer_and_file") as mock_answer_and_file,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer_and_file,
         ):
             mock_answer_and_file.return_value = ("Answer text", tmp_path / "output.md")
 
@@ -528,7 +532,15 @@ class TestQaCommand:
             )
 
         assert result.exit_code == 0
-        mock_answer_and_file.assert_called_once()
+        mock_answer_and_file.assert_called_once_with(
+            question="Question?",
+            file_back=True,
+            to_wiki=False,
+            allow_sensitive=False,
+            no_commit=True,
+            no_traverse=False,
+            depth=1,
+        )
         mock_print.assert_any_call(
             f"\n[dim]Arquivado em:[/] [green]{tmp_path / 'output.md'}[/]"
         )
@@ -536,41 +548,47 @@ class TestQaCommand:
     def test_should_support_no_traverse_option(self):
         with (
             patch("kb.cli.console.print"),
-            patch("kb.qa.answer") as mock_answer,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = "Answer"
+            mock_answer.return_value = ("Answer", None)
 
             result = runner.invoke(app, ["qa", "Question?", "--no-traverse"])
 
         assert result.exit_code == 0
         mock_answer.assert_called_once_with(
-            "Question?",
+            question="Question?",
+            file_back=False,
+            to_wiki=False,
             allow_sensitive=False,
-            traverse=False,
+            no_commit=False,
+            no_traverse=True,
             depth=1,
         )
 
     def test_should_support_custom_depth(self):
         with (
             patch("kb.cli.console.print"),
-            patch("kb.qa.answer") as mock_answer,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = "Answer"
+            mock_answer.return_value = ("Answer", None)
 
             result = runner.invoke(app, ["qa", "Question?", "--depth", "3"])
 
         assert result.exit_code == 0
         mock_answer.assert_called_once_with(
-            "Question?",
+            question="Question?",
+            file_back=False,
+            to_wiki=False,
             allow_sensitive=False,
-            traverse=True,
+            no_commit=False,
+            no_traverse=False,
             depth=3,
         )
 
     def test_should_support_to_wiki_flag(self):
         with (
             patch("kb.cli.console.print"),
-            patch("kb.qa.answer_and_file") as mock_answer,
+            patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
             mock_answer.return_value = ("Answer", None)
 
@@ -578,7 +596,10 @@ class TestQaCommand:
 
         assert result.exit_code == 0
         call_kwargs = mock_answer.call_args.kwargs
+        assert call_kwargs["question"] == "Q?"
+        assert call_kwargs["file_back"] is True
         assert call_kwargs["to_wiki"] is True
+        assert call_kwargs["no_traverse"] is False
 
 
 class TestImportBookCommand:

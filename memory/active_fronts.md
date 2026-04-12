@@ -56,17 +56,18 @@ type: project
 
 ---
 
-### F9: Finalizar a frente atual em branch dedicada
+### F9: Migração final QA+Compile e instrumentação unificada por comando
 
-**Status:** Em fechamento
+**Status:** Concluído (2026-04-12)
 
-**Problema:** a frente já está em branch dedicada, mas ainda faltam os gates formais de escopo/workflow antes do fechamento Git.
+**Resultado resumido:**
 
-**Impacto:** `git-flow-manager` ainda não deve avançar para commit/PR sem `feature-scope-guard` e `enforce-workflow`.
-
-**Próximo passo:** emitir `feature-scope-guard` e `enforce-workflow` na branch `feat/test-coverage-90`, então seguir para commit/push/PR quando solicitado.
-
-**Atualização:** branch `feat/test-coverage-90` criada e alinhada com `origin/main` (`0/0`).
+- `qa` migrado para `kb/cmds/qa/run.py` e CLI roteando por `execute_qa_command`
+- `compile` migrado para `kb/cmds/compile/run.py` e CLI roteando por `execute_compile_command`
+- tracking unificado com `category` em `kb/core/tracking.py`
+- `jobs run <name>` registrando execução com categoria no tracking
+- `kb/analytics/history.py` e `kb/analytics/gain.py` exibindo categoria por comando
+- suíte alvo verde: `53 passed`
 
 ---
 

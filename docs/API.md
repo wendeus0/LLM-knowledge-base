@@ -448,6 +448,32 @@ Retorna artigos mais relevantes (para uso interno do Q&A).
 
 ---
 
+### Git helper (`kb.git`)
+
+```python
+from kb.git import commit
+```
+
+#### `commit(message, paths, enabled=True)`
+
+Stageia arquivos da knowledge base (tipicamente em `raw/`, `wiki/` e `outputs/` sob `KB_DATA_DIR`) e cria commit quando houver mudanças staged.
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Padrão | Descrição |
+| --------- | ---- | ------ | --------- |
+| `message` | str | - | Mensagem de commit |
+| `paths` | list[Path] | - | Arquivos da KB a serem stageados (em geral sob `KB_DATA_DIR`) |
+| `enabled` | bool | `True` | Quando `False`, não executa side effects |
+
+**Comportamento operacional:**
+
+- Internamente converte os `Path` informados para relativo ao diretório git do projeto antes de executar `git add`
+- Idempotente quando não há mudanças staged (`git diff --cached --quiet`)
+- Suprime falhas de git indisponível sem quebrar o fluxo principal
+
+---
+
 ### Heal (`kb.heal`)
 
 ```python
