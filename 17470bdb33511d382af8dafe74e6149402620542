@@ -1,0 +1,33 @@
+kb/cli.py
+  082a4645bc2aaf50 545,547-553,555-557
+features/llm-wiki-v2-foundation/SPEC.md
+  082a4645bc2aaf50 62
+kb/claims.py
+  082a4645bc2aaf50 89,97-98,130-131
+tests/unit/test_jobs.py
+  082a4645bc2aaf50 5,207-208
+tests/unit/test_cli.py
+  082a4645bc2aaf50 168
+kb/jobs.py
+  082a4645bc2aaf50 14-17,303
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "17470bdb33511d382af8dafe74e6149402620542",
+  "prompts": {
+    "082a4645bc2aaf50": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ea42dc2-1634-43e6-b9eb-2c7a69db7eaf",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 14,
+      "accepted_lines": 26,
+      "overriden_lines": 0
+    }
+  }
+}
