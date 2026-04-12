@@ -53,8 +53,11 @@ Essas decisões estavam implementadas e testadas, mas sem ADR própria, gerando 
 - `kb/client.py`
   - `validate_provider_model_compatibility()`
   - `is_provider_resource_limit_error()`
+- `kb/compile.py`
+  - `compile_to_artifact()` (fallback para retry com prompt pré-processado ao detectar resource limit)
 - Testes:
   - `tests/unit/test_client.py`
+  - `tests/unit/test_compile.py` (`test_should_retry_with_preprocessed_prompt_after_provider_resource_limit_error`)
 
 ## Quando revisitar
 

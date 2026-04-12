@@ -6,13 +6,18 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from kb.core.tracking import DB_PATH
+from kb.core.tracking import DB_PATH, _ensure_schema
 
 
 def _parse_now(now: str | None) -> datetime:
     if now:
-        return datetime.fromisoformat(now)
-    return datetime.now(timezone.utc)
+        parsed = datetime.fromisoformat(now)
+    else:
+        parsed = datetime.now(timezone.utc)
+
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def get_history_summary(
@@ -34,14 +39,17 @@ def get_history_summary(
 
     end = _parse_now(now)
     start = end - timedelta(days=int(days))
+    start_bound = start.astimezone(timezone.utc).isoformat()
+    end_bound = end.astimezone(timezone.utc).isoformat()
 
     where = "timestamp >= ? AND timestamp <= ?"
-    params: list[object] = [start.isoformat(), end.isoformat()]
+    params: list[object] = [start_bound, end_bound]
     if command:
         where += " AND command = ?"
         params.append(command)
 
     with sqlite3.connect(DB_PATH) as conn:
+        _ensure_schema(conn)
         cur = conn.cursor()
 
         cur.execute(
@@ -74,16 +82,41 @@ def get_history_summary(
             """,
             params,
         )
-        by_command = {
-            cmd: {
-                "category": category,
-                "runs": int(runs),
-                "avg_savings_pct": round(float(savings), 2),
-                "avg_duration_ms": round(float(duration), 2),
-                "failures": int(fails),
+        by_command: dict[str, dict[str, object]] = {}
+        for cmd, category, runs, savings, duration, fails in cur.fetchall():
+            existing = by_command.get(cmd)
+            if existing is None:
+                by_command[cmd] = {
+                    "category": category,
+                    "runs": int(runs),
+                    "avg_savings_pct": round(float(savings), 2),
+                    "avg_duration_ms": round(float(duration), 2),
+                    "failures": int(fails),
+                }
+                continue
+
+            prev_runs = int(existing["runs"])
+            merged_runs = prev_runs + int(runs)
+            merged_savings = (
+                float(existing["avg_savings_pct"]) * prev_runs + float(savings) * int(runs)
+            ) / merged_runs
+            merged_duration = (
+                float(existing["avg_duration_ms"]) * prev_runs
+                + float(duration) * int(runs)
+            ) / merged_runs
+            categories = {
+                *(cat.strip() for cat in str(existing["category"]).split(",") if cat.strip()),
+                category,
             }
-            for cmd, category, runs, savings, duration, fails in cur.fetchall()
-        }
+            existing.update(
+                {
+                    "category": ", ".join(sorted(categories)) if categories else "unknown",
+                    "runs": merged_runs,
+                    "avg_savings_pct": round(merged_savings, 2),
+                    "avg_duration_ms": round(merged_duration, 2),
+                    "failures": int(existing["failures"]) + int(fails),
+                }
+            )
 
     return {
         "window_days": int(days),

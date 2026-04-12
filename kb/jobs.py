@@ -112,17 +112,23 @@ def run_job(name: str) -> str:
         raise ValueError(f"Job desconhecido: {name}. Disponíveis: {available}")
 
     start = perf_counter()
-    output = definition.handler()
-    duration_ms = int((perf_counter() - start) * 1000)
-
-    track_command(
-        command=f"jobs run {normalized}",
-        category=definition.spec.category,
-        project_path=Path.cwd(),
-        exit_code=0,
-        raw_output=output,
-        filtered_output=output,
-        duration_ms=duration_ms,
-    )
-
-    return output
+    output = ""
+    exit_code = 0
+    try:
+        output = definition.handler()
+        return output
+    except Exception as exc:
+        exit_code = 1
+        output = str(exc) or type(exc).__name__
+        raise
+    finally:
+        duration_ms = int((perf_counter() - start) * 1000)
+        track_command(
+            command=f"jobs run {normalized}",
+            category=definition.spec.category,
+            project_path=Path.cwd(),
+            exit_code=exit_code,
+            raw_output=output,
+            filtered_output=output,
+            duration_ms=duration_ms,
+        )

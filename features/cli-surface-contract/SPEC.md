@@ -14,7 +14,7 @@ A CLI já concentra diversos fluxos (`ingest`, `compile`, `qa`, `search`, `lint`
 ## Requisitos funcionais
 
 - [ ] RF-01: comandos públicos suportados devem incluir `ingest`, `import-book`, `compile`, `qa`, `search`, `lint`, `heal`, `jobs list`, `jobs run`
-- [ ] RF-02: fluxos com provider externo devem oferecer caminho seguro padrão e confirmação para conteúdo sensível quando aplicável
+- [ ] RF-02: fluxos com provider externo devem oferecer caminho seguro padrão; confirmação interativa para conteúdo sensível é obrigatória nos fluxos interativos (ex.: `kb compile`) e pode ser substituída por falha segura em lotes paralelos (ex.: `import-book --compile` com `workers > 1`)
 - [ ] RF-03: fluxos com write devem suportar controle de commit via flag (`--no-commit` ou `--no-commit/--commit` conforme contrato de cada comando)
 - [ ] RF-04: `kb search` deve imprimir lista de resultados ou `Nenhum resultado encontrado.`
 - [ ] RF-05: `kb jobs list` deve listar `nome`, `schedule` e `description`; `kb jobs run <nome>` executa e imprime retorno

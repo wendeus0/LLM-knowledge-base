@@ -34,10 +34,10 @@
 
 - `kb/heal.py`
 - `kb/cmds/lint/run.py`
-- `kb/config.py`
 
 ### Módulos em PARCIAL
 
+- `kb/config.py` (sem evidência de teste dedicada no comando executado; classificação mantida parcial por rastreabilidade)
 - `kb/lint.py` (sem SPEC dedicada para contrato estável de saída)
 - `kb/jobs.py` (catálogo ampliado sem SPEC dedicada)
 - `kb/git.py` (regras distribuídas em SPECs transversais)

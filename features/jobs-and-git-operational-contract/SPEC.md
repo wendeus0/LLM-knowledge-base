@@ -32,14 +32,15 @@ pr:
   - `kb jobs run <nome>`
 - API interna:
   - `list_jobs()`, `run_job(name)`
-  - `commit(message, paths, enabled=True)`
+  - `commit(message, paths, enabled=True)` (assinatura canônica)
 
 ## Testes
 
 - Unit:
-  - `tests/unit/test_jobs.py`
+  - `tests/unit/test_jobs.py` (inclui sucesso + erro explícito para job inválido)
   - `tests/unit/test_jobs_registry.py`
   - `tests/unit/test_git.py`
+  - `tests/unit/test_rtk_front.py` (cobre emissão de métricas e leitura de tracking)
 - Manual:
   1. `kb jobs list`
   2. `kb jobs run lint`
@@ -68,7 +69,7 @@ pr:
 
 ## Evidências esperadas
 
-- `python -m pytest tests/unit/test_jobs.py tests/unit/test_jobs_registry.py tests/unit/test_git.py -q`
+- `python -m pytest tests/unit/test_jobs.py tests/unit/test_jobs_registry.py tests/unit/test_git.py tests/unit/test_rtk_front.py -q`
 
 ## Notas
 

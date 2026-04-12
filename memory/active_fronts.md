@@ -67,7 +67,7 @@ type: project
 - tracking unificado com `category` em `kb/core/tracking.py`
 - `jobs run <name>` registrando execução com categoria no tracking
 - `kb/analytics/history.py` e `kb/analytics/gain.py` exibindo categoria por comando
-- suíte alvo verde: `45 passed`
+- suíte alvo verde: `53 passed`
 
 ---
 

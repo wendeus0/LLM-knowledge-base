@@ -327,7 +327,9 @@ def compile(
     if result.failures:
         sensitive = [f for f in result.failures if isinstance(f.error, SensitiveContentError)]
         for failure in sensitive:
-            console.print(f"[yellow]{summarize_findings(failure.error)}[/]")
+            console.print(
+                f"[yellow]{failure.raw_path.name}:[/] {summarize_findings(failure.error)}"
+            )
 
     if result.exit_code != 0:
         raise typer.Exit(code=result.exit_code)

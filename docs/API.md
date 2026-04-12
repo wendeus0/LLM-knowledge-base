@@ -448,6 +448,31 @@ Retorna artigos mais relevantes (para uso interno do Q&A).
 
 ---
 
+### Git helper (`kb.git`)
+
+```python
+from kb.git import commit
+```
+
+#### `commit(message, paths, enabled=True)`
+
+Stageia paths relativos e cria commit quando houver mudanças staged.
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Padrão | Descrição |
+| --------- | ---- | ------ | --------- |
+| `message` | str | - | Mensagem de commit |
+| `paths` | list[Path] | - | Arquivos a serem adicionados via `git add` |
+| `enabled` | bool | `True` | Quando `False`, não executa side effects |
+
+**Comportamento operacional:**
+
+- Idempotente quando não há mudanças staged (`git diff --cached --quiet`)
+- Suprime falhas de git indisponível sem quebrar o fluxo principal
+
+---
+
 ### Heal (`kb.heal`)
 
 ```python

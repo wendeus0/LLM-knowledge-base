@@ -37,7 +37,7 @@ pr:
   - `tests/unit/test_lint.py`
   - `tests/unit/test_lint_cmds.py`
 - Integration:
-  - cenários CLI com guardrails em `tests/integration/test_sensitive_execution_cli.py`
+  - não há integração dedicada de `kb lint` com guardrails no escopo atual; cobertura está em unit (`tests/unit/test_lint.py`, `tests/unit/test_lint_cmds.py`)
 - Manual:
   1. `kb lint`
   2. `kb lint --allow-sensitive`

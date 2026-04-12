@@ -99,6 +99,7 @@ def get_gain_summary(limit: int = 20) -> dict:
         }
 
     with sqlite3.connect(DB_PATH) as conn:
+        _ensure_schema(conn)
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*), COALESCE(AVG(savings_pct),0) FROM commands")
         total_runs, avg_savings = cur.fetchone()

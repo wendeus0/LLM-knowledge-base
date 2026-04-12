@@ -12,9 +12,9 @@ Descreva objetivamente o problema e a solução.
 
 ## Governança documental (obrigatório)
 
-- [ ] Li e segui a ordem: `CONTEXT.md` -> `docs/architecture/SDD.md` -> `docs/architecture/TDD.md` -> `docs/architecture/SPEC_FORMAT.md` -> `features/<feature>/SPEC.md`
-- [ ] Esta mudança possui SPEC em `features/<feature>/SPEC.md`
-- [ ] A SPEC foi atualizada para refletir o escopo real desta PR
+- [ ] Li e segui a ordem: `CONTEXT.md` -> `docs/architecture/SDD.md` -> `docs/architecture/TDD.md` -> `docs/architecture/SPEC_FORMAT.md` -> `features/<feature>/SPEC.md` (quando houver feature em foco)
+- [ ] Esta mudança possui SPEC em `features/<feature>/SPEC.md` quando aplicável (mudança não trivial/contratual)
+- [ ] Quando houver SPEC aplicável, ela foi atualizada para refletir o escopo real desta PR
 - [ ] Se houve decisão arquitetural durável, registrei ADR em `docs/adr/`
 - [ ] Se não houve ADR, explicitei o motivo abaixo
 

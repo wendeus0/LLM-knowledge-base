@@ -89,6 +89,12 @@ def execute_compile_command(
         )
 
     effective_workers = _effective_workers(targets, workers)
+    if effective_workers > 1 and interactive_sensitive and not allow_sensitive:
+        lines.append(
+            "[dim]Confirmação sensível interativa ativa; executando em modo serial para garantir prompt por arquivo.[/]"
+        )
+        effective_workers = 1
+
     compiled_outputs: list[Path] = []
     failures: list[CompileFailure] = []
 

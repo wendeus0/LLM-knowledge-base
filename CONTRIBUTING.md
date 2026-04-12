@@ -38,7 +38,7 @@ Antes de qualquer mudança não trivial, é obrigatório seguir esta ordem de le
 2. `docs/architecture/SDD.md`
 3. `docs/architecture/TDD.md`
 4. `docs/architecture/SPEC_FORMAT.md`
-5. `features/<feature>/SPEC.md`
+5. `features/<feature>/SPEC.md` (quando houver feature em foco)
 
 Regra de precedência em caso de conflito:
 
@@ -146,9 +146,9 @@ Requisitos mínimos de aprovação da PR:
 
 Uma mudança só está pronta quando TODOS os itens abaixo estiverem atendidos:
 
-- [ ] Existe SPEC em `features/<feature>/SPEC.md` para o escopo entregue
-- [ ] A SPEC contém requisitos testáveis e está alinhada ao código final
-- [ ] Testes (unit/integration quando aplicável) cobrem os requisitos da SPEC
+- [ ] Existe SPEC em `features/<feature>/SPEC.md` quando a mudança for não trivial ou alterar comportamento/contrato
+- [ ] Quando houver SPEC aplicável, ela contém requisitos testáveis e está alinhada ao código final
+- [ ] Quando houver SPEC aplicável, testes (unit/integration quando aplicável) cobrem os requisitos da SPEC
 - [ ] Em mudança arquitetural durável, ADR criada/atualizada em `docs/adr/`
 - [ ] PR referencia SPEC e ADR (ou justificativa objetiva de não aplicabilidade)
 - [ ] Evidências de validação (comandos/saídas) foram registradas no PR

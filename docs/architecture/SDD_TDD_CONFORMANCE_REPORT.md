@@ -48,10 +48,10 @@ Relatório de conformidade da governança SDD+TDD no repositório `LLM-knowledge
 
 ## Achados da auditoria de SPECs
 
-Total de SPECs encontradas em `features/`: 8
+Total de SPECs encontradas em `features/`: 12
 
-- SPECs com seções mínimas clássicas (`Objetivo`, `Requisitos funcionais`, `Requisitos técnicos`, `Testes`): 8/8
-- SPECs com novas seções (`ADR`, `Critérios de aceite`, `Evidências esperadas`): 1/8 (apenas o template)
+- SPECs com seções mínimas clássicas (`Objetivo`, `Requisitos funcionais`, `Requisitos técnicos`, `Testes`): 12/12
+- SPECs com novas seções (`ADR`, `Critérios de aceite`, `Evidências esperadas`): 5/12
 
 Interpretação:
 
