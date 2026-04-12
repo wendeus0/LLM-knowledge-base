@@ -29,7 +29,7 @@ app = typer.Typer(
         "search <query>\n\n"
         "lint  [--allow-sensitive]\n\n"
         "heal  [--n/-n INT] [--allow-sensitive] [--no-commit]\n\n"
-        "jobs list  |  jobs run <nome>"
+        "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron"
     ),
 )
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
@@ -488,19 +488,113 @@ def heal(
 
 
 @jobs_app.command("list")
-def jobs_list():
+def jobs_list(
+    show_cron: bool = typer.Option(
+        True,
+        "--show-cron/--hide-cron",
+        help="Mostra comandos cron operacionais sugeridos.",
+    ),
+):
     """Lista jobs canônicos e seus cron hints."""
-    from kb.jobs import list_jobs
+    from kb.jobs import (
+        build_operational_cron_lines,
+        get_jobs_list_rows,
+        get_recommended_cron_chain,
+    )
 
-    for job in list_jobs():
+    for row in get_jobs_list_rows():
+        extra = f" [dim]| {row['extra']}[/]" if row.get("extra") else ""
         console.print(
-            f"[bold]{job.name}[/] [dim]({job.schedule})[/] — {job.description}"
+            f"[bold]{row['name']}[/] [dim]({row['schedule']})[/] — {row['description']}{extra}"
         )
+
+    console.print("\n[bold]Cadeia sugerida (Fase 3):[/]")
+    for item in get_recommended_cron_chain():
+        console.print(
+            f"  • [bold]{item['name']}[/] [dim]({item['schedule']})[/] — {item['purpose']}"
+        )
+
+    if show_cron:
+        console.print("\n[bold]Cron operacional sugerido:[/]")
+        for line in build_operational_cron_lines(
+            executable="kb",
+            stale_max_pct=20.0,
+            disputed_max_pct=8.0,
+        ):
+            console.print(f"  {line}")
 
 
 @jobs_app.command("run")
-def jobs_run(name: str = typer.Argument(..., help="Nome do job a executar")):
+def jobs_run(
+    name: str = typer.Argument(..., help="Nome do job a executar"),
+    stale_max_pct: float = typer.Option(
+        None,
+        "--stale-max-pct",
+        help="Falha o job health se stale_pct ultrapassar este limite.",
+    ),
+    disputed_max_pct: float = typer.Option(
+        None,
+        "--disputed-max-pct",
+        help="Falha o job health se disputed_pct ultrapassar este limite.",
+    ),
+):
     """Executa um job canônico por nome."""
     from kb.jobs import run_job
 
-    console.print(run_job(name))
+    console.print(
+        run_job(
+            name,
+            stale_max_pct=stale_max_pct,
+            disputed_max_pct=disputed_max_pct,
+        )
+    )
+
+
+@jobs_app.command("gate")
+def jobs_gate(
+    stale_max_pct: float = typer.Option(
+        20.0,
+        "--stale-max-pct",
+        help="Limite máximo de stale_pct para gate.",
+    ),
+    disputed_max_pct: float = typer.Option(
+        8.0,
+        "--disputed-max-pct",
+        help="Limite máximo de disputed_pct para gate.",
+    ),
+):
+    """Executa gate estrito de saúde para CI/pipeline (exit != 0 quando viola)."""
+    from kb.jobs import run_health_gate
+
+    code, message = run_health_gate(
+        stale_max_pct=stale_max_pct,
+        disputed_max_pct=disputed_max_pct,
+    )
+    if code != 0:
+        console.print(f"[red]{message}[/]")
+        raise typer.Exit(code=code)
+    console.print(f"[green]{message}[/]")
+
+
+@jobs_app.command("cron")
+def jobs_cron(
+    stale_max_pct: float = typer.Option(
+        20.0,
+        "--stale-max-pct",
+        help="Limite de stale_pct embutido no comando health.",
+    ),
+    disputed_max_pct: float = typer.Option(
+        8.0,
+        "--disputed-max-pct",
+        help="Limite de disputed_pct embutido no comando health.",
+    ),
+):
+    """Imprime bloco de cron pronto para colar no crontab."""
+    from kb.jobs import build_operational_cron_lines
+
+    for line in build_operational_cron_lines(
+        executable="python -m kb.cli",
+        stale_max_pct=stale_max_pct,
+        disputed_max_pct=disputed_max_pct,
+    ):
+        console.print(line)
