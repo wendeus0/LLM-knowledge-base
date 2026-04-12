@@ -11,6 +11,10 @@ from kb.core.tracking import track_command
 from kb.discover import classify_job_command
 
 
+class HealthGateError(RuntimeError):
+    """Lançado quando um threshold de health é ultrapassado em run_job."""
+
+
 @dataclass(frozen=True)
 class JobSpec:
     name: str
@@ -296,7 +300,7 @@ def run_job(
                 exit_code = 1
                 detail = "; ".join(violations)
                 output = f"{output}\n- threshold_violation: {detail}"
-                raise ValueError(output)
+                raise HealthGateError(output)
 
         return output
     except Exception as exc:

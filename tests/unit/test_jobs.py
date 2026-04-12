@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kb.jobs import (
+    HealthGateError,
     build_operational_cron_lines,
     get_jobs_list_rows,
     get_recommended_cron_chain,
@@ -203,8 +204,8 @@ def test_run_job_health_should_fail_when_threshold_exceeded(tmp_raw_wiki):
 
         try:
             run_job("health", stale_max_pct=20.0)
-            raise AssertionError("expected ValueError")
-        except ValueError as exc:
+            raise AssertionError("expected HealthGateError")
+        except HealthGateError as exc:
             assert "threshold_violation" in str(exc)
 
 

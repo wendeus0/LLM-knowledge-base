@@ -59,7 +59,7 @@ Mudanças planejadas por fase:
   2. `kb compile`
   3. `kb qa "qual o impacto de X em Y?"`
   4. `kb jobs list`
-  5. `kb jobs run lifecycle-decay`
+  5. `kb jobs run decay`
 
 ## Dados de contexto
 

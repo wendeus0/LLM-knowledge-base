@@ -542,15 +542,19 @@ def jobs_run(
     ),
 ):
     """Executa um job canônico por nome."""
-    from kb.jobs import run_job
+    from kb.jobs import HealthGateError, run_job
 
-    console.print(
-        run_job(
-            name,
-            stale_max_pct=stale_max_pct,
-            disputed_max_pct=disputed_max_pct,
+    try:
+        console.print(
+            run_job(
+                name,
+                stale_max_pct=stale_max_pct,
+                disputed_max_pct=disputed_max_pct,
+            )
         )
-    )
+    except HealthGateError as exc:
+        console.print(str(exc))
+        raise typer.Exit(code=1)
 
 
 @jobs_app.command("gate")

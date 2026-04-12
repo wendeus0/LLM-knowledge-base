@@ -86,6 +86,7 @@ def record_compiled_claims(
     new_claims: list[dict] = []
     for text in _split_claims(summary_text):
         claim_id = str(uuid.uuid4())
+        base = round(_base_confidence(text, topic), 3)
         entry = {
             "id": claim_id,
             "text": text,
@@ -93,7 +94,8 @@ def record_compiled_claims(
             "source": normalized_source,
             "article": str(article_path),
             "status": "active",
-            "confidence": round(_base_confidence(text, topic), 3),
+            "confidence": base,
+            "initial_confidence": base,
             "evidence_count": 1,
             "created_at": _to_iso(now),
             "updated_at": _to_iso(now),
@@ -125,7 +127,8 @@ def _decayed_confidence(claim: dict, now: datetime) -> float:
     half_life_days = 60 if claim.get("topic") in {"architecture", "decision"} else 30
     decay = math.exp(-(math.log(2) * age_days / half_life_days))
     evidence_boost = 1 + (0.07 * max(0, int(claim.get("evidence_count", 1)) - 1))
-    return _clamp(float(claim.get("confidence", 0.5)) * decay * evidence_boost)
+    base = float(claim.get("initial_confidence", claim.get("confidence", 0.5)))
+    return _clamp(base * decay * evidence_boost)
 
 
 def apply_decay_cycle(days_forward: int = 0) -> int:
