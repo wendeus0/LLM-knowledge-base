@@ -456,14 +456,14 @@ from kb.git import commit
 
 #### `commit(message, paths, enabled=True)`
 
-Stageia paths relativos e cria commit quando houver mudanças staged.
+Stageia paths sob `ROOT` (convertidos internamente para relativo) e cria commit quando houver mudanças staged.
 
 **Parâmetros:**
 
 | Parâmetro | Tipo | Padrão | Descrição |
 | --------- | ---- | ------ | --------- |
 | `message` | str | - | Mensagem de commit |
-| `paths` | list[Path] | - | Arquivos a serem adicionados via `git add` |
+| `paths` | list[Path] | - | Arquivos sob `ROOT`; a função converte para paths relativos antes do `git add` |
 | `enabled` | bool | `True` | Quando `False`, não executa side effects |
 
 **Comportamento operacional:**

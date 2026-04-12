@@ -96,3 +96,25 @@ def test_should_track_failed_job_execution(tmp_raw_wiki):
     assert kwargs["exit_code"] == 1
     assert kwargs["raw_output"] == "kaboom"
     assert kwargs["category"] == "maintenance"
+
+
+def test_should_not_mask_job_error_when_tracking_fails(tmp_raw_wiki):
+    with (
+        patch("kb.jobs._JOB_DEFINITIONS") as mock_defs,
+        patch("kb.jobs.track_command", side_effect=RuntimeError("db down")),
+    ):
+        failing = type("JobDefinition", (), {})()
+        failing.spec = type("JobSpec", (), {"category": "maintenance"})()
+
+        def _boom():
+            raise RuntimeError("kaboom")
+
+        failing.handler = _boom
+        mock_defs.get.side_effect = lambda name: failing if name == "broken" else None
+        mock_defs.__iter__.return_value = iter(["broken"])
+
+        try:
+            run_job("broken")
+            raise AssertionError("expected RuntimeError")
+        except RuntimeError as exc:
+            assert str(exc) == "kaboom"

@@ -146,7 +146,7 @@ Requisitos mínimos de aprovação da PR:
 
 Uma mudança só está pronta quando TODOS os itens abaixo estiverem atendidos:
 
-- [ ] Existe SPEC em `features/<feature>/SPEC.md` quando a mudança for não trivial ou alterar comportamento/contrato
+- [ ] Existe SPEC em `features/<feature>/SPEC.md` para toda mudança não trivial ou que altere comportamento/contrato; exceções apenas para ajustes estritamente triviais (typo/comentário/cosmético sem impacto funcional) com justificativa explícita na PR
 - [ ] Quando houver SPEC aplicável, ela contém requisitos testáveis e está alinhada ao código final
 - [ ] Quando houver SPEC aplicável, testes (unit/integration quando aplicável) cobrem os requisitos da SPEC
 - [ ] Em mudança arquitetural durável, ADR criada/atualizada em `docs/adr/`

@@ -123,12 +123,16 @@ def run_job(name: str) -> str:
         raise
     finally:
         duration_ms = int((perf_counter() - start) * 1000)
-        track_command(
-            command=f"jobs run {normalized}",
-            category=definition.spec.category,
-            project_path=Path.cwd(),
-            exit_code=exit_code,
-            raw_output=output,
-            filtered_output=output,
-            duration_ms=duration_ms,
-        )
+        try:
+            track_command(
+                command=f"jobs run {normalized}",
+                category=definition.spec.category,
+                project_path=Path.cwd(),
+                exit_code=exit_code,
+                raw_output=output,
+                filtered_output=output,
+                duration_ms=duration_ms,
+            )
+        except Exception:
+            # Tracking é best-effort e nunca deve mascarar o resultado real do job.
+            pass
