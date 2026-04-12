@@ -14,6 +14,19 @@ def _timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d-%H%M")
 
 
+def _next_available_path(handoff_dir: Path, base_name: str) -> Path:
+    first = handoff_dir / f"{base_name}.md"
+    if not first.exists():
+        return first
+
+    counter = 1
+    while True:
+        candidate = handoff_dir / f"{base_name}-{counter:02d}.md"
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
 def create_handoff(
     *,
     scope: str,
@@ -26,8 +39,8 @@ def create_handoff(
     handoff_dir = _handoff_dir()
     handoff_dir.mkdir(parents=True, exist_ok=True)
 
-    name = f"{_timestamp()}.md"
-    path = handoff_dir / name
+    base_name = _timestamp()
+    path = _next_available_path(handoff_dir, base_name)
 
     body = (
         "# Handoff de Sessão\n\n"

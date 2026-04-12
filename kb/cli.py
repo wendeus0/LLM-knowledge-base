@@ -622,6 +622,14 @@ def jobs_doc_gate(
         text=True,
     )
 
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        message = "Falha ao calcular diff para doc-gate"
+        if stderr:
+            message = f"{message}: {stderr}"
+        console.print(f"[red]{message}[/]")
+        raise typer.Exit(code=1)
+
     changed = [line.strip() for line in (proc.stdout or "").splitlines() if line.strip()]
     result = evaluate_doc_gate(changed)
 
