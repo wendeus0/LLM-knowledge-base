@@ -20,6 +20,7 @@ JOBS = [
     ),
     JobSpec("lint", "0 8 * * 0", "Auditar a wiki e relatar inconsistências."),
     JobSpec("review", "0 18 * * 5", "Executar heal amostrado para manutenção da wiki."),
+    JobSpec("metrics", "0 21 * * *", "Exibir resumo de economia do tracking (RTK-style)."),
 ]
 
 
@@ -51,6 +52,11 @@ def run_job(name: str) -> str:
 
         processed = heal(3)
         return f"Job review executado ({len(processed)} item(ns) processado(s))."
+
+    if normalized == "metrics":
+        from kb.analytics.gain import render_gain_summary
+
+        return render_gain_summary(limit=10)
 
     available = ", ".join(job.name for job in JOBS)
     raise ValueError(f"Job desconhecido: {name}. Disponíveis: {available}")
