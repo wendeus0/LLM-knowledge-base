@@ -28,7 +28,7 @@ Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas 
 
 ```bash
 # Clone o repositório
-git clone <repo-url>
+git clone https://github.com/wendeus0/LLM-knowledge-base
 cd kb
 
 # Instalar dependências base
