@@ -368,6 +368,8 @@ def compile_many(
 
 def update_index(no_commit: bool = True) -> None:
     """Regenera _index.md listando todos os artigos da wiki."""
+    WIKI_DIR.mkdir(parents=True, exist_ok=True)
+
     articles: list[str] = []
     for md in sorted(WIKI_DIR.rglob("*.md")):
         if md.name == "_index.md" or "summaries" in md.parts:
