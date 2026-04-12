@@ -2,6 +2,24 @@
 
 @AGENTS.md
 
+## Read first
+
+Antes de alterações não triviais, leia estes documentos nesta ordem:
+
+1. `CONTEXT.md`
+2. `docs/architecture/SDD.md`
+3. `docs/architecture/TDD.md`
+4. `docs/architecture/SPEC_FORMAT.md`
+5. `features/<feature>/SPEC.md` (quando a tarefa for de feature)
+
+Se houver conflito:
+
+- `features/<feature>/SPEC.md` governa o comportamento da feature
+- `docs/architecture/SDD.md` governa arquitetura e evolução
+- `docs/architecture/TDD.md` governa estratégia de testes
+- `docs/architecture/SPEC_FORMAT.md` governa formato da SPEC
+- `CONTEXT.md` governa contexto macro e limites do produto
+
 ## Sobre o projeto
 
 > Manifesto estruturado do Pi: `.pi/manifest.yaml`

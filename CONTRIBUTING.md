@@ -30,6 +30,30 @@ cp .env.example .env
 # Editar .env com KB_API_KEY
 ```
 
+## Governança obrigatória (SDD + TDD)
+
+Antes de qualquer mudança não trivial, é obrigatório seguir esta ordem de leitura:
+
+1. `CONTEXT.md`
+2. `docs/architecture/SDD.md`
+3. `docs/architecture/TDD.md`
+4. `docs/architecture/SPEC_FORMAT.md`
+5. `features/<feature>/SPEC.md`
+
+Regra de precedência em caso de conflito:
+
+- `features/<feature>/SPEC.md` governa comportamento da feature
+- `docs/architecture/SDD.md` governa arquitetura e evolução
+- `docs/architecture/TDD.md` governa estratégia de testes
+- `docs/architecture/SPEC_FORMAT.md` governa formato e completude da SPEC
+- `CONTEXT.md` governa contexto macro e limites de escopo
+
+Fluxo obrigatório de execução:
+
+SPEC -> TEST_RED -> CODE_GREEN -> REFACTOR -> VALIDATE -> REPORT
+
+Sem SPEC estável e validável, não prossiga para implementação.
+
 ## Workflow de Contribuição
 
 ### 1. Issues
@@ -55,11 +79,13 @@ git checkout -b docs/atualiza-readme
 
 #### Para features novas
 
-1. **Criar SPEC** em `docs/architecture/SPEC.md` ou `features/<nome>/SPEC.md`
+1. **Criar SPEC obrigatoriamente** em `features/<nome>/SPEC.md` (use `features/_template/SPEC.md` como base)
 2. **Validar SPEC** seguindo `docs/architecture/SPEC_FORMAT.md`
-3. **Testes RED** antes do código
-4. **Implementar** (GREEN)
-5. **Refatorar**
+3. **Executar TEST_RED** antes do código de produção
+4. **Implementar mínimo para GREEN**
+5. **Refatorar sem alterar comportamento**
+6. **Atualizar SPEC e evidências** para refletir o escopo real entregue
+7. **Abrir/atualizar ADR** em `docs/adr/` se houver decisão arquitetural durável
 
 #### Para bugs
 
@@ -107,31 +133,28 @@ kb lint                    # Health check da wiki (se aplicável)
 
 ### 6. Pull Request
 
-Template do PR:
+Use o template obrigatório em `.github/pull_request_template.md`.
 
-```markdown
-## Resumo
+Requisitos mínimos de aprovação da PR:
 
-Breve descrição da mudança
+- referência explícita da SPEC (`features/<feature>/SPEC.md`)
+- referência de ADR quando aplicável (`docs/adr/...`) ou justificativa de não aplicabilidade
+- evidências objetivas de TEST_RED/GREEN, testes e lint
+- rastreabilidade documental completa (SPEC/ADR/README/CONTRIBUTING quando impactados)
 
-## Tipo
+## Definition of Done (documental obrigatório)
 
-- [ ] Feature
-- [ ] Bugfix
-- [ ] Documentação
-- [ ] Refatoração
+Uma mudança só está pronta quando TODOS os itens abaixo estiverem atendidos:
 
-## Checklist
+- [ ] Existe SPEC em `features/<feature>/SPEC.md` para o escopo entregue
+- [ ] A SPEC contém requisitos testáveis e está alinhada ao código final
+- [ ] Testes (unit/integration quando aplicável) cobrem os requisitos da SPEC
+- [ ] Em mudança arquitetural durável, ADR criada/atualizada em `docs/adr/`
+- [ ] PR referencia SPEC e ADR (ou justificativa objetiva de não aplicabilidade)
+- [ ] Evidências de validação (comandos/saídas) foram registradas no PR
+- [ ] README/CONTRIBUTING/docs impactados foram atualizados quando necessário
 
-- [ ] Testes passam
-- [ ] Lint limpo
-- [ ] Documentação atualizada (se necessário)
-- [ ] SPEC aprovada (para features)
-
-## Como testar
-
-Passos para reproduzir/testar
-```
+Qualquer implementação sem lastro documental (SPEC/ADR/evidências) é considerada incompleta e não deve ser aceita.
 
 ## Convenções de Código
 
