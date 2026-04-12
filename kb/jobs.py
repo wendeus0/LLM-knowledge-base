@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+from time import perf_counter
 from typing import Callable
 
+from kb.core.tracking import track_command
 from kb.discover import classify_job_command
 
 
@@ -108,4 +111,18 @@ def run_job(name: str) -> str:
         available = ", ".join(sorted(_JOB_DEFINITIONS))
         raise ValueError(f"Job desconhecido: {name}. Disponíveis: {available}")
 
-    return definition.handler()
+    start = perf_counter()
+    output = definition.handler()
+    duration_ms = int((perf_counter() - start) * 1000)
+
+    track_command(
+        command=f"jobs run {normalized}",
+        category=definition.spec.category,
+        project_path=Path.cwd(),
+        exit_code=0,
+        raw_output=output,
+        filtered_output=output,
+        duration_ms=duration_ms,
+    )
+
+    return output

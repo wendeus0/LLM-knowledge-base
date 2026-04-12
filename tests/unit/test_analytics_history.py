@@ -10,6 +10,7 @@ def _seed(conn: sqlite3.Connection) -> None:
             id INTEGER PRIMARY KEY,
             timestamp TEXT NOT NULL,
             command TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'unknown',
             exit_code INTEGER NOT NULL,
             input_chars INTEGER NOT NULL,
             output_chars INTEGER NOT NULL,
@@ -22,17 +23,17 @@ def _seed(conn: sqlite3.Connection) -> None:
     )
 
     rows = [
-        ("2026-04-10T10:00:00+00:00", "compile", 0, 100, 60, 40, 40.0, 1000, "/repo"),
-        ("2026-04-10T11:00:00+00:00", "compile", 1, 80, 80, 0, 0.0, 800, "/repo"),
-        ("2026-04-11T11:00:00+00:00", "lint", 0, 50, 25, 25, 50.0, 300, "/repo"),
-        ("2026-04-11T12:00:00+00:00", "metrics", 0, 30, 30, 0, 0.0, 100, "/repo"),
+        ("2026-04-10T10:00:00+00:00", "compile", "compile", 0, 100, 60, 40, 40.0, 1000, "/repo"),
+        ("2026-04-10T11:00:00+00:00", "compile", "compile", 1, 80, 80, 0, 0.0, 800, "/repo"),
+        ("2026-04-11T11:00:00+00:00", "lint", "lint", 0, 50, 25, 25, 50.0, 300, "/repo"),
+        ("2026-04-11T12:00:00+00:00", "metrics", "metrics", 0, 30, 30, 0, 0.0, 100, "/repo"),
     ]
     conn.executemany(
         """
         INSERT INTO commands (
-            timestamp, command, exit_code, input_chars, output_chars,
+            timestamp, command, category, exit_code, input_chars, output_chars,
             saved_chars, savings_pct, duration_ms, project_path
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )

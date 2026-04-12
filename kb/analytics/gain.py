@@ -32,7 +32,7 @@ def render_gain_summary(limit: int = 10) -> str:
         lines.append("- by_command_7d:")
         for cmd, info in by_command.items():
             lines.append(
-                f"  • {cmd}: runs={info['runs']} fails={info['failures']} avg_save={info['avg_savings_pct']}% avg_ms={info['avg_duration_ms']}"
+                f"  • {cmd} [{info['category']}]: runs={info['runs']} fails={info['failures']} avg_save={info['avg_savings_pct']}% avg_ms={info['avg_duration_ms']}"
             )
 
     return "\n".join(lines)

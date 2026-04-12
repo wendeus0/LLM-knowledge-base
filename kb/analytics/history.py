@@ -62,25 +62,27 @@ def get_history_summary(
             f"""
             SELECT
                 command,
+                COALESCE(category, 'unknown'),
                 COUNT(*),
                 COALESCE(AVG(savings_pct), 0),
                 COALESCE(AVG(duration_ms), 0),
                 COALESCE(SUM(CASE WHEN exit_code != 0 THEN 1 ELSE 0 END), 0)
             FROM commands
             WHERE {where}
-            GROUP BY command
+            GROUP BY command, COALESCE(category, 'unknown')
             ORDER BY COUNT(*) DESC, command ASC
             """,
             params,
         )
         by_command = {
             cmd: {
+                "category": category,
                 "runs": int(runs),
                 "avg_savings_pct": round(float(savings), 2),
                 "avg_duration_ms": round(float(duration), 2),
                 "failures": int(fails),
             }
-            for cmd, runs, savings, duration, fails in cur.fetchall()
+            for cmd, category, runs, savings, duration, fails in cur.fetchall()
         }
 
     return {
