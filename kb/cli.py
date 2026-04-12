@@ -484,21 +484,13 @@ def qa(
 @app.command()
 def search(query: str = typer.Argument(..., help="Termos de busca")):
     """Busca artigos na wiki por palavra-chave."""
-    from kb.search import search as do_search
+    from kb.cmds.search.run import execute_search_command
 
-    results = do_search(query)
-    if not results:
-        console.print("[yellow]Nenhum resultado encontrado.[/]")
+    lines = execute_search_command(query)
+    for line in lines:
+        console.print(line)
+    if len(lines) == 1 and "Nenhum resultado" in lines[0]:
         raise typer.Exit()
-    for r in results:
-        rel = (
-            r["path"].relative_to(Path.cwd())
-            if r["path"].is_relative_to(Path.cwd())
-            else r["path"]
-        )
-        console.print(f"[bold]{r['path'].stem}[/] [dim]({rel})[/] score={r['score']}")
-        if r["snippet"]:
-            console.print(f"  [dim]{r['snippet'][:120]}[/]")
 
 
 @app.command()

@@ -107,20 +107,17 @@ class TestSearchCommand:
     def test_should_search_and_display_results(self, tmp_path):
         with (
             patch("kb.cli.console.print") as mock_print,
-            patch("kb.search.search") as mock_search,
+            patch("kb.cmds.search.run.execute_search_command") as mock_execute,
         ):
-            mock_search.return_value = [
-                {
-                    "path": tmp_path / "wiki" / "article.md",
-                    "score": 10,
-                    "snippet": "This is a snippet of the content...",
-                }
+            mock_execute.return_value = [
+                f"[bold]article[/] [dim]({tmp_path / 'wiki' / 'article.md'})[/] score=10",
+                "  [dim]This is a snippet of the content...[/]",
             ]
 
             result = runner.invoke(app, ["search", "query"])
 
         assert result.exit_code == 0
-        mock_search.assert_called_once_with("query")
+        mock_execute.assert_called_once_with("query")
         mock_print.assert_any_call(
             f"[bold]article[/] [dim]({tmp_path / 'wiki' / 'article.md'})[/] score=10"
         )
@@ -128,9 +125,9 @@ class TestSearchCommand:
     def test_should_exit_when_no_results(self):
         with (
             patch("kb.cli.console.print") as mock_print,
-            patch("kb.search.search") as mock_search,
+            patch("kb.cmds.search.run.execute_search_command") as mock_execute,
         ):
-            mock_search.return_value = []
+            mock_execute.return_value = ["[yellow]Nenhum resultado encontrado.[/]"]
 
             result = runner.invoke(app, ["search", "unknown"])
 
