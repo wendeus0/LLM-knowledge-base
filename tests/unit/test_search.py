@@ -102,3 +102,34 @@ class TestSearch:
         # RED: falha se não formata resultados
         results = search("auth")
         assert isinstance(results, list)
+
+    def test_should_apply_rrf_hybrid_ranking_with_bm25_signal(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+
+        long_doc = wiki / "ai" / "long-redis.md"
+        long_doc.write_text(
+            "# Long Redis\n\n"
+            + ("palavra " * 400)
+            + "redis cache"
+        )
+        short_doc = wiki / "ai" / "short-redis.md"
+        short_doc.write_text("# Short Redis\n\nredis cache")
+
+        results = search("redis cache", top_k=2, mode="hybrid")
+
+        assert len(results) == 2
+        assert results[0]["path"].name == "short-redis.md"
+        assert "rrf_score" in results[0]
+        assert "channel_scores" in results[0]
+
+    def test_find_relevant_should_use_hybrid_ranking_by_default(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        (wiki / "python" / "long.md").write_text(
+            "# Long\n\n" + ("texto " * 500) + "python decorators"
+        )
+        (wiki / "python" / "short.md").write_text("# Short\n\npython decorators")
+
+        top = find_relevant("python decorators", top_k=1)
+
+        assert len(top) == 1
+        assert top[0].name == "short.md"
