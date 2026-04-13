@@ -1,0 +1,39 @@
+README.md
+  6ef5e10e82e710b1 1,8,10,14,16-53,61,64,67,70,73-74,76,78-80,83-92,95,102,105,107,109-112,120,123,126,129,132,135,138,142-143,145,151,153,155,158-160,162,166,169-200,202-205,208-209,212-219,223,226-237,240,244-269,275-289
+features/makefile-workflow/PLAN.md
+  6ef5e10e82e710b1 1-24
+CONTRIBUTING.md
+  6ef5e10e82e710b1 28-30,138-142
+tests/unit/test_analytics_history.py
+  6ef5e10e82e710b1 1,8,22,25-72,90,104
+features/makefile-workflow/TASKS.md
+  6ef5e10e82e710b1 1-7
+Makefile
+  6ef5e10e82e710b1 1-45
+kb/core/tracking.py
+  6ef5e10e82e710b1 6,15-18,20,34,37,67,102
+features/makefile-workflow/SPEC.md
+  6ef5e10e82e710b1 1-77
+kb/analytics/history.py
+  6ef5e10e82e710b1 7,49,99-100,107-111,116-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "2e70d829544d48263741c121498b35efda5206f7",
+  "prompts": {
+    "6ef5e10e82e710b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27bf54f57ffe6xCcBEUor2JqNa",
+        "model": "opencode-go/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 385,
+      "total_deletions": 6,
+      "accepted_lines": 425,
+      "overriden_lines": 0
+    }
+  }
+}
