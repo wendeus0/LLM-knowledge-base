@@ -1,0 +1,63 @@
+docs/adr/0014-release-version-source-of-truth.md
+  6ef5e10e82e710b1 1-44
+kb/book_import_pdf.py
+  6ef5e10e82e710b1 1-187
+features/infra-alignment-phase-1/TASKS.md
+  6ef5e10e82e710b1 1-8
+README.md
+  6ef5e10e82e710b1 1,8,10,14,16-53,61,64,67,70,73-74,76,78-80,85,92,95,97,99-102,110,113,116,119,122,125,128,132-133,135,141,143,145,148-150,152,156,159-190,192-195,198-199,202-209,213,216-220,223,227-252,258-272
+kb/config.py
+  6ef5e10e82e710b1 2,23-53
+kb/qa.py
+  6ef5e10e82e710b1 6-7,21-22,24-25,29,50-52,69-71,95-96,114-120,129-133,143,150
+features/infra-alignment-phase-1/SPEC.md
+  6ef5e10e82e710b1 1-74
+tests/unit/test_version_contract.py
+  6ef5e10e82e710b1 1-24
+kb/compile.py
+  6ef5e10e82e710b1 10-16,28-30,167,199,245,257
+kb/cmds/compile/run.py
+  6ef5e10e82e710b1 9,18,23-59,77-79,125,130-132,136-138,145,151,162
+README.en.md
+  6ef5e10e82e710b1 1-274
+kb/analytics/history.py
+  6ef5e10e82e710b1 100-101,108-112,117-119
+features/infra-alignment-phase-1/PLAN.md
+  6ef5e10e82e710b1 1-37
+pyproject.toml
+  6ef5e10e82e710b1 3,46-47
+kb/__init__.py
+  6ef5e10e82e710b1 1-2,4-5
+kb/book_import_core.py
+  6ef5e10e82e710b1 13-19
+docs/adr/0015-runtime-topic-taxonomy.md
+  6ef5e10e82e710b1 1-45
+tests/unit/test_config.py
+  6ef5e10e82e710b1 1-35
+docs/architecture/ARCHITECTURE.md
+  6ef5e10e82e710b1 329,386-390,416,802
+.env.example
+  6ef5e10e82e710b1 9-11
+docs/API.md
+  6ef5e10e82e710b1 252-261,266-277,472-476
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "d7480b44d8bc00b512009084329d7c8a2cd0256b",
+  "prompts": {
+    "6ef5e10e82e710b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27bf54f57ffe6xCcBEUor2JqNa",
+        "model": "opencode-go/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1134,
+      "total_deletions": 418,
+      "accepted_lines": 1105,
+      "overriden_lines": 0
+    }
+  }
+}
