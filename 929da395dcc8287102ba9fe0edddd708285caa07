@@ -1,0 +1,37 @@
+features/issue-templates-governance/TASKS.md
+  6ef5e10e82e710b1 1-7
+.github/ISSUE_TEMPLATE/operational_task.yml
+  6ef5e10e82e710b1 1-64
+CONTRIBUTING.md
+  6ef5e10e82e710b1 62-66
+.github/ISSUE_TEMPLATE/config.yml
+  6ef5e10e82e710b1 1-8
+.github/ISSUE_TEMPLATE/bug_report.yml
+  6ef5e10e82e710b1 1-90
+features/issue-templates-governance/SPEC.md
+  6ef5e10e82e710b1 1-77
+features/issue-templates-governance/PLAN.md
+  6ef5e10e82e710b1 1-28
+.github/ISSUE_TEMPLATE/feature_request.yml
+  6ef5e10e82e710b1 1-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "929da395dcc8287102ba9fe0edddd708285caa07",
+  "prompts": {
+    "6ef5e10e82e710b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27bf54f57ffe6xCcBEUor2JqNa",
+        "model": "opencode-go/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 385,
+      "total_deletions": 6,
+      "accepted_lines": 381,
+      "overriden_lines": 0
+    }
+  }
+}
