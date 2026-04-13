@@ -48,7 +48,7 @@ Características principais:
 | `jobs list`      | Listar jobs canônicos                             | `kb jobs list`                                          |
 | `jobs run`       | Executar job (`compile`, `review`, `decay`, etc.) | `kb jobs run compile`                                   |
 | `jobs gate`      | Health gate com thresholds                        | `kb jobs gate --stale-max-pct 15`                       |
-| `jobs cron`      | Encadeamento operacional completo                 | `kb jobs cron`                                          |
+| `jobs cron`      | Imprime bloco de cron sugerido                    | `kb jobs cron`                                          |
 | `jobs doc-gate`  | Conformidade documental para mudanças de código   | `kb jobs doc-gate --base-ref main`                      |
 | `handoff create` | Handoff estruturado de sessão                     | `kb handoff create --scope "modulo" --summary "resumo"` |
 
@@ -56,7 +56,7 @@ Características principais:
 
 ```bash
 git clone https://github.com/wendeus0/LLM-knowledge-base
-cd kb
+cd LLM-knowledge-base
 
 # Base (ingest, search, jobs, handoff)
 pip install -e .

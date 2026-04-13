@@ -682,3 +682,25 @@ class TestImportBookCommand:
 
         assert result.exit_code == 0
         mock_import.assert_called_once()
+
+    def test_should_commit_imported_artifacts_when_commit_flag_is_set(self, tmp_path):
+        book_path = tmp_path / "book.epub"
+        book_path.write_text("content")
+        output_dir = tmp_path / "raw" / "books" / "book"
+        chapter = output_dir / "01-intro.md"
+        metadata = output_dir / "metadata.json"
+
+        with (
+            patch("kb.cli.console.print"),
+            patch("kb.book_import.import_epub") as mock_import,
+            patch("kb.git.commit") as mock_commit,
+        ):
+            mock_import.return_value = ([chapter], metadata)
+
+            result = runner.invoke(app, ["import-book", str(book_path), "--commit"])
+
+        assert result.exit_code == 0
+        mock_commit.assert_called_once()
+        committed_paths = mock_commit.call_args.args[1]
+        assert chapter in committed_paths
+        assert metadata in committed_paths

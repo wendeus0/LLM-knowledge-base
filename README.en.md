@@ -48,7 +48,7 @@ Key features:
 | `jobs list`      | List canonical jobs                            | `kb jobs list`                                           |
 | `jobs run`       | Run a job (`compile`, `review`, `decay`, etc.) | `kb jobs run compile`                                    |
 | `jobs gate`      | Health gate with thresholds                    | `kb jobs gate --stale-max-pct 15`                        |
-| `jobs cron`      | Full operational chain                         | `kb jobs cron`                                           |
+| `jobs cron`      | Print suggested cron block                     | `kb jobs cron`                                           |
 | `jobs doc-gate`  | Document conformity for code changes           | `kb jobs doc-gate --base-ref main`                       |
 | `handoff create` | Structured session handoff                     | `kb handoff create --scope "module" --summary "summary"` |
 
@@ -56,7 +56,7 @@ Key features:
 
 ```bash
 git clone https://github.com/wendeus0/LLM-knowledge-base
-cd kb
+cd LLM-knowledge-base
 
 # Base (ingest, search, jobs, handoff)
 pip install -e .

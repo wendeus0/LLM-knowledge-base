@@ -4,9 +4,14 @@ from pathlib import Path
 def _normalize_pdf_text(text: str) -> str:
     import re
 
-    normalized_lines = [
-        re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()
-    ]
+    normalized_lines = []
+    for line in text.splitlines():
+        leading = re.match(r"[ \t]*", line).group(0)
+        content = line[len(leading) :]
+        normalized_content = re.sub(r"[ \t]+", " ", content).strip()
+        normalized_lines.append(
+            f"{leading}{normalized_content}" if normalized_content else ""
+        )
     kept_lines: list[str] = []
     blank_streak = 0
     for line in normalized_lines:
@@ -17,7 +22,7 @@ def _normalize_pdf_text(text: str) -> str:
             continue
         blank_streak = 0
         kept_lines.append(line)
-    return "\n".join(kept_lines).strip()
+    return "\n".join(kept_lines).strip("\n")
 
 
 def _is_garbled(text: str) -> bool:
@@ -73,7 +78,21 @@ def _get_pdf_pages(
         doc.close()
 
 
-def _build_pdf_metadata(source: Path, chapter_source: str) -> dict:
+def _pdf_toc_entries(entries: list[tuple[str, int]]) -> list[dict]:
+    return [
+        {"title": title[:120], "page": max(1, page + 1)}
+        for title, page in entries
+        if title.strip()
+    ]
+
+
+def _build_pdf_metadata(
+    source: Path,
+    chapter_source: str,
+    *,
+    toc: list[dict] | None = None,
+    toc_source: str = "none",
+) -> dict:
     return {
         "title": source.stem,
         "author": None,
@@ -84,8 +103,8 @@ def _build_pdf_metadata(source: Path, chapter_source: str) -> dict:
         "date": None,
         "identifiers": [],
         "subjects": [],
-        "toc": [],
-        "toc_source": "none",
+        "toc": toc or [],
+        "toc_source": toc_source,
         "chapter_source": chapter_source,
         "assets": [],
     }
@@ -137,7 +156,12 @@ def _extract_chapters_from_pdf(
                     }
                 )
         if chapters:
-            return chapters, _build_pdf_metadata(source, "toc")
+            return chapters, _build_pdf_metadata(
+                source,
+                "toc",
+                toc=_pdf_toc_entries(top_level),
+                toc_source="pdf_outline",
+            )
 
     if overflow_candidates:
         chapters = []
@@ -167,7 +191,12 @@ def _extract_chapters_from_pdf(
                 )
             i = j
         if chapters:
-            return chapters, _build_pdf_metadata(source, "toc_merged")
+            return chapters, _build_pdf_metadata(
+                source,
+                "toc_merged",
+                toc=_pdf_toc_entries(overflow_candidates),
+                toc_source="pdf_outline",
+            )
 
     chapters = []
     for i in range(0, len(pages), chunk_pages):

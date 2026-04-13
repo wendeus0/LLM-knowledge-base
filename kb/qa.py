@@ -1,10 +1,10 @@
-"""Q&A contra fontes nativas. Com --file-back, a resposta é arquivada de volta na wiki."""
+"""Q&A contra fontes nativas. Com --file-back, a resposta é arquivada no corpus."""
 
 import re
 from pathlib import Path
 from kb.client import chat
 from kb.config import WIKI_DIR as CONFIG_WIKI_DIR
-from kb.config import is_supported_topic, topic_prompt_options, wiki_topic_dir
+from kb.config import canonical_topic, topic_prompt_options, wiki_topic_dir
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.outputs import write_output as _write_output
@@ -140,8 +140,7 @@ def answer_and_file(
     for line in article.splitlines():
         if line.startswith("topic:"):
             t = line.split(":", 1)[1].strip()
-            if is_supported_topic(t):
-                topic = t
+            topic = canonical_topic(t)
         if line.startswith("title:"):
             title = line.split(":", 1)[1].strip()
 

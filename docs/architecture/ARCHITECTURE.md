@@ -254,7 +254,7 @@ source: <nome do arquivo original>
 4. **File-back opcional** (`qa.answer_and_file`)
    - LLM converte resposta em artigo wiki
    - Extrai topic/title do frontmatter gerado
-   - Salva em wiki/ localmente; commit só ocorre com ativação explícita
+   - Salva em `outputs/` por padrão; com `to_wiki=True`, salva em wiki/; commit só ocorre com ativação explícita
 
 ### 3.4 Heal Workflow
 

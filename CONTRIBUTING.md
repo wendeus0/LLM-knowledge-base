@@ -138,10 +138,10 @@ ruff check kb              # Lint
 python -m pytest           # Testes
 kb lint                    # Health check da wiki (se aplicável)
 
-# Atalhos equivalentes
+# Atalhos parciais para lint/test
 make lint
 make test
-make check
+make check                 # cobre ruff + pytest, mas não substitui kb lint
 ```
 
 ### 6. Pull Request

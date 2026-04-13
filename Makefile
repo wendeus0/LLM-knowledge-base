@@ -14,7 +14,7 @@ install-llm: ## Install LLM extras
 	pip install -e ".[llm]"
 
 install-dev: ## Install development environment
-	pip install -e ".[llm,dev]"
+	pip install -e ".[llm,web,dev]"
 
 install-all: ## Install all optional extras
 	pip install -e ".[llm,pdf,ocr,web,dev]"
@@ -38,7 +38,7 @@ check: ## Run lint and full test suite
 jobs-list: ## List canonical kb jobs
 	kb jobs list
 
-jobs-cron: ## Run canonical kb operational chain
+jobs-cron: ## Print suggested kb cron block
 	kb jobs cron
 
 doc-gate: ## Run documentation conformity gate

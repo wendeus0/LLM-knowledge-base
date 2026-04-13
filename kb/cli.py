@@ -141,8 +141,10 @@ def import_book(
 ):
     """Importa um ou mais livros EPUB ou PDF textual para raw/books/ em arquivos Markdown por capítulo."""
     from kb.book_import import BookImportError, default_output_dir, import_epub
+    from kb.git import commit
 
     all_written: List[Path] = []
+    all_imported: List[Path] = []
     results_map = {}  # path → (status, detail) para manter ordem original na tabela
 
     def _process(path: Path):
@@ -150,10 +152,10 @@ def import_book(
         if not force and target_dir.exists() and any(target_dir.glob("*.md")):
             return path, "skip", target_dir
         try:
-            written_files, _ = import_epub(
+            written_files, metadata_path = import_epub(
                 path, target_dir, use_ocr=ocr, chunk_pages=chunk_pages
             )
-            return path, "ok", written_files
+            return path, "ok", (written_files, metadata_path)
         except (BookImportError, PermissionError) as exc:
             return path, "fail", str(exc)
         except Exception as exc:
@@ -186,9 +188,11 @@ def import_book(
         status, detail = results_map[path]
         label = path.name[:60] + "..." if len(path.name) > 60 else path.name
         if status == "ok":
-            all_written.extend(detail)
-            output_dir = detail[0].parent if detail else None
-            detail_label = f"[dim]{len(detail)} capítulos[/]"
+            written_files, metadata_path = detail
+            all_written.extend(written_files)
+            all_imported.extend([*written_files, metadata_path])
+            output_dir = metadata_path.parent
+            detail_label = f"[dim]{len(written_files)} capítulos[/]"
             if output_dir is not None:
                 detail_label = f"{detail_label} [dim]{output_dir}[/]"
             table.add_row("[green]OK[/]", label, detail_label)
@@ -203,13 +207,21 @@ def import_book(
     if len(paths) == 1:
         status, detail = results_map[paths[0]]
         if status == "ok" and detail:
-            typer.echo(str(detail[0].parent))
+            typer.echo(str(detail[1].parent))
         elif status == "skip":
             typer.echo(str(detail))
 
     failed = [p for p in paths if results_map[p][0] == "fail"]
     if failed:
         console.print(f"\n[bold red]FALHAS: {len(failed)}/{len(paths)}[/]")
+
+    if all_imported and not no_commit:
+        message = (
+            f"feat(raw): import book — {paths[0].name}"
+            if len(paths) == 1
+            else f"feat(raw): import books — {len(all_imported)} artefato(s)"
+        )
+        commit(message, all_imported)
 
     compile_failures = []
     if compile_imported and all_written:

@@ -46,6 +46,7 @@ def write_output(question: str, answer: str, topic: str, no_commit: bool = True)
     today = date.today().isoformat()
     slug = re.sub(r"[^a-z0-9]+", "-", question.lower())[:60].strip("-")
 
+    topic = _config.canonical_topic(topic)
     folder = _config.OUTPUTS_DIR / topic
     folder.mkdir(parents=True, exist_ok=True)
 

@@ -50,7 +50,7 @@ def _run_lint_job() -> str:
 def _run_review_job() -> str:
     from kb.heal import heal
 
-    processed = heal(3)
+    processed = heal(3, no_commit=False)
     return f"Job review executado ({len(processed)} item(ns) processado(s))."
 
 
@@ -288,7 +288,10 @@ def run_job(
         if normalized == "health" and (
             stale_max_pct is not None or disputed_max_pct is not None
         ):
-            from kb.analytics.health import evaluate_health_thresholds, get_health_summary
+            from kb.analytics.health import (
+                evaluate_health_thresholds,
+                get_health_summary,
+            )
 
             summary = get_health_summary()
             ok, violations = evaluate_health_thresholds(

@@ -10,7 +10,7 @@ from kb.client import chat, is_provider_resource_limit_error
 from kb.config import (
     RAW_DIR,
     WIKI_DIR,
-    is_supported_topic,
+    canonical_topic,
     topic_prompt_options,
     wiki_topic_dir,
 )
@@ -196,8 +196,7 @@ def _extract_topic_and_title(
     for line in compiled_markdown.splitlines():
         if line.startswith("topic:"):
             candidate = line.split(":", 1)[1].strip()
-            if is_supported_topic(candidate):
-                topic = candidate
+            topic = canonical_topic(candidate)
         if line.startswith("title:"):
             title = line.split(":", 1)[1].strip()
     return topic, title

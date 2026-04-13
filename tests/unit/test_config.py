@@ -26,7 +26,17 @@ def test_should_normalize_and_deduplicate_topics_from_env(monkeypatch):
 
     assert config.TOPICS == ["ml-ops", "ai"]
     assert config.is_supported_topic("ml-ops") is True
+    assert config.is_supported_topic("ML Ops") is True
+    assert config.canonical_topic(" ML Ops ") == "ml-ops"
     assert config.is_supported_topic("general") is False
+
+
+def test_should_resolve_wiki_dir_with_canonical_topic_name(monkeypatch, tmp_path):
+    monkeypatch.setenv("KB_TOPICS", "ML Ops")
+    monkeypatch.setenv("KB_WIKI_DIR", str(tmp_path / "wiki"))
+    config = _reload_config(monkeypatch, "ML Ops")
+
+    assert config.wiki_topic_dir("ML Ops") == config.WIKI_DIR / "ml-ops"
 
 
 def test_should_fallback_to_default_topics_when_env_has_no_valid_entries(monkeypatch):
