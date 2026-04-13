@@ -1,217 +1,274 @@
-# kb — LLM-powered Knowledge Base Engine
+# kb — Engine de Knowledge Base mantida por LLM
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-223%20passing-brightgreen.svg)]()
 [![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)]()
 
-Engine de knowledge base mantida por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático.
+Engine de knowledge base mantida por LLM. Ingesta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático. Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas de conhecimento assistidos por IA.
 
-Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas de conhecimento assistidos por IA.
+> [English version](README.en.md)
 
 > Este repositório contém a **engine** (`kb`), testes e documentação. O **corpus/vault do usuário** deve ficar fora daqui, em um diretório próprio apontado por `KB_DATA_DIR`.
 
-## Features
+## Visão Geral
 
-| Feature         | Descrição                                                                               | Comando                                |
-| --------------- | --------------------------------------------------------------------------------------- | -------------------------------------- |
-| **Ingest**      | Adicionar documentos brutos à fila de processamento                                     | `kb ingest <arquivo>`                  |
-| **Book Import** | Importar um ou mais EPUB/PDFs em capítulos markdown                                     | `kb import-book <arquivo...>`          |
-| **Compile**     | Transformar `raw/` em wiki estruturada via LLM, por arquivo, diretório ou nome de livro | `kb compile [alvo]`                    |
-| **Q&A**         | Perguntar com routing por fonte nativa (`wiki`, `raw`, `knowledge`, `learnings`)        | `kb qa "pergunta"`                     |
-| **Search**      | Busca simples por palavras-chave na wiki                                                | `kb search "termo"`                    |
-| **Heal**        | Correção estocástica: links, stubs, timestamps                                          | `kb heal --n 10`                       |
-| **Lint**        | Health checks e auditoria da wiki                                                       | `kb lint`                              |
-| **Jobs**        | Catálogo de rotinas agendáveis de manutenção                                            | `kb jobs list` / `kb jobs run compile` |
+O `kb` implementa um ciclo central de 4 etapas:
+
+```
+Ingest → Compile → Q&A / Search → Heal / Lint
+```
+
+- **Ingest** — coleta documentos e URLs para `raw/`
+- **Compile** — transforma `raw/` em wiki estruturada via LLM
+- **Q&A** — consulta a wiki com routing por fonte e traversal de wikilinks
+- **Heal / Lint** — manutenção estocástica e auditoria automática
+
+Características principais:
+
+- Busca híbrida (keyword + BM25 + RRF)
+- Claims com ciclo de vida (confiança, supersessão, decaimento)
+- Health gate com thresholds configuráveis
+- Catálogo de jobs canônicos agendáveis (`jobs cron`)
+- Guardrails de conteúdo sensível com opt-in explícito (`--allow-sensitive`)
+- Git auto-commit com opt-out (`--no-commit`)
+- Frontend recomendado: Obsidian via `obsidian-terminal`
+
+## Comandos
+
+| Comando          | Descrição                                         | Exemplo                                                 |
+| ---------------- | ------------------------------------------------- | ------------------------------------------------------- |
+| `ingest`         | Adicionar documentos/URLs a `raw/`                | `kb ingest doc.md https://example.com`                  |
+| `import-book`    | Importar EPUB/PDF em capítulos markdown           | `kb import-book livro.epub --compile`                   |
+| `compile`        | Compilar `raw/` → wiki via LLM (paralelo)         | `kb compile --workers 4`                                |
+| `qa`             | Perguntar com routing por fonte                   | `kb qa "pergunta" -f --no-commit`                       |
+| `search`         | Busca híbrida (keyword + BM25 + RRF)              | `kb search "termo"`                                     |
+| `heal`           | Correção estocástica de N arquivos                | `kb heal --n 10`                                        |
+| `lint`           | Auditoria da wiki via LLM                         | `kb lint`                                               |
+| `jobs list`      | Listar jobs canônicos                             | `kb jobs list`                                          |
+| `jobs run`       | Executar job (`compile`, `review`, `decay`, etc.) | `kb jobs run compile`                                   |
+| `jobs gate`      | Health gate com thresholds                        | `kb jobs gate --stale-max-pct 15`                       |
+| `jobs cron`      | Encadeamento operacional completo                 | `kb jobs cron`                                          |
+| `jobs doc-gate`  | Conformidade documental para mudanças de código   | `kb jobs doc-gate --base-ref main`                      |
+| `handoff create` | Handoff estruturado de sessão                     | `kb handoff create --scope "modulo" --summary "resumo"` |
 
 ## Instalação
 
 ```bash
-# Clone o repositório
 git clone https://github.com/wendeus0/LLM-knowledge-base
 cd kb
 
-# Instalar dependências base
+# Base (ingest, search, jobs, handoff)
 pip install -e .
 
-# Instalar com suporte a LLM (compile, qa, heal, lint)
+# Com suporte a LLM (compile, qa, heal, lint)
 pip install -e ".[llm]"
 
-# Suporte a PDFs textuais com PyMuPDF
+# Suporte a PDFs textuais
 pip install -e ".[pdf]"
 
-# OCR opcional para PDFs escaneados
+# OCR para PDFs escaneados
 pip install -e ".[ocr]"
 
-# Instalar dependências de desenvolvimento
+# Ingestão de URLs (web scraping)
+pip install -e ".[web]"
+
+# Desenvolvimento (pytest, ruff)
 pip install -e ".[dev]"
+
+# Tudo junto
+pip install -e ".[llm,pdf,ocr,web,dev]"
 ```
 
 ## Configuração
 
-Crie um arquivo `.env` na raiz do projeto:
+Crie `.env` na raiz do projeto (veja `.env.example`):
 
 ```bash
 KB_API_KEY=sua_api_key_aqui
 KB_BASE_URL=https://opencode.ai/zen/go/v1  # opcional
 KB_MODEL=kimi-k2.5                          # opcional
 KB_DATA_DIR=/caminho/para/seu/llm-wiki      # recomendado: fora deste repositório
+KB_TOPICS=cybersecurity,ai,python,typescript # opcional; `general` é fallback implícito
 ```
 
-`KB_DATA_DIR` aponta para o vault/corpus do usuário. Dentro dele, o `kb` espera encontrar ou criar:
+Estrutura esperada em `KB_DATA_DIR`:
 
-```text
+```
 <KB_DATA_DIR>/
-  raw/
-  wiki/
-  outputs/
-  kb_state/
+  raw/          ← documentos fonte + books/
+  wiki/         ← markdown compilado
+  outputs/      ← file-backs de QA
+  kb_state/     ← manifesto + knowledge + learnings + claims + tracking
 ```
-
-Veja também `.env.example`.
 
 ## Uso Rápido
 
 ```bash
-# 1. Aponte para seu vault/corpus local
 export KB_DATA_DIR=/caminho/para/seu/llm-wiki
 
-# 2. Ingerir um documento neutro de exemplo
+# Ingerir documento de exemplo
 kb ingest examples/raw/getting-started.md
 
-# 3. Compilar para wiki (usa LLM para estruturar)
+# Compilar para wiki
 kb compile
 
-# 3b. Compilar apenas um livro já importado
+# Compilar livro específico
 kb compile "Mathematics for Machine Learning"
 
-# 4. Fazer perguntas
+# Perguntar
 kb qa "O que este corpus descreve?"
 
-# 5. Arquivar resposta fora da wiki (recomendado no fluxo Obsidian)
+# Arquivar resposta (fluxo recomendado com Obsidian)
 kb qa "Resuma este corpus" -f --no-commit
 
-# 6. Permitir explicitamente conteúdo sensível quando necessário
+# Conteúdo sensível (opt-in explícito)
 kb compile --allow-sensitive
 
-# 7. Health check
+# Health check
 kb heal --n 5 --no-commit
 kb lint
 
-# 8. Importar vários livros e compilar em seguida
-kb import-book ~/Downloads/book-1.epub ~/Downloads/book-2.pdf --compile
+# Importar livros
+kb import-book ~/Downloads/book.epub ~/Downloads/book.pdf --compile
 
-# 9. Ativar OCR para PDFs de scan
+# OCR para PDFs escaneados
 kb import-book ~/Downloads/scan.pdf --ocr --chunk-pages 10
 ```
 
 ## Obsidian
 
-O frontend oficial recomendado é o Obsidian sobre o vault do usuário, e a integração operacional recomendada usa o plugin community [`obsidian-terminal`](https://github.com/polyipseity/obsidian-terminal).
+Frontend recomendado: Obsidian sobre o vault do usuário, com o plugin [`obsidian-terminal`](https://github.com/polyipseity/obsidian-terminal).
 
-### Setup recomendado
+### Setup
 
-1. Configurar `KB_DATA_DIR` para o diretório do seu vault/corpus local
+1. Configurar `KB_DATA_DIR` para o diretório do vault
 2. Abrir `<KB_DATA_DIR>/wiki` como vault no Obsidian
 3. Instalar o plugin `obsidian-terminal`
-4. Criar um profile integrado com:
-   - Executable: `/bin/zsh` (ou `/bin/bash`)
-   - Arguments: `--login`
-5. Adicionar no shell um alias apontando para o binário do projeto:
+4. Criar profile integrado com executable `/bin/zsh` (ou `/bin/bash`), arguments `--login`
+5. Adicionar alias: `alias kb='<repo>/.venv/bin/kb'`
+6. Usar no terminal integrado: `kb qa "pergunta" --allow-sensitive`
 
-```bash
-alias kb='<raiz-do-repositorio>/.venv/bin/kb'
-```
-
-> Substitua `<raiz-do-repositorio>` pelo caminho absoluto do seu clone local.
-
-6. No terminal integrado do Obsidian, entrar na raiz do projeto e rodar:
-
-```bash
-cd <raiz-do-repositorio>
-kb --help
-kb qa "Como implementar um orquestrador em meu workflow?" --allow-sensitive
-```
-
-Tutorial completo:
-
-- [docs/OBSIDIAN.md](docs/OBSIDIAN.md)
-- Plugin upstream: <https://github.com/polyipseity/obsidian-terminal>
+Guia completo: [docs/OBSIDIAN.md](docs/OBSIDIAN.md)
 
 ## Arquitetura
 
-```text
+```
 # Repositório da engine
 kb/
-├── kb/               ← engine/CLI principal
-├── docs/             ← documentação do produto
-├── tests/            ← testes unitários e integração
-└── examples/         ← exemplos neutros de corpus/seed
+├── kb/                  ← pacote Python / engine
+│   ├── cli.py           ← CLI Typer (680 linhas)
+│   ├── client.py         ← wrapper OpenAI SDK + validação de modelo
+│   ├── compile.py        ← raw → wiki via LLM (paralelo)
+│   ├── qa.py             ← Q&A com routing e wikilink traversal
+│   ├── search.py         ← busca híbrida (keyword + BM25 + RRF)
+│   ├── heal.py           ← healing estocástico
+│   ├── lint.py           ← auditoria via LLM
+│   ├── jobs.py           ← jobs canônicos + health gate
+│   ├── claims.py         ← ciclo de vida de claims
+│   ├── book_import.py    ← facade EPUB/PDF
+│   ├── book_import_core.py ← parsing core (1100+ linhas)
+│   ├── router.py         ← routing por fonte
+│   ├── graph.py          ← wikilink traversal
+│   ├── guardrails.py     ← detecção de conteúdo sensível
+│   ├── state.py          ← persistência JSON
+│   ├── outputs.py        ← file-back store
+│   ├── web_ingest.py     ← URL → Markdown
+│   ├── git.py            ← auto-commit helper
+│   ├── handoff.py        ← handoff de sessão
+│   ├── doc_gate.py       ← conformidade documental
+│   ├── config.py         ← variáveis de ambiente e constantes
+│   ├── cmds/             ← camada de execução (RTK-style)
+│   ├── core/             ← runner + tracking SQLite
+│   ├── discover/         ← classificação de comandos
+│   └── analytics/        ← métricas e histórico de comandos
+├── tests/               ← 223 testes (96% cobertura)
+├── docs/                ← documentação do produto
+├── features/            ← SPECs por feature
+└── examples/            ← exemplos neutros
 
-# Corpus/vault do usuário (fora deste repositório)
+# Corpus do usuário (fora do repositório)
 <KB_DATA_DIR>/
-├── raw/              ← documentos fonte
-├── wiki/             ← markdown compilado
-├── outputs/          ← file-backs de QA
-└── kb_state/         ← manifesto/knowledge/learnings
+├── raw/                 ← documentos fonte + books/
+├── wiki/                ← markdown compilado e versionado
+├── outputs/             ← file-backs de QA
+└── kb_state/            ← manifesto + knowledge + learnings + claims
 ```
+
+Diagramas completos: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
 
 ## Convenções
 
-- **Corpus do usuário:** `raw/`, `wiki/`, `outputs/` e `kb_state/` devem ficar preferencialmente fora do repositório principal via `KB_DATA_DIR`
-- **Frontmatter YAML:** Cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `translated_by`, `reviewed_at`
-- **Tradução:** artigos compilados são gerados em português e terminam com um disclaimer apontando para a fonte original
-- **Git:** writes no corpus local podem gerar commit automático, exceto quando `--no-commit` é usado explicitamente
-- **LLM:** O LLM nunca escreve a wiki manualmente — tudo é via CLI
-- **Sensibilidade:** operações com provider externo aceitam `--allow-sensitive` para bypass explícito da confirmação interativa
+- **Corpus separado:** `raw/`, `wiki/`, `outputs/`, `kb_state/` vivem em `KB_DATA_DIR`, fora do repositório
+- **Frontmatter YAML:** cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `translated_by`, `reviewed_at`
+- **Tradução:** artigos compilados são gerados em português
+- **Git:** writes no corpus podem gerar commit automático; `--no-commit` suprime
+- **LLM:** o LLM nunca escreve a wiki manualmente — tudo via CLI
+- **Sensibilidade:** `--allow-sensitive` é opt-in explícito para bypass de guardrails
+- **Spec Driven Development:** nenhuma mudança não trivial sem SPEC
+- **Test Driven Development:** comportamento novo nasce RED antes de GREEN
 
 ## Testes
 
-Baseline validada em `2026-04-08`: `223` testes passando, `96%` de cobertura total e `kb/book_import_core.py` em `97%`.
+Baseline validada em 2026-04-08: 223 testes passando, 96% de cobertura total.
 
 ```bash
-# Todos os testes
-pytest
-
-# Com cobertura
-pytest --cov=kb --cov-report=html
-
-# Apenas unitários
-pytest tests/unit/
-
-# Apenas integração
-pytest tests/integration/
-
-# Lint
-ruff check kb tests
+pytest                                    # todos os testes
+pytest --cov=kb --cov-report=html         # com cobertura
+pytest tests/unit/                        # apenas unitários
+pytest tests/integration/                 # apenas integração
+ruff check kb tests                       # lint
 ```
+
+Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_core.py` 97%, `compile.py` 91%.
 
 ## Documentação
 
-| Documento                                                            | Descrição                            |
-| -------------------------------------------------------------------- | ------------------------------------ |
-| [CONTEXT.md](CONTEXT.md)                                             | Contexto macro, princípios e fluxo SDD+TDD |
-| [AGENTS.md](AGENTS.md)                                               | Convenções e contexto operacional    |
-| [docs/architecture/SDD.md](docs/architecture/SDD.md)                 | Metodologia Spec Driven Development  |
-| [docs/architecture/TDD.md](docs/architecture/TDD.md)                 | Convenções de teste                  |
-| [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md) | Formato de especificação de features |
-| [features/_template/SPEC.md](features/_template/SPEC.md)             | Template base de SPEC por feature    |
-| [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                 | Guia oficial de uso com Obsidian     |
-| [docs/adr/](docs/adr/)                                               | Architectural Decision Records       |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                                   | Regras de contribuição e gates SDD+TDD |
+| Documento                                                              | Descrição                                  |
+| ---------------------------------------------------------------------- | ------------------------------------------ |
+| [CONTEXT.md](CONTEXT.md)                                               | Contexto macro, princípios e fluxo SDD+TDD |
+| [AGENTS.md](AGENTS.md)                                                 | Convenções e contexto operacional          |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                     | Regras de contribuição e gates             |
+| [docs/architecture/SDD.md](docs/architecture/SDD.md)                   | Spec Driven Development                    |
+| [docs/architecture/TDD.md](docs/architecture/TDD.md)                   | Convenções de teste                        |
+| [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | Arquitetura C4 completa                    |
+| [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md)   | Formato de SPEC                            |
+| [docs/API.md](docs/API.md)                                             | Referência CLI + Python API (813 linhas)   |
+| [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                   | Integração com Obsidian                    |
+| [docs/adr/](docs/adr/)                                                 | 13 ADRs (0001-0013)                        |
+| [SECURITY.md](SECURITY.md)                                             | Política de segurança                      |
+
+## Stack
+
+| Camada        | Tecnologia                                                |
+| ------------- | --------------------------------------------------------- |
+| Linguagem     | Python 3.11+                                              |
+| CLI           | Typer + Rich                                              |
+| LLM           | OpenAI SDK (OpenCode Go, OpenAI, local)                   |
+| Armazenamento | JSON (`kb_state/`), Markdown (`wiki/`), SQLite (tracking) |
+| Busca         | Keyword + BM25 + RRF (sem dependência externa)            |
+| Versionamento | Git                                                       |
+| Testes        | pytest + pytest-cov                                       |
+| Lint          | ruff                                                      |
 
 ## Roadmap
 
 - [x] Sistema base de ingestão e compilação
 - [x] Importação de livros (EPUB/PDF)
-- [x] Q&A com file-back
-- [x] Stochastic healing
-- [x] Suite de testes completa
-- [ ] Multi-agent specialization (futuro)
-- [x] Integração com Obsidian como frontend oficial recomendado (`obsidian-terminal`)
-- [ ] Embeddings + RAG híbrido (futuro)
-- [x] Modo no-commit para cenários sensíveis
+- [x] Q&A com file-back e routing por fonte
+- [x] Busca híbrida (keyword + BM25 + RRF)
+- [x] Stochastic healing e lint
+- [x] Claims com ciclo de vida
+- [x] Jobs canônicos e health gate
+- [x] Suite de testes completa (223 testes, 96% cobertura)
+- [x] Integração com Obsidian
+- [x] Modo no-commit e allow-sensitive
+- [x] Handoff de sessão
+- [x] Tracking SQLite de comandos
+- [x] Conformidade documental (doc-gate)
+- [ ] Embeddings + RAG híbrido
+- [ ] Multi-agent specialization
 
-## License
+## Licença
 
 MIT

@@ -2,13 +2,10 @@ from typer.testing import CliRunner
 
 from kb.cli import app
 
-
 runner = CliRunner()
 
 
 def test_handoff_create_should_generate_file_and_print_path(monkeypatch, tmp_path):
-    from kb import handoff as handoff_module
-
     monkeypatch.setattr("kb.handoff.DATA_DIR", tmp_path)
 
     result = runner.invoke(

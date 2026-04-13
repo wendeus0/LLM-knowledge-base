@@ -326,7 +326,7 @@ source: <nome do arquivo original>
 
 - Paths base: `ROOT`, `RAW_DIR`, `WIKI_DIR`
 - Config LLM: `API_KEY`, `BASE_URL`, `MODEL`
-- Topics válidos: `TOPICS` list
+- Taxonomia runtime: `TOPICS`, `is_supported_topic()`, `wiki_topic_dir()`
 
 #### `kb/client.py`
 
@@ -380,9 +380,13 @@ source: <nome do arquivo original>
 #### `kb/book_import_core.py`
 
 - Parse EPUB: XML seguro (defusedxml), ZIP handling
-- Parse PDF: extração de operadores de texto
 - Conversão HTML→Markdown: `_MarkdownHTMLParser`
 - Detecção de capítulos: padrões de heading
+
+#### `kb/book_import_pdf.py`
+
+- Parse PDF: extração textual, OCR opcional e chunking
+- Heurísticas de TOC para capítulos
 
 ---
 
@@ -409,7 +413,7 @@ kb lint                                   # Health check
 
 ```python
 # Config
-from kb.config import RAW_DIR, WIKI_DIR, TOPICS
+from kb.config import RAW_DIR, WIKI_DIR, TOPICS, topic_prompt_options
 
 # Client LLM
 from kb.client import chat
@@ -795,7 +799,7 @@ def novo_comando(arg: str):
 
 ### Novos Topics
 
-No estado atual, `TOPICS` ainda é uma lista fixa em `config.py`. A direção recomendada é torná-la configurável por corpus no futuro, evitando acoplamento do produto a domínios específicos.
+`TOPICS` agora pode ser configurado por `KB_TOPICS`, preservando a lista histórica como default. `general` segue como fallback implícito fora da taxonomia configurável.
 
 ### Novos Formatos de Importação
 

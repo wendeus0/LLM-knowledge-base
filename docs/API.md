@@ -249,23 +249,32 @@ kb heal --n 20
 ### Configuração (`kb.config`)
 
 ```python
-from kb.config import RAW_DIR, WIKI_DIR, API_KEY, BASE_URL, MODEL, TOPICS
+from kb.config import (
+    RAW_DIR,
+    WIKI_DIR,
+    API_KEY,
+    BASE_URL,
+    MODEL,
+    TOPICS,
+    is_supported_topic,
+    topic_prompt_options,
+)
 ```
 
 **Constantes:**
 
-| Nome          | Tipo      | Descrição                                      |
-| ------------- | --------- | ---------------------------------------------- |
-| `ROOT`        | Path      | Raiz do projeto                                |
-| `DATA_DIR`    | Path      | Diretório do corpus do usuário (`KB_DATA_DIR`) |
-| `RAW_DIR`     | Path      | `raw/` - documentos fonte                      |
-| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                   |
-| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                  |
-| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings    |
-| `API_KEY`     | str       | KB_API_KEY do .env                             |
-| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)             |
-| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                 |
-| `TOPICS`      | list[str] | Tópicos suportados atualmente                  |
+| Nome          | Tipo      | Descrição                                                 |
+| ------------- | --------- | --------------------------------------------------------- |
+| `ROOT`        | Path      | Raiz do projeto                                           |
+| `DATA_DIR`    | Path      | Diretório do corpus do usuário (`KB_DATA_DIR`)            |
+| `RAW_DIR`     | Path      | `raw/` - documentos fonte                                 |
+| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                              |
+| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                             |
+| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings               |
+| `API_KEY`     | str       | KB_API_KEY do .env                                        |
+| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)                        |
+| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                            |
+| `TOPICS`      | list[str] | Tópicos configurados via `KB_TOPICS` ou default histórico |
 
 ---
 
@@ -460,11 +469,11 @@ Stageia arquivos da knowledge base (tipicamente em `raw/`, `wiki/` e `outputs/` 
 
 **Parâmetros:**
 
-| Parâmetro | Tipo | Padrão | Descrição |
-| --------- | ---- | ------ | --------- |
-| `message` | str | - | Mensagem de commit |
-| `paths` | list[Path] | - | Arquivos da KB a serem stageados (em geral sob `KB_DATA_DIR`) |
-| `enabled` | bool | `True` | Quando `False`, não executa side effects |
+| Parâmetro | Tipo       | Padrão | Descrição                                                     |
+| --------- | ---------- | ------ | ------------------------------------------------------------- |
+| `message` | str        | -      | Mensagem de commit                                            |
+| `paths`   | list[Path] | -      | Arquivos da KB a serem stageados (em geral sob `KB_DATA_DIR`) |
+| `enabled` | bool       | `True` | Quando `False`, não executa side effects                      |
 
 **Comportamento operacional:**
 

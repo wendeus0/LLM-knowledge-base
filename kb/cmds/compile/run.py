@@ -6,15 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from kb.compile import (
-    CompileBatchResult,
-    CompileFailure,
-    compile_file,
-    compile_many,
-    discover_compile_targets,
-    find_book_dirs,
-    update_index as do_update_index,
-)
+import kb.compile as compile_module
 from kb.guardrails import SensitiveContentError
 
 
@@ -23,9 +15,46 @@ class CompileExecutionResult:
     exit_code: int
     message_lines: list[str]
     compiled_outputs: list[Path]
-    failures: list[CompileFailure]
+    failures: list[compile_module.CompileFailure]
     targets: list[Path]
     book_dir_count: int = 0
+
+
+def discover_compile_targets(path: Path | None = None):
+    return compile_module.discover_compile_targets(path)
+
+
+def find_book_dirs(query: str):
+    return compile_module.find_book_dirs(query)
+
+
+def compile_file(path: Path, *, allow_sensitive: bool = False, no_commit: bool = True):
+    return compile_module.compile_file(
+        path,
+        allow_sensitive=allow_sensitive,
+        no_commit=no_commit,
+    )
+
+
+def compile_many(
+    paths: list[Path],
+    *,
+    workers: int = 4,
+    allow_sensitive: bool = False,
+    no_commit: bool = True,
+    update_index_enabled: bool = True,
+):
+    return compile_module.compile_many(
+        paths,
+        workers=workers,
+        allow_sensitive=allow_sensitive,
+        no_commit=no_commit,
+        update_index_enabled=update_index_enabled,
+    )
+
+
+def run_update_index(*, no_commit: bool = True):
+    return compile_module.update_index(no_commit=no_commit)
 
 
 def _resolve_targets(target: str | None) -> tuple[list[Path], int, list[str], int]:
@@ -45,7 +74,9 @@ def _resolve_targets(target: str | None) -> tuple[list[Path], int, list[str], in
     for d in book_dirs:
         targets.extend(discover_compile_targets(d))
 
-    lines.append(f"[dim]{len(book_dirs)} livro(s), {len(targets)} arquivo(s) a compilar[/]")
+    lines.append(
+        f"[dim]{len(book_dirs)} livro(s), {len(targets)} arquivo(s) a compilar[/]"
+    )
     return targets, len(book_dirs), lines, 0
 
 
@@ -89,36 +120,35 @@ def execute_compile_command(
         )
 
     effective_workers = _effective_workers(targets, workers)
-    if effective_workers > 1 and interactive_sensitive and not allow_sensitive:
-        lines.append(
-            "[dim]Confirmação sensível interativa ativa; executando em modo serial para garantir prompt por arquivo.[/]"
-        )
-        effective_workers = 1
 
     compiled_outputs: list[Path] = []
-    failures: list[CompileFailure] = []
+    failures: list[compile_module.CompileFailure] = []
 
     if effective_workers == 1:
         for t in targets:
             try:
-                out = compile_file(t, allow_sensitive=allow_sensitive, no_commit=no_commit)
+                out = compile_file(
+                    t, allow_sensitive=allow_sensitive, no_commit=no_commit
+                )
             except SensitiveContentError as exc:
                 if allow_sensitive:
                     out = compile_file(t, allow_sensitive=True, no_commit=no_commit)
-                elif interactive_sensitive and confirm_sensitive and confirm_sensitive():
+                elif (
+                    interactive_sensitive and confirm_sensitive and confirm_sensitive()
+                ):
                     out = compile_file(t, allow_sensitive=True, no_commit=no_commit)
                 else:
                     return CompileExecutionResult(
                         exit_code=1,
                         message_lines=lines,
                         compiled_outputs=compiled_outputs,
-                        failures=[CompileFailure(raw_path=t, error=exc)],
+                        failures=[compile_module.CompileFailure(raw_path=t, error=exc)],
                         targets=targets,
                         book_dir_count=book_dir_count,
                     )
             compiled_outputs.append(out)
     else:
-        result: CompileBatchResult = compile_many(
+        result: compile_module.CompileBatchResult = compile_many(
             targets,
             workers=effective_workers,
             allow_sensitive=allow_sensitive,
@@ -129,7 +159,7 @@ def execute_compile_command(
         failures = result.failures
 
     if update_index and compiled_outputs:
-        do_update_index(no_commit=no_commit)
+        run_update_index(no_commit=no_commit)
         lines.append("[dim]Índice atualizado.[/]")
 
     if failures:
