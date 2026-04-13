@@ -102,7 +102,7 @@ def answer_and_file(
     question: str,
     top_k: int = 5,
     allow_sensitive: bool = False,
-    no_commit: bool = False,
+    no_commit: bool = True,
     to_wiki: bool = False,
     traverse: bool = True,
     depth: int | None = None,

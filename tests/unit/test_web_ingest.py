@@ -8,7 +8,7 @@ Rastreabilidade SPEC:
   REQ-5: erro HTTP (4xx/5xx) → exibe erro sem criar arquivo
   REQ-6: timeout → exibe erro sem criar arquivo
   REQ-7: .[web] não instalado → mensagem clara
-  REQ-8: --no-commit suprime commit automático
+REQ-8: write local é padrão; commit é explícito
   REQ-9: slug usa <title> da página; fallback: 8 primeiros chars da URL
 """
 
@@ -166,7 +166,7 @@ class TestIngestUrl:
         assert list(raw_dir.iterdir()) == []
 
     def test_should_suppress_commit_when_no_commit_is_true(self, tmp_path, monkeypatch):
-        """REQ-8: no_commit=True deve suprimir o commit automático."""
+        """REQ-8: no_commit=True deve manter a ingestão apenas local."""
         # RED: falha até ingest-url ser implementada
         raw_dir = tmp_path / "raw"
         raw_dir.mkdir()
@@ -185,8 +185,8 @@ class TestIngestUrl:
 
         assert not mock_commit.called
 
-    def test_should_commit_automatically_by_default(self, tmp_path, monkeypatch):
-        """REQ-8b: commit automático deve ser chamado por padrão."""
+    def test_should_not_commit_by_default(self, tmp_path, monkeypatch):
+        """REQ-8b: commit não deve ocorrer por padrão."""
         # RED: falha até ingest-url ser implementada
         raw_dir = tmp_path / "raw"
         raw_dir.mkdir()
@@ -203,4 +203,22 @@ class TestIngestUrl:
         ):
             ingest_url("https://example.com/xss")
 
-        assert mock_commit.called
+        mock_commit.assert_not_called()
+
+    def test_should_commit_when_explicitly_requested(self, tmp_path, monkeypatch):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = HTML_SAMPLE
+        mock_response.raise_for_status = MagicMock()
+
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit") as mock_commit,
+        ):
+            ingest_url("https://example.com/xss", no_commit=False)
+
+        mock_commit.assert_called_once()

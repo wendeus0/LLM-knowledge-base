@@ -31,7 +31,7 @@ Características principais:
 - Health gate com thresholds configuráveis
 - Catálogo de jobs canônicos agendáveis (`jobs cron`)
 - Guardrails de conteúdo sensível com opt-in explícito (`--allow-sensitive`)
-- Git auto-commit com opt-out (`--no-commit`)
+- Git com commit explícito por comando (`--commit`; `--no-commit` segue válido)
 - Frontend recomendado: Obsidian via `obsidian-terminal`
 
 ## Comandos
@@ -41,7 +41,7 @@ Características principais:
 | `ingest`         | Adicionar documentos/URLs a `raw/`                | `kb ingest doc.md https://example.com`                  |
 | `import-book`    | Importar EPUB/PDF em capítulos markdown           | `kb import-book livro.epub --compile`                   |
 | `compile`        | Compilar `raw/` → wiki via LLM (paralelo)         | `kb compile --workers 4`                                |
-| `qa`             | Perguntar com routing por fonte                   | `kb qa "pergunta" -f --no-commit`                       |
+| `qa`             | Perguntar com routing por fonte                   | `kb qa "pergunta" -f --commit`                          |
 | `search`         | Busca híbrida (keyword + BM25 + RRF)              | `kb search "termo"`                                     |
 | `heal`           | Correção estocástica de N arquivos                | `kb heal --n 10`                                        |
 | `lint`           | Auditoria da wiki via LLM                         | `kb lint`                                               |
@@ -129,14 +129,20 @@ kb compile "Mathematics for Machine Learning"
 # Perguntar
 kb qa "O que este corpus descreve?"
 
-# Arquivar resposta (fluxo recomendado com Obsidian)
-kb qa "Resuma este corpus" -f --no-commit
+# Arquivar resposta localmente (fluxo recomendado com Obsidian)
+kb qa "Resuma este corpus" -f
+
+# Arquivar e versionar explicitamente
+kb qa "Resuma este corpus" -f --commit
 
 # Conteúdo sensível (opt-in explícito)
 kb compile --allow-sensitive
 
-# Health check
-kb heal --n 5 --no-commit
+# Health check local
+kb heal --n 5
+
+# Health check com versionamento explícito
+kb heal --n 5 --commit
 kb lint
 
 # Importar livros
@@ -184,7 +190,7 @@ kb/
 │   ├── state.py          ← persistência JSON
 │   ├── outputs.py        ← file-back store
 │   ├── web_ingest.py     ← URL → Markdown
-│   ├── git.py            ← auto-commit helper
+│   ├── git.py            ← explicit commit helper
 │   ├── handoff.py        ← handoff de sessão
 │   ├── doc_gate.py       ← conformidade documental
 │   ├── config.py         ← variáveis de ambiente e constantes
@@ -212,7 +218,7 @@ Diagramas completos: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHI
 - **Corpus separado:** `raw/`, `wiki/`, `outputs/`, `kb_state/` vivem em `KB_DATA_DIR`, fora do repositório
 - **Frontmatter YAML:** cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `translated_by`, `reviewed_at`
 - **Tradução:** artigos compilados são gerados em português
-- **Git:** writes no corpus podem gerar commit automático; `--no-commit` suprime
+- **Git:** writes no corpus ficam locais por padrão; use `--commit` para versionar na execução atual
 - **LLM:** o LLM nunca escreve a wiki manualmente — tudo via CLI
 - **Sensibilidade:** `--allow-sensitive` é opt-in explícito para bypass de guardrails
 - **Spec Driven Development:** nenhuma mudança não trivial sem SPEC
@@ -252,7 +258,7 @@ Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_impor
 | [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md)   | Formato de SPEC                            |
 | [docs/API.md](docs/API.md)                                             | Referência CLI + Python API (813 linhas)   |
 | [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                   | Integração com Obsidian                    |
-| [docs/adr/](docs/adr/)                                                 | 13 ADRs (0001-0013)                        |
+| [docs/adr/](docs/adr/)                                                 | 16 ADRs (0001-0016)                        |
 | [SECURITY.md](SECURITY.md)                                             | Política de segurança                      |
 
 ## Stack

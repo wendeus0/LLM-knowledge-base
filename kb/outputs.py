@@ -38,7 +38,7 @@ def _build_content(answer: str, question: str, today: str, topic: str) -> str:
     )
 
 
-def write_output(question: str, answer: str, topic: str, no_commit: bool = False):
+def write_output(question: str, answer: str, topic: str, no_commit: bool = True):
     """Grava resposta de QA em outputs/<topic>/<YYYY-MM-DD>-<slug>.md.
 
     Retorna (answer, path).

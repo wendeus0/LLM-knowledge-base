@@ -31,7 +31,7 @@ Key features:
 - Health gate with configurable thresholds
 - Catalog of schedulable canonical jobs (`jobs cron`)
 - Sensitive content guardrails with explicit opt-in (`--allow-sensitive`)
-- Git auto-commit with opt-out (`--no-commit`)
+- Git with explicit per-command commit (`--commit`; `--no-commit` remains valid)
 - Recommended frontend: Obsidian via `obsidian-terminal`
 
 ## Commands
@@ -41,7 +41,7 @@ Key features:
 | `ingest`         | Add documents/URLs to `raw/`                   | `kb ingest doc.md https://example.com`                   |
 | `import-book`    | Import EPUB/PDF as markdown chapters           | `kb import-book book.epub --compile`                     |
 | `compile`        | Compile `raw/` → wiki via LLM (parallel)       | `kb compile --workers 4`                                 |
-| `qa`             | Ask questions with source routing              | `kb qa "question" -f --no-commit`                        |
+| `qa`             | Ask questions with source routing              | `kb qa "question" -f --commit`                           |
 | `search`         | Hybrid search (keyword + BM25 + RRF)           | `kb search "term"`                                       |
 | `heal`           | Stochastic healing of N files                  | `kb heal --n 10`                                         |
 | `lint`           | Wiki audit via LLM                             | `kb lint`                                                |
@@ -119,14 +119,20 @@ kb compile "Mathematics for Machine Learning"
 # Ask questions
 kb qa "What does this corpus describe?"
 
-# Archive response (recommended Obsidian workflow)
-kb qa "Summarize this corpus" -f --no-commit
+# Archive response locally (recommended Obsidian workflow)
+kb qa "Summarize this corpus" -f
+
+# Archive and version explicitly
+kb qa "Summarize this corpus" -f --commit
 
 # Sensitive content (explicit opt-in)
 kb compile --allow-sensitive
 
-# Health check
-kb heal --n 5 --no-commit
+# Local health check
+kb heal --n 5
+
+# Health check with explicit versioning
+kb heal --n 5 --commit
 kb lint
 
 # Import books
@@ -174,7 +180,7 @@ kb/
 │   ├── state.py         ← JSON persistence
 │   ├── outputs.py       ← file-back store
 │   ├── web_ingest.py    ← URL → Markdown
-│   ├── git.py           ← auto-commit helper
+│   ├── git.py           ← explicit commit helper
 │   ├── handoff.py       ← session handoff
 │   ├── doc_gate.py      ← document conformity gate
 │   ├── config.py        ← env vars and constants
@@ -202,7 +208,7 @@ Full C4 diagrams: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITEC
 - **Separated corpus:** `raw/`, `wiki/`, `outputs/`, `kb_state/` live in `KB_DATA_DIR`, outside the repository
 - **YAML frontmatter:** each compiled article includes `title`, `topic`, `tags`, `source`, `translated_by`, `reviewed_at`
 - **Translation:** compiled articles are generated in Portuguese
-- **Git:** corpus writes may trigger auto-commit; `--no-commit` suppresses
+- **Git:** corpus writes stay local by default; use `--commit` to version the current run
 - **LLM:** the LLM never manually writes the wiki — everything goes through the CLI
 - **Sensitivity:** `--allow-sensitive` is an explicit opt-in to bypass guardrails
 - **Spec Driven Development:** no non-trivial change without a SPEC
@@ -235,7 +241,7 @@ Per-module coverage: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_
 | [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md)   | SPEC format (Portuguese)                             |
 | [docs/API.md](docs/API.md)                                             | CLI + Python API reference (Portuguese)              |
 | [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                   | Obsidian integration guide (Portuguese)              |
-| [docs/adr/](docs/adr/)                                                 | 13 ADRs (0001-0013)                                  |
+| [docs/adr/](docs/adr/)                                                 | 16 ADRs (0001-0016)                                  |
 | [SECURITY.md](SECURITY.md)                                             | Security policy                                      |
 
 ## Tech Stack

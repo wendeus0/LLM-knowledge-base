@@ -1,6 +1,6 @@
 # ADR 0007 — Controles explícitos `--allow-sensitive` e `--no-commit`
 
-- **Status:** Aceito
+- **Status:** Parcialmente supercedido por ADR 0016 (parte de commit)
 - **Data:** 2026-04-03
 
 ## Contexto
@@ -15,10 +15,10 @@ Essa combinação era boa para uso manual simples, mas insuficiente para dois ce
 ## Decisão
 
 1. Adotar `--allow-sensitive` como **opt-in explícito por execução** para `compile`, `qa`, `qa --file-back`, `heal`, `lint` e `import-book --compile`.
-2. Adotar `--no-commit` como **opt-out explícito do commit automático** para fluxos que escrevem no corpus do usuário (`wiki/` ou `outputs/`).
+2. A decisão original foi adotar `--no-commit` como **opt-out explícito do commit automático** para fluxos que escrevem no corpus do usuário (`wiki/` ou `outputs/`).
 3. Manter o comportamento seguro por padrão:
    - sem `--allow-sensitive`, o sistema continua bloqueando programaticamente ou pedindo confirmação
-   - sem `--no-commit`, o sistema continua fazendo commit automático onde já fazia antes
+   - sem `--no-commit`, o sistema continuava fazendo commit automático onde já fazia antes
 4. Limitar o efeito das flags à execução corrente; não criar estado global persistente nesta fase.
 
 ## Consequências
@@ -39,10 +39,17 @@ Essa combinação era boa para uso manual simples, mas insuficiente para dois ce
 ## Alternativas consideradas
 
 ### A1. Manter apenas confirmação interativa
+
 - **Rejeitada.** Não atende automação nem casos em que a confirmação precisa ser declarativa e repetível.
 
 ### A2. Criar configuração global persistente para sensibilidade/commit
+
 - **Rejeitada.** Aumentaria risco operacional e esconderia decisões perigosas fora do comando invocado.
 
 ### A3. Remover completamente o commit automático
-- **Rejeitada.** Contraria a rastreabilidade que continua sendo uma convenção central do projeto.
+
+- **Rejeitada na época.** Esta alternativa foi posteriormente revisitada e substituída por commit explícito por comando no ADR 0016.
+
+## Atualização
+
+O controle de sensibilidade via `--allow-sensitive` continua válido. A parte desta ADR referente ao modelo de commit foi substituída por `docs/adr/0016-explicit-commit-activation.md`.

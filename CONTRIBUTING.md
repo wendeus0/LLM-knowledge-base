@@ -101,6 +101,8 @@ git checkout -b docs/atualiza-readme
 
 ### 4. Commits
 
+Os comandos do produto que escrevem no corpus do usuário agora operam em modo local por padrão. Use `--commit` apenas quando quiser versionar aquela execução específica.
+
 Formato: Conventional Commits
 
 ```

@@ -1,6 +1,6 @@
-# ADR 0003 — Git como sistema de versionamento implícito
+# ADR 0003 — Git como sistema de versionamento do corpus
 
-- **Status:** Aceito
+- **Status:** Supercedido por ADR 0016
 - **Data:** 2026-04-04
 
 ## Contexto
@@ -17,7 +17,7 @@ Sem uma estratégia de versionamento formal, havia risco de:
 ## Decisão
 
 1. Git será a fonte de verdade única para o estado versionado da wiki no corpus do usuário.
-2. Commits automáticos serão executados sempre que a wiki for modificada por operações do CLI.
+2. A política inicial adotada foi executar commits automáticos sempre que a wiki fosse modificada por operações do CLI.
 3. Não haverá staging manual — o processo é totalmente automatizado.
 4. Adotamos a estratégia de Pawel Huryn: operações são append-only ou atualizam seções específicas, nunca reescrevem arquivos completos arbitrariamente.
 5. Mensagens de commit seguem padrão descritivo: `kb: <operação> - <contexto>`.
@@ -62,3 +62,4 @@ Sem uma estratégia de versionamento formal, havia risco de:
 
 - Estratégia de Pawel Huryn: [pawelhuryn.com](https://pawelhuryn.com) — abordagem de notas incrementais e não-destrutivas
 - Git como source of truth para knowledge bases: modelo similar ao Obsidian Git / Foam
+- `docs/adr/0016-explicit-commit-activation.md`

@@ -1,4 +1,4 @@
-"""Git helper — todo write na wiki é um commit."""
+"""Git helper — commit explícito para writes no corpus."""
 
 import subprocess
 from pathlib import Path

@@ -19,16 +19,16 @@ app = typer.Typer(
     help="LLM-powered personal knowledge base",
     epilog=(
         "Opções por comando:\n\n"
-        "ingest <src...>  [--no-commit] [--compile]\n\n"
+        "ingest <src...>  [--no-commit|--commit] [--compile]\n\n"
         "import-book <arquivo...>  [--output PATH] [--compile] [--force] [--ocr]"
-        "  [--workers/-j INT] [--chunk-pages INT] [--allow-sensitive] [--no-commit]\n\n"
+        "  [--workers/-j INT] [--chunk-pages INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
         "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
-        "  [--allow-sensitive] [--no-commit]\n\n"
+        "  [--allow-sensitive] [--no-commit|--commit]\n\n"
         "search <query>\n\n"
         "lint  [--allow-sensitive]\n\n"
-        "heal  [--n/-n INT] [--allow-sensitive] [--no-commit]\n\n"
+        "heal  [--n/-n INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
         "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron  |  jobs doc-gate\n\n"
         "handoff create --scope <texto> [--summary] [--next-steps] [--evidence] [--decisions]"
     ),
@@ -46,7 +46,9 @@ def ingest(
         ..., help="Arquivo(s) ou URL(s) para adicionar a raw/"
     ),
     no_commit: bool = typer.Option(
-        False, "--no-commit", help="Escreve arquivo localmente sem criar commit git"
+        True,
+        "--no-commit/--commit",
+        help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
     compile_after: bool = typer.Option(
         False,
@@ -118,7 +120,9 @@ def import_book(
         help="Permite processar conteúdo sensível sem confirmação adicional",
     ),
     no_commit: bool = typer.Option(
-        False, "--no-commit", help="Escreve arquivos localmente sem criar commit git"
+        True,
+        "--no-commit/--commit",
+        help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
     ocr: bool = typer.Option(
         False,
@@ -328,7 +332,9 @@ def compile(
         console.print(f"  → [green]{rel}[/]")
 
     if result.failures:
-        sensitive = [f for f in result.failures if isinstance(f.error, SensitiveContentError)]
+        sensitive = [
+            f for f in result.failures if isinstance(f.error, SensitiveContentError)
+        ]
         for failure in sensitive:
             console.print(
                 f"[yellow]{failure.raw_path.name}:[/] {summarize_findings(failure.error)}"
@@ -359,9 +365,9 @@ def qa(
         help="Permite processar conteúdo sensível sem confirmação adicional",
     ),
     no_commit: bool = typer.Option(
-        False,
-        "--no-commit",
-        help="Escreve arquivos localmente sem criar commit git quando houver file-back",
+        True,
+        "--no-commit/--commit",
+        help="Padrão: escreve localmente sem commit; use --commit para versionar quando houver file-back",
     ),
     no_traverse: bool = typer.Option(
         False,
@@ -458,7 +464,9 @@ def heal(
         help="Permite processar conteúdo sensível sem confirmação adicional",
     ),
     no_commit: bool = typer.Option(
-        False, "--no-commit", help="Escreve arquivos localmente sem criar commit git"
+        True,
+        "--no-commit/--commit",
+        help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
 ):
     """Heal estocástico: pega N artigos aleatórios, corrige links, remove stubs, stampa reviewed."""
@@ -634,7 +642,9 @@ def jobs_doc_gate(
         console.print(f"[red]{message}[/]")
         raise typer.Exit(code=1)
 
-    changed = [line.strip() for line in (proc.stdout or "").splitlines() if line.strip()]
+    changed = [
+        line.strip() for line in (proc.stdout or "").splitlines() if line.strip()
+    ]
     result = evaluate_doc_gate(changed)
 
     if result.ok:
