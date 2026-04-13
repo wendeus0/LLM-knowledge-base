@@ -22,5 +22,5 @@ def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
         )
         if result.returncode != 0:  # há mudanças staged
             _run("commit", "-m", message)
-    except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+    except (subprocess.CalledProcessError, FileNotFoundError):
         pass  # sem mudanças ou git não disponível — ignora
