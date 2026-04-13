@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,9 +12,12 @@ from kb.config import STATE_DIR
 DB_PATH = STATE_DIR / "tracking.db"
 
 
+def _connect_db(db_path=DB_PATH):
+    return closing(sqlite3.connect(db_path))
+
+
 def _ensure_schema(conn: sqlite3.Connection) -> None:
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS commands (
             id INTEGER PRIMARY KEY,
             timestamp TEXT NOT NULL,
@@ -27,13 +31,10 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
             duration_ms INTEGER NOT NULL,
             project_path TEXT NOT NULL
         )
-        """
-    )
+        """)
 
     # Migração leve para bases antigas sem coluna de categoria.
-    columns = {
-        row[1] for row in conn.execute("PRAGMA table_info(commands)").fetchall()
-    }
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(commands)").fetchall()}
     if "category" not in columns:
         conn.execute(
             "ALTER TABLE commands ADD COLUMN category TEXT NOT NULL DEFAULT 'unknown'"
@@ -63,7 +64,7 @@ def track_command(
     saved = max(0, in_chars - out_chars)
     savings_pct = (saved / in_chars * 100.0) if in_chars > 0 else 0.0
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with _connect_db() as conn:
         _ensure_schema(conn)
         conn.execute(
             """
@@ -98,7 +99,7 @@ def get_gain_summary(limit: int = 20) -> dict:
             "recent": [],
         }
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with _connect_db() as conn:
         _ensure_schema(conn)
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*), COALESCE(AVG(savings_pct),0) FROM commands")

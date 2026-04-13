@@ -80,6 +80,16 @@ pip install -e ".[dev]"
 pip install -e ".[llm,pdf,ocr,web,dev]"
 ```
 
+Se preferir atalhos locais para setup e validação recorrente:
+
+```bash
+make help
+make install-dev
+make lint
+make test-unit
+make check
+```
+
 ## Configuração
 
 Crie `.env` na raiz do projeto (veja `.env.example`):
@@ -218,6 +228,13 @@ pytest --cov=kb --cov-report=html         # com cobertura
 pytest tests/unit/                        # apenas unitários
 pytest tests/integration/                 # apenas integração
 ruff check kb tests                       # lint
+
+# Atalhos equivalentes
+make lint
+make test
+make test-unit
+make test-integration
+make check
 ```
 
 Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_core.py` 97%, `compile.py` 91%.

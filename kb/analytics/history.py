@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime, timedelta, timezone
 
-from kb.core.tracking import DB_PATH, _ensure_schema
+from kb.core.tracking import DB_PATH, _connect_db, _ensure_schema
 
 
 def _parse_now(now: str | None) -> datetime:
@@ -47,7 +46,7 @@ def get_history_summary(
         where += " AND command = ?"
         params.append(command)
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with _connect_db(DB_PATH) as conn:
         _ensure_schema(conn)
         cur = conn.cursor()
 

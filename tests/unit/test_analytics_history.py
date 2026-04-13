@@ -1,11 +1,11 @@
+from contextlib import closing
 import sqlite3
 
 from kb.analytics.history import get_history_summary
 
 
 def _seed(conn: sqlite3.Connection) -> None:
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS commands (
             id INTEGER PRIMARY KEY,
             timestamp TEXT NOT NULL,
@@ -19,14 +19,57 @@ def _seed(conn: sqlite3.Connection) -> None:
             duration_ms INTEGER NOT NULL,
             project_path TEXT NOT NULL
         )
-        """
-    )
+        """)
 
     rows = [
-        ("2026-04-10T10:00:00+00:00", "compile", "compile", 0, 100, 60, 40, 40.0, 1000, "/repo"),
-        ("2026-04-10T11:00:00+00:00", "compile", "compile", 1, 80, 80, 0, 0.0, 800, "/repo"),
-        ("2026-04-11T11:00:00+00:00", "lint", "lint", 0, 50, 25, 25, 50.0, 300, "/repo"),
-        ("2026-04-11T12:00:00+00:00", "metrics", "metrics", 0, 30, 30, 0, 0.0, 100, "/repo"),
+        (
+            "2026-04-10T10:00:00+00:00",
+            "compile",
+            "compile",
+            0,
+            100,
+            60,
+            40,
+            40.0,
+            1000,
+            "/repo",
+        ),
+        (
+            "2026-04-10T11:00:00+00:00",
+            "compile",
+            "compile",
+            1,
+            80,
+            80,
+            0,
+            0.0,
+            800,
+            "/repo",
+        ),
+        (
+            "2026-04-11T11:00:00+00:00",
+            "lint",
+            "lint",
+            0,
+            50,
+            25,
+            25,
+            50.0,
+            300,
+            "/repo",
+        ),
+        (
+            "2026-04-11T12:00:00+00:00",
+            "metrics",
+            "metrics",
+            0,
+            30,
+            30,
+            0,
+            0.0,
+            100,
+            "/repo",
+        ),
     ]
     conn.executemany(
         """
@@ -44,7 +87,7 @@ def test_history_summary_should_filter_by_command(tmp_path, monkeypatch):
     db = tmp_path / "tracking.db"
     monkeypatch.setattr("kb.analytics.history.DB_PATH", db)
 
-    with sqlite3.connect(db) as conn:
+    with closing(sqlite3.connect(db)) as conn:
         _seed(conn)
 
     summary = get_history_summary(command="compile", days=30)
@@ -58,7 +101,7 @@ def test_history_summary_should_apply_days_window(tmp_path, monkeypatch):
     db = tmp_path / "tracking.db"
     monkeypatch.setattr("kb.analytics.history.DB_PATH", db)
 
-    with sqlite3.connect(db) as conn:
+    with closing(sqlite3.connect(db)) as conn:
         _seed(conn)
 
     summary = get_history_summary(command=None, days=1, now="2026-04-11T12:30:00+00:00")

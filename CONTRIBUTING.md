@@ -25,6 +25,9 @@ source .venv/bin/activate  # Linux/Mac
 # Instalar dependências
 pip install -e ".[llm,dev]"
 
+# Ou usar o atalho local
+make install-dev
+
 # Configurar
 cp .env.example .env
 # Editar .env com KB_API_KEY
@@ -132,6 +135,11 @@ docs(readme): atualizar instruções de instalação
 ruff check kb              # Lint
 python -m pytest           # Testes
 kb lint                    # Health check da wiki (se aplicável)
+
+# Atalhos equivalentes
+make lint
+make test
+make check
 ```
 
 ### 6. Pull Request
