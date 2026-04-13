@@ -1,0 +1,39 @@
+tests/unit/test_analytics_history.py
+  6ef5e10e82e710b1 1,8,22,25-72,90,104
+CONTRIBUTING.md
+  6ef5e10e82e710b1 28-30,135-139
+features/makefile-workflow/PLAN.md
+  6ef5e10e82e710b1 1-24
+features/makefile-workflow/SPEC.md
+  6ef5e10e82e710b1 1-77
+kb/core/tracking.py
+  6ef5e10e82e710b1 6,15-18,20,34,37,67,102
+kb/analytics/history.py
+  6ef5e10e82e710b1 7,49
+README.md
+  6ef5e10e82e710b1 83-92,231-237
+Makefile
+  6ef5e10e82e710b1 1-45
+features/makefile-workflow/TASKS.md
+  6ef5e10e82e710b1 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "f4d10b9b9bad24ed8d7236b84cf7e8a7a14a50d7",
+  "prompts": {
+    "6ef5e10e82e710b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27bf54f57ffe6xCcBEUor2JqNa",
+        "model": "opencode-go/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 250,
+      "total_deletions": 29,
+      "accepted_lines": 264,
+      "overriden_lines": 0
+    }
+  }
+}
