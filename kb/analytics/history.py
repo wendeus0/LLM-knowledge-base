@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-from kb.core.tracking import DB_PATH, _ensure_schema
+from kb.core.tracking import DB_PATH, _connect_db, _ensure_schema
 
 
 def _parse_now(now: str | None) -> datetime:
@@ -48,7 +46,7 @@ def get_history_summary(
         where += " AND command = ?"
         params.append(command)
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with _connect_db(DB_PATH) as conn:
         _ensure_schema(conn)
         cur = conn.cursor()
 
@@ -98,19 +96,26 @@ def get_history_summary(
             prev_runs = int(existing["runs"])
             merged_runs = prev_runs + int(runs)
             merged_savings = (
-                float(existing["avg_savings_pct"]) * prev_runs + float(savings) * int(runs)
+                float(existing["avg_savings_pct"]) * prev_runs
+                + float(savings) * int(runs)
             ) / merged_runs
             merged_duration = (
                 float(existing["avg_duration_ms"]) * prev_runs
                 + float(duration) * int(runs)
             ) / merged_runs
             categories = {
-                *(cat.strip() for cat in str(existing["category"]).split(",") if cat.strip()),
+                *(
+                    cat.strip()
+                    for cat in str(existing["category"]).split(",")
+                    if cat.strip()
+                ),
                 category,
             }
             existing.update(
                 {
-                    "category": ", ".join(sorted(categories)) if categories else "unknown",
+                    "category": (
+                        ", ".join(sorted(categories)) if categories else "unknown"
+                    ),
                     "runs": merged_runs,
                     "avg_savings_pct": round(merged_savings, 2),
                     "avg_duration_ms": round(merged_duration, 2),

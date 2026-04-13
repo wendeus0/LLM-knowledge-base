@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from kb.handoff import create_handoff
 
 

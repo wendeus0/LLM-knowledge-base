@@ -9,7 +9,6 @@ from kb.config import WIKI_DIR
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 
-
 SYSTEM = """Você é um editor de knowledge base. Dado um artigo em markdown:
 1. Encontre conceitos mencionados sem [[wikilink]] e adicione-os
 2. Remova seções vazias ou placeholders ("TODO", "Em breve", etc.)
@@ -33,7 +32,9 @@ def _is_stub(text: str) -> bool:
             continue
         if not in_front:
             content_lines.append(line)
-    meaningful = [line for line in content_lines if not line.startswith("#") and len(line) > 10]
+    meaningful = [
+        line for line in content_lines if not line.startswith("#") and len(line) > 10
+    ]
     return len(meaningful) == 0
 
 
@@ -45,7 +46,9 @@ def _stamp_reviewed(text: str) -> str:
     return text.replace("---\n", f"---\nreviewed_at: {now}\n", 1)
 
 
-def heal(n: int = 10, allow_sensitive: bool = False, no_commit: bool = False) -> list[dict]:
+def heal(
+    n: int = 10, allow_sensitive: bool = False, no_commit: bool = True
+) -> list[dict]:
     """Processa N arquivos aleatórios da wiki. Retorna log de ações."""
     candidates = [p for p in WIKI_DIR.rglob("*.md") if p.name != "_index.md"]
     if not candidates:
@@ -63,7 +66,9 @@ def heal(n: int = 10, allow_sensitive: bool = False, no_commit: bool = False) ->
             log.append({"file": path.name, "action": "deleted_stub"})
             continue
 
-        assert_safe_for_provider(text, source=f"heal:{path.name}", allow_sensitive=allow_sensitive)
+        assert_safe_for_provider(
+            text, source=f"heal:{path.name}", allow_sensitive=allow_sensitive
+        )
 
         response = chat(
             messages=[

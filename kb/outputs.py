@@ -38,7 +38,7 @@ def _build_content(answer: str, question: str, today: str, topic: str) -> str:
     )
 
 
-def write_output(question: str, answer: str, topic: str, no_commit: bool = False):
+def write_output(question: str, answer: str, topic: str, no_commit: bool = True):
     """Grava resposta de QA em outputs/<topic>/<YYYY-MM-DD>-<slug>.md.
 
     Retorna (answer, path).
@@ -46,6 +46,7 @@ def write_output(question: str, answer: str, topic: str, no_commit: bool = False
     today = date.today().isoformat()
     slug = re.sub(r"[^a-z0-9]+", "-", question.lower())[:60].strip("-")
 
+    topic = _config.canonical_topic(topic)
     folder = _config.OUTPUTS_DIR / topic
     folder.mkdir(parents=True, exist_ok=True)
 

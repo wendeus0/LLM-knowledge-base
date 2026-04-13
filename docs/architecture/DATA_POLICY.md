@@ -33,12 +33,12 @@ Define como dados são persistidos localmente pelo kb (CLI Python).
 
 ### Versionamento
 
-| Ação                | Comportamento                        |
-| ------------------- | ------------------------------------ |
-| `kb compile`        | Commit automático se houver mudanças |
-| `kb heal`           | Commit automático após correções     |
-| `kb qa --file-back` | Commit automático da resposta, salvo com `--no-commit` |
-| Edição manual       | **Proibida** — apenas via CLI        |
+| Ação                | Comportamento                                                    |
+| ------------------- | ---------------------------------------------------------------- |
+| `kb compile`        | Write local por padrão; `--commit` versiona se houver mudanças   |
+| `kb heal`           | Write local por padrão; `--commit` versiona após correções       |
+| `kb qa --file-back` | Write local por padrão; `--commit` versiona a resposta arquivada |
+| Edição manual       | **Proibida** — apenas via CLI                                    |
 
 ### Limpeza
 

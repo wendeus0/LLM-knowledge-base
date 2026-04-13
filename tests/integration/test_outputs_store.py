@@ -3,8 +3,8 @@
 Rastreabilidade SPEC:
   REQ-2: kb qa -f grava em outputs/ por padrão
   REQ-3: kb qa -f --to-wiki grava em wiki/
-  REQ-6: git commit automático após write em outputs/
-  REQ-7: --no-commit suprime o commit
+  REQ-6: write local é padrão; commit exige ativação explícita
+  REQ-7: --no-commit segue válido por compatibilidade
 """
 
 from unittest.mock import patch
@@ -67,10 +67,10 @@ class TestAnswerAndFileOutputsStore:
         assert out_path is not None
         assert str(wiki) in str(out_path), f"esperado wiki/, obtido: {out_path}"
 
-    def test_should_commit_output_file_automatically(
+    def test_should_not_commit_output_file_by_default(
         self, tmp_raw_wiki, tmp_path, monkeypatch
     ):
-        """REQ-6: commit automático deve ocorrer após write em outputs/."""
+        """REQ-6: answer_and_file deve escrever sem commit por padrão."""
         # RED: falha até outputs-store ser implementada
         raw, wiki = tmp_raw_wiki
         outputs_dir = tmp_path / "outputs"
@@ -82,14 +82,29 @@ class TestAnswerAndFileOutputsStore:
             mock_chat.side_effect = [MOCK_ANSWER, MOCK_ARTICLE]
             answer_and_file("O que é um LLM?", allow_sensitive=True)
 
-        assert mock_commit.called, "commit deveria ser chamado automaticamente"
+        assert not mock_commit.called
+
+    def test_should_commit_output_file_when_explicitly_requested(
+        self, tmp_raw_wiki, tmp_path, monkeypatch
+    ):
+        raw, wiki = tmp_raw_wiki
+        outputs_dir = tmp_path / "outputs"
+        monkeypatch.setattr("kb.config.OUTPUTS_DIR", outputs_dir)
+
+        (wiki / "ai" / "llm.md").write_text("# LLM\nModelos de linguagem.")
+
+        with patch("kb.qa.chat") as mock_chat, patch("kb.qa.commit") as mock_commit:
+            mock_chat.side_effect = [MOCK_ANSWER, MOCK_ARTICLE]
+            answer_and_file("O que é um LLM?", allow_sensitive=True, no_commit=False)
+
+        mock_commit.assert_called_once()
         committed_path = mock_commit.call_args[0][1][0]
         assert "outputs" in str(committed_path)
 
     def test_should_suppress_commit_when_no_commit_is_true(
         self, tmp_raw_wiki, tmp_path, monkeypatch
     ):
-        """REQ-7: no_commit=True deve suprimir o commit automático."""
+        """REQ-7: no_commit=True deve manter o file-back apenas local."""
         # RED: falha até outputs-store ser implementada
         raw, wiki = tmp_raw_wiki
         outputs_dir = tmp_path / "outputs"

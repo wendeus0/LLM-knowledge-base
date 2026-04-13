@@ -106,6 +106,24 @@ class TestCommit:
                 # Should not raise
                 commit("feat: test", [test_file], enabled=True)
 
+    def test_should_handle_missing_git_binary_gracefully(self, tmp_path):
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("content")
+
+        with patch("kb.git.ROOT", tmp_path):
+            with patch("kb.git.subprocess.run", side_effect=FileNotFoundError):
+                commit("feat: test", [test_file], enabled=True)
+
+    def test_should_handle_paths_outside_root_gracefully(self, tmp_path):
+        other_root = tmp_path / "repo"
+        other_root.mkdir()
+        external = tmp_path / "external.txt"
+        external.write_text("content")
+
+        with patch("kb.git.ROOT", other_root):
+            with patch("kb.git.subprocess.run"):
+                commit("feat: test", [external], enabled=True)
+
     def test_should_handle_multiple_paths(self, tmp_path):
         file1 = tmp_path / "file1.txt"
         file2 = tmp_path / "file2.txt"

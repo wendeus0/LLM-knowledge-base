@@ -28,19 +28,22 @@ kb [COMANDO] [OPÇÕES]
 
 #### `kb ingest`
 
-Copia um arquivo para o diretório `raw/`.
+Copia arquivos locais ou URLs para `raw/`.
 
 **Parâmetros:**
 
-| Parâmetro | Tipo | Obrigatório | Descrição                                  |
-| --------- | ---- | ----------- | ------------------------------------------ |
-| `path`    | Path | Sim         | Caminho do arquivo para adicionar a `raw/` |
+| Parâmetro              | Tipo        | Obrigatório | Padrão        | Descrição                                                           |
+| ---------------------- | ----------- | ----------- | ------------- | ------------------------------------------------------------------- |
+| `sources`              | `List[str]` | Sim         | -             | Caminhos locais ou URLs a adicionar em `raw/`                       |
+| `--compile`            | Flag        | Não         | `False`       | Compilar os itens ingeridos logo após a ingestão                    |
+| `--no-commit/--commit` | Flag        | Não         | `--no-commit` | Escreve localmente por padrão; `--commit` versiona a execução atual |
 
 **Exemplo:**
 
 ```bash
 kb ingest documentos/notas.md
 kb ingest /home/user/docs/artigo.txt
+kb ingest https://example.com/post --commit
 ```
 
 **Retorno:**
@@ -56,15 +59,16 @@ Importa um ou mais livros EPUB ou PDF textual para `raw/books/` em arquivos Mark
 
 **Parâmetros:**
 
-| Parâmetro         | Tipo         | Obrigatório | Padrão             | Descrição                                           |
-| ----------------- | ------------ | ----------- | ------------------ | --------------------------------------------------- |
-| `paths`           | `List[Path]` | Sim         | -                  | Um ou mais arquivos EPUB/PDF textual                |
-| `--output`        | Path         | Não         | `raw/books/<slug>` | Diretório de saída; ignorado com múltiplos arquivos |
-| `--compile`       | Flag         | Não         | `False`            | Compilar os capítulos importados após a importação  |
-| `--ocr`           | Flag         | Não         | `False`            | Ativa OCR para PDFs de scan ou com texto corrompido |
-| `--force`         | Flag         | Não         | `False`            | Reimporta livros já existentes em `raw/books/`      |
-| `--workers`, `-j` | int          | Não         | `4`                | Número de livros processados em paralelo            |
-| `--chunk-pages`   | int          | Não         | `15`               | Páginas por chunk no fallback de PDFs sem TOC       |
+| Parâmetro              | Tipo         | Obrigatório | Padrão             | Descrição                                                           |
+| ---------------------- | ------------ | ----------- | ------------------ | ------------------------------------------------------------------- |
+| `paths`                | `List[Path]` | Sim         | -                  | Um ou mais arquivos EPUB/PDF textual                                |
+| `--output`             | Path         | Não         | `raw/books/<slug>` | Diretório de saída; ignorado com múltiplos arquivos                 |
+| `--compile`            | Flag         | Não         | `False`            | Compilar os capítulos importados após a importação                  |
+| `--ocr`                | Flag         | Não         | `False`            | Ativa OCR para PDFs de scan ou com texto corrompido                 |
+| `--force`              | Flag         | Não         | `False`            | Reimporta livros já existentes em `raw/books/`                      |
+| `--workers`, `-j`      | int          | Não         | `4`                | Número de livros processados em paralelo                            |
+| `--chunk-pages`        | int          | Não         | `15`               | Páginas por chunk no fallback de PDFs sem TOC                       |
+| `--no-commit/--commit` | Flag         | Não         | `--no-commit`      | Com `--compile`, mantém write local por padrão; `--commit` versiona |
 
 **Exemplo:**
 
@@ -83,6 +87,9 @@ kb import-book livros/scan.pdf --ocr --chunk-pages 10
 
 # Importar e compilar automaticamente
 kb import-book livros/clean-code.epub --compile
+
+# Importar, compilar e versionar explicitamente
+kb import-book livros/clean-code.epub --compile --commit
 ```
 
 **Retorno:**
@@ -98,12 +105,12 @@ Compila documentos de `raw/` para a wiki em Markdown usando LLM.
 
 **Parâmetros:**
 
-| Parâmetro           | Tipo | Obrigatório | Padrão         | Descrição                                                |
-| ------------------- | ---- | ----------- | -------------- | -------------------------------------------------------- |
-| `target`            | str  | Não         | `None` (todos) | Arquivo, diretório ou nome de livro já importado         |
-| `--update-index`    | Flag | Não         | `True`         | Atualizar `_index.md` após compilar                      |
-| `--allow-sensitive` | Flag | Não         | `False`        | Permite envio explícito de conteúdo sensível ao provider |
-| `--no-commit`       | Flag | Não         | `False`        | Escreve localmente sem criar commit git                  |
+| Parâmetro              | Tipo | Obrigatório | Padrão         | Descrição                                                |
+| ---------------------- | ---- | ----------- | -------------- | -------------------------------------------------------- |
+| `target`               | str  | Não         | `None` (todos) | Arquivo, diretório ou nome de livro já importado         |
+| `--update-index`       | Flag | Não         | `True`         | Atualizar `_index.md` após compilar                      |
+| `--allow-sensitive`    | Flag | Não         | `False`        | Permite envio explícito de conteúdo sensível ao provider |
+| `--no-commit/--commit` | Flag | Não         | `--no-commit`  | Escreve localmente por padrão; `--commit` versiona       |
 
 **Exemplo:**
 
@@ -122,6 +129,9 @@ kb compile "Mathematics for Machine Learning"
 
 # Compilar sem atualizar índice
 kb compile --no-update-index
+
+# Compilar e versionar explicitamente
+kb compile --commit
 ```
 
 **Retorno:**
@@ -137,10 +147,15 @@ Responde uma pergunta consultando a wiki.
 
 **Parâmetros:**
 
-| Parâmetro           | Tipo | Obrigatório | Padrão  | Descrição                                  |
-| ------------------- | ---- | ----------- | ------- | ------------------------------------------ |
-| `question`          | str  | Sim         | -       | Pergunta para a knowledge base             |
-| `--file-back`, `-f` | Flag | Não         | `False` | Arquivar resposta em `outputs/` por padrão |
+| Parâmetro              | Tipo | Obrigatório | Padrão        | Descrição                                                                  |
+| ---------------------- | ---- | ----------- | ------------- | -------------------------------------------------------------------------- |
+| `question`             | str  | Sim         | -             | Pergunta para a knowledge base                                             |
+| `--file-back`, `-f`    | Flag | Não         | `False`       | Arquivar resposta em `outputs/` por padrão                                 |
+| `--to-wiki`            | Flag | Não         | `False`       | Arquivar resposta em `wiki/` em vez de `outputs/`                          |
+| `--allow-sensitive`    | Flag | Não         | `False`       | Permite envio explícito de conteúdo sensível ao provider                   |
+| `--no-traverse`        | Flag | Não         | `False`       | Desativa traversal de wikilinks                                            |
+| `--depth`              | int  | Não         | `1`           | Profundidade de traversal quando `--no-traverse` não estiver ativo         |
+| `--no-commit/--commit` | Flag | Não         | `--no-commit` | Em file-back, escreve localmente por padrão; `--commit` versiona o arquivo |
 
 **Exemplo:**
 
@@ -150,6 +165,9 @@ kb qa "Quais são as principais vulnerabilidades OWASP?"
 
 # Pergunta e arquivo a resposta
 kb qa "Como funciona o pattern Singleton?" --file-back
+
+# Pergunta, arquiva e versiona explicitamente
+kb qa "Como funciona o pattern Singleton?" --file-back --commit
 ```
 
 **Retorno:**
@@ -221,9 +239,11 @@ Heal estocástico: processa N artigos aleatórios, corrige links, remove stubs, 
 
 **Parâmetros:**
 
-| Parâmetro   | Tipo | Obrigatório | Padrão | Descrição                                 |
-| ----------- | ---- | ----------- | ------ | ----------------------------------------- |
-| `--n`, `-n` | int  | Não         | `10`   | Número de arquivos aleatórios a processar |
+| Parâmetro              | Tipo | Obrigatório | Padrão        | Descrição                                                           |
+| ---------------------- | ---- | ----------- | ------------- | ------------------------------------------------------------------- |
+| `--n`, `-n`            | int  | Não         | `10`          | Número de arquivos aleatórios a processar                           |
+| `--allow-sensitive`    | Flag | Não         | `False`       | Permite envio explícito de conteúdo sensível ao provider            |
+| `--no-commit/--commit` | Flag | Não         | `--no-commit` | Escreve localmente por padrão; `--commit` versiona a execução atual |
 
 **Exemplo:**
 
@@ -233,6 +253,9 @@ kb heal
 
 # Heal com 20 arquivos
 kb heal --n 20
+
+# Heal e versionamento explícito
+kb heal --n 20 --commit
 ```
 
 **Retorno:**
@@ -249,23 +272,32 @@ kb heal --n 20
 ### Configuração (`kb.config`)
 
 ```python
-from kb.config import RAW_DIR, WIKI_DIR, API_KEY, BASE_URL, MODEL, TOPICS
+from kb.config import (
+    RAW_DIR,
+    WIKI_DIR,
+    API_KEY,
+    BASE_URL,
+    MODEL,
+    TOPICS,
+    is_supported_topic,
+    topic_prompt_options,
+)
 ```
 
 **Constantes:**
 
-| Nome          | Tipo      | Descrição                                      |
-| ------------- | --------- | ---------------------------------------------- |
-| `ROOT`        | Path      | Raiz do projeto                                |
-| `DATA_DIR`    | Path      | Diretório do corpus do usuário (`KB_DATA_DIR`) |
-| `RAW_DIR`     | Path      | `raw/` - documentos fonte                      |
-| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                   |
-| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                  |
-| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings    |
-| `API_KEY`     | str       | KB_API_KEY do .env                             |
-| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)             |
-| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                 |
-| `TOPICS`      | list[str] | Tópicos suportados atualmente                  |
+| Nome          | Tipo      | Descrição                                                 |
+| ------------- | --------- | --------------------------------------------------------- |
+| `ROOT`        | Path      | Raiz do projeto                                           |
+| `DATA_DIR`    | Path      | Diretório do corpus do usuário (`KB_DATA_DIR`)            |
+| `RAW_DIR`     | Path      | `raw/` - documentos fonte                                 |
+| `WIKI_DIR`    | Path      | `wiki/` - markdown compilado                              |
+| `OUTPUTS_DIR` | Path      | `outputs/` - file-backs de QA                             |
+| `STATE_DIR`   | Path      | `kb_state/` - manifesto/knowledge/learnings               |
+| `API_KEY`     | str       | KB_API_KEY do .env                                        |
+| `BASE_URL`    | str       | Endpoint LLM (padrão: opencode.ai)                        |
+| `MODEL`       | str       | Modelo LLM (padrão: kimi-k2.5)                            |
+| `TOPICS`      | list[str] | Tópicos configurados via `KB_TOPICS` ou default histórico |
 
 ---
 
@@ -341,7 +373,7 @@ Compila um documento bruto para a wiki.
 **Efeitos colaterais:**
 
 - Escreve arquivo em `wiki/` do corpus do usuário
-- Faz commit git automático
+- Persiste em `wiki/` localmente; commit depende do caller passar `no_commit=False`
 
 ---
 
@@ -460,11 +492,11 @@ Stageia arquivos da knowledge base (tipicamente em `raw/`, `wiki/` e `outputs/` 
 
 **Parâmetros:**
 
-| Parâmetro | Tipo | Padrão | Descrição |
-| --------- | ---- | ------ | --------- |
-| `message` | str | - | Mensagem de commit |
-| `paths` | list[Path] | - | Arquivos da KB a serem stageados (em geral sob `KB_DATA_DIR`) |
-| `enabled` | bool | `True` | Quando `False`, não executa side effects |
+| Parâmetro | Tipo       | Padrão | Descrição                                                     |
+| --------- | ---------- | ------ | ------------------------------------------------------------- |
+| `message` | str        | -      | Mensagem de commit                                            |
+| `paths`   | list[Path] | -      | Arquivos da KB a serem stageados (em geral sob `KB_DATA_DIR`) |
+| `enabled` | bool       | `True` | Quando `False`, não executa side effects                      |
 
 **Comportamento operacional:**
 

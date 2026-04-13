@@ -477,6 +477,8 @@ def test_should_merge_overflowing_pdf_toc_entries_into_chunked_chapters(
 
     assert [chapter["title"] for chapter in chapters] == ["Part 1", "Part 4"]
     assert metadata["chapter_source"] == "toc_merged"
+    assert metadata["toc_source"] == "pdf_outline"
+    assert metadata["toc"][0] == {"title": "Part 1", "page": 1}
     assert "Page 1" in chapters[0]["content"]
     assert "Page 13" in chapters[1]["content"]
 
@@ -493,6 +495,10 @@ def test_should_write_assets_and_cover_text_and_pdf_error_helpers(
     assert written == [assets_dir / "images" / "cover.png"]
     assert written[0].read_bytes() == b"png-bytes"
     assert core._normalize_pdf_text("A\n\n\nB\n\t \nC") == "A\n\nB\n\nC"
+    assert (
+        core._normalize_pdf_text("    def x():\n        return 1")
+        == "    def x():\n        return 1"
+    )
     assert core._is_garbled("x" * 90 + "\x01" * 10) is True
     assert core._is_garbled("short text") is False
 

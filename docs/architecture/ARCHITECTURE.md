@@ -254,7 +254,7 @@ source: <nome do arquivo original>
 4. **File-back opcional** (`qa.answer_and_file`)
    - LLM converte resposta em artigo wiki
    - Extrai topic/title do frontmatter gerado
-   - Salva em wiki/ com commit automático
+   - Salva em `outputs/` por padrão; com `to_wiki=True`, salva em wiki/; commit só ocorre com ativação explícita
 
 ### 3.4 Heal Workflow
 
@@ -274,8 +274,8 @@ source: <nome do arquivo original>
      - Sugere novos artigos (como comentário)
    - **Stamp:** Adiciona/atualiza `reviewed_at: YYYY-MM-DD`
 
-3. **Batch commit**
-   - Commit único para todos os arquivos modificados
+3. **Batch commit opcional**
+   - Se `--commit` estiver ativo, gera commit único para todos os arquivos modificados
    - Mensagem: `chore(heal): stochastic heal (N files)`
 
 **Ações possíveis:**
@@ -290,12 +290,12 @@ source: <nome do arquivo original>
 
 ### 4.1 Core Components
 
-| Componente | Arquivo     | Responsabilidade                                     |
-| ---------- | ----------- | ---------------------------------------------------- |
-| **CLI**    | `cli.py`    | Interface Typer, orquestração de comandos, Rich UI   |
-| **Config** | `config.py` | Constantes, paths, env vars, topics                  |
-| **Client** | `client.py` | Wrapper OpenAI SDK, validação provider/model         |
-| **Git**    | `git.py`    | Commits automáticos, staging, mensagens padronizadas |
+| Componente | Arquivo     | Responsabilidade                                         |
+| ---------- | ----------- | -------------------------------------------------------- |
+| **CLI**    | `cli.py`    | Interface Typer, orquestração de comandos, Rich UI       |
+| **Config** | `config.py` | Constantes, paths, env vars, topics                      |
+| **Client** | `client.py` | Wrapper OpenAI SDK, validação provider/model             |
+| **Git**    | `git.py`    | Commit helper explícito, staging, mensagens padronizadas |
 
 ### 4.2 Feature Components
 
@@ -326,7 +326,7 @@ source: <nome do arquivo original>
 
 - Paths base: `ROOT`, `RAW_DIR`, `WIKI_DIR`
 - Config LLM: `API_KEY`, `BASE_URL`, `MODEL`
-- Topics válidos: `TOPICS` list
+- Taxonomia runtime: `TOPICS`, `is_supported_topic()`, `wiki_topic_dir()`
 
 #### `kb/client.py`
 
@@ -358,7 +358,7 @@ source: <nome do arquivo original>
 - `heal(n)`: processa N arquivos aleatórios
 - `_is_stub()`: detecta artigos vazios
 - `_stamp_reviewed()`: adiciona `reviewed_at` ao frontmatter
-- Batch commit ao final
+- Batch commit opcional ao final
 
 #### `kb/lint.py`
 
@@ -380,9 +380,13 @@ source: <nome do arquivo original>
 #### `kb/book_import_core.py`
 
 - Parse EPUB: XML seguro (defusedxml), ZIP handling
-- Parse PDF: extração de operadores de texto
 - Conversão HTML→Markdown: `_MarkdownHTMLParser`
 - Detecção de capítulos: padrões de heading
+
+#### `kb/book_import_pdf.py`
+
+- Parse PDF: extração textual, OCR opcional e chunking
+- Heurísticas de TOC para capítulos
 
 ---
 
@@ -409,7 +413,7 @@ kb lint                                   # Health check
 
 ```python
 # Config
-from kb.config import RAW_DIR, WIKI_DIR, TOPICS
+from kb.config import RAW_DIR, WIKI_DIR, TOPICS, topic_prompt_options
 
 # Client LLM
 from kb.client import chat
@@ -511,18 +515,18 @@ kb/
 
 ### 6.2 Git como Sistema de Versionamento
 
-**Decisão:** Todo write na wiki gera commit automático.
+**Decisão:** writes no corpus ficam locais por padrão; commit ocorre apenas quando o comando é executado com `--commit`.
 
 **Rationale:**
 
-- Histórico completo de evolução do conhecimento
+- Histórico completo quando o usuário decide versionar a execução
 - Rollback simples de alterações problemáticas
-- Audit trail natural
+- Controle explícito sobre quando materializar audit trail em Git
 
 **Trade-offs:**
 
-- Commits pequenos e frequentes (aceitável para uso pessoal)
-- Possíveis conflitos (mitigado por estratégia de append)
+- Menos rastreabilidade automática se o usuário não usar `--commit`
+- Possíveis conflitos continuam mitigados por estratégia de append
 
 ### 6.3 Stochastic Heal
 
@@ -795,7 +799,7 @@ def novo_comando(arg: str):
 
 ### Novos Topics
 
-No estado atual, `TOPICS` ainda é uma lista fixa em `config.py`. A direção recomendada é torná-la configurável por corpus no futuro, evitando acoplamento do produto a domínios específicos.
+`TOPICS` agora pode ser configurado por `KB_TOPICS`, preservando a lista histórica como default. `general` segue como fallback implícito fora da taxonomia configurável.
 
 ### Novos Formatos de Importação
 

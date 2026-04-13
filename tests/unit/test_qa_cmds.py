@@ -19,7 +19,7 @@ def test_execute_qa_command_should_call_answer_when_file_back_disabled():
             file_back=False,
             to_wiki=False,
             allow_sensitive=False,
-            no_commit=False,
+            no_commit=True,
             no_traverse=False,
             depth=1,
         )
@@ -73,7 +73,7 @@ def test_cli_qa_should_render_markdown_from_cmd_layer():
         file_back=False,
         to_wiki=False,
         allow_sensitive=False,
-        no_commit=False,
+        no_commit=True,
         no_traverse=False,
         depth=2,
     )
@@ -102,7 +102,7 @@ def test_cli_qa_should_retry_when_sensitive_confirmed():
         file_back=False,
         to_wiki=False,
         allow_sensitive=False,
-        no_commit=False,
+        no_commit=True,
         no_traverse=False,
         depth=1,
     )
@@ -111,7 +111,7 @@ def test_cli_qa_should_retry_when_sensitive_confirmed():
         file_back=False,
         to_wiki=False,
         allow_sensitive=True,
-        no_commit=False,
+        no_commit=True,
         no_traverse=False,
         depth=1,
     )

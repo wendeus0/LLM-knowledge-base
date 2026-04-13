@@ -1,4 +1,4 @@
-"""Git helper — todo write na wiki é um commit."""
+"""Git helper — commit explícito para writes no corpus."""
 
 import subprocess
 from pathlib import Path
@@ -22,5 +22,5 @@ def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
         )
         if result.returncode != 0:  # há mudanças staged
             _run("commit", "-m", message)
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, FileNotFoundError):
         pass  # sem mudanças ou git não disponível — ignora

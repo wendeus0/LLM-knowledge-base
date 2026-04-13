@@ -19,7 +19,7 @@ Ciclo central:
 - Test Driven Development (TDD): comportamento novo/alterado nasce com testes RED antes do código GREEN.
 - Rastreabilidade documental: decisões e mudanças precisam de trilha verificável.
 - Separação engine × corpus: código no repositório; dados do usuário em `KB_DATA_DIR`.
-- Segurança e controle: guardrails para conteúdo sensível e controle explícito de commit (`--no-commit`).
+- Segurança e controle: guardrails para conteúdo sensível e controle explícito de commit (`--commit`, com `--no-commit` preservado por compatibilidade).
 
 ## Fonte de verdade para execução
 

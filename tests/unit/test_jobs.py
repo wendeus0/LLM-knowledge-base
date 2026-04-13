@@ -68,7 +68,7 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
         assert mock_lint.called
 
         assert "review" in run_job("review")
-        assert mock_heal.called
+        mock_heal.assert_called_once_with(3, no_commit=False)
 
         metrics_result = run_job("metrics")
         assert "Job metrics executado." in metrics_result

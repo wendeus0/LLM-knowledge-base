@@ -8,7 +8,7 @@ runner = CliRunner()
 
 
 class TestIngestCommand:
-    def test_should_ingest_local_file(self, tmp_path):
+    def test_should_ingest_local_file_without_commit_by_default(self, tmp_path):
         source = tmp_path / "source.md"
         source.write_text("# Content")
 
@@ -23,7 +23,7 @@ class TestIngestCommand:
         assert result.exit_code == 0
         assert (tmp_path / "source.md").exists()
         mock_record.assert_called_once()
-        mock_commit.assert_called_once()
+        mock_commit.assert_not_called()
         # Check that the print call was made with the expected message format
         # (uses single f-string argument)
         adicionado_calls = [
@@ -37,7 +37,7 @@ class TestIngestCommand:
             len(adicionado_calls) == 1
         ), f"Expected one 'Adicionado' call with source.md, got: {mock_print.call_args_list}"
 
-    def test_should_ingest_without_commit_when_no_commit_flag(self, tmp_path):
+    def test_should_ingest_with_explicit_commit_flag(self, tmp_path):
         source = tmp_path / "source.md"
         source.write_text("# Content")
 
@@ -47,10 +47,10 @@ class TestIngestCommand:
             patch("kb.state.record_ingest"),
             patch("kb.git.commit") as mock_commit,
         ):
-            result = runner.invoke(app, ["ingest", str(source), "--no-commit"])
+            result = runner.invoke(app, ["ingest", str(source), "--commit"])
 
         assert result.exit_code == 0
-        mock_commit.assert_not_called()
+        mock_commit.assert_called_once()
 
     def test_should_ingest_url(self, tmp_path):
         with (
@@ -101,6 +101,8 @@ class TestIngestCommand:
         assert result.exit_code == 0
         mock_compile.assert_called_once()
         mock_update.assert_called_once()
+        assert mock_compile.call_args.kwargs["no_commit"] is True
+        assert mock_update.call_args.kwargs["no_commit"] is True
 
 
 class TestSearchCommand:
@@ -165,7 +167,9 @@ class TestJobsCommand:
             result = runner.invoke(app, ["jobs", "run", "compile"])
 
         assert result.exit_code == 0
-        mock_run.assert_called_once_with("compile", stale_max_pct=None, disputed_max_pct=None)
+        mock_run.assert_called_once_with(
+            "compile", stale_max_pct=None, disputed_max_pct=None
+        )
         mock_print.assert_called_once_with("Job completed")
 
 
@@ -387,7 +391,7 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=False)
+        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=True)
         mock_print.assert_any_call("  [green]✓[/] a.md [dim](healed)[/]")
         mock_print.assert_any_call("  [dim]·[/] b.md [dim](reviewed_no_changes)[/]")
 
@@ -413,7 +417,19 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal", "--n", "5"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(5, allow_sensitive=False, no_commit=False)
+        mock_heal.assert_called_once_with(5, allow_sensitive=False, no_commit=True)
+
+    def test_should_support_explicit_commit_flag(self):
+        with (
+            patch("kb.cli.console.print"),
+            patch("kb.heal.heal") as mock_heal,
+        ):
+            mock_heal.return_value = [{"file": "a.md", "action": "healed"}]
+
+            result = runner.invoke(app, ["heal", "--commit"])
+
+        assert result.exit_code == 0
+        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=False)
 
     def test_should_handle_sensitive_content_error_with_confirmation(self):
         from kb.guardrails import SensitiveContentError, SensitiveFinding
@@ -472,7 +488,7 @@ class TestQaCommand:
             file_back=False,
             to_wiki=False,
             allow_sensitive=False,
-            no_commit=False,
+            no_commit=True,
             no_traverse=False,
             depth=1,
         )
@@ -560,7 +576,7 @@ class TestQaCommand:
             file_back=False,
             to_wiki=False,
             allow_sensitive=False,
-            no_commit=False,
+            no_commit=True,
             no_traverse=True,
             depth=1,
         )
@@ -580,7 +596,7 @@ class TestQaCommand:
             file_back=False,
             to_wiki=False,
             allow_sensitive=False,
-            no_commit=False,
+            no_commit=True,
             no_traverse=False,
             depth=3,
         )
@@ -666,3 +682,25 @@ class TestImportBookCommand:
 
         assert result.exit_code == 0
         mock_import.assert_called_once()
+
+    def test_should_commit_imported_artifacts_when_commit_flag_is_set(self, tmp_path):
+        book_path = tmp_path / "book.epub"
+        book_path.write_text("content")
+        output_dir = tmp_path / "raw" / "books" / "book"
+        chapter = output_dir / "01-intro.md"
+        metadata = output_dir / "metadata.json"
+
+        with (
+            patch("kb.cli.console.print"),
+            patch("kb.book_import.import_epub") as mock_import,
+            patch("kb.git.commit") as mock_commit,
+        ):
+            mock_import.return_value = ([chapter], metadata)
+
+            result = runner.invoke(app, ["import-book", str(book_path), "--commit"])
+
+        assert result.exit_code == 0
+        mock_commit.assert_called_once()
+        committed_paths = mock_commit.call_args.args[1]
+        assert chapter in committed_paths
+        assert metadata in committed_paths

@@ -48,7 +48,7 @@ def _url_fallback_slug(url: str) -> str:
     return _slugify(clean)[:40] or "page"
 
 
-def ingest_url(url: str, no_commit: bool = False) -> Path:
+def ingest_url(url: str, no_commit: bool = True) -> Path:
     """Baixa URL, converte para Markdown e salva em raw/."""
     _require_deps()
 

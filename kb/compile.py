@@ -7,7 +7,13 @@ import re
 import unicodedata
 from pathlib import Path
 from kb.client import chat, is_provider_resource_limit_error
-from kb.config import RAW_DIR, WIKI_DIR, TOPICS
+from kb.config import (
+    RAW_DIR,
+    WIKI_DIR,
+    canonical_topic,
+    topic_prompt_options,
+    wiki_topic_dir,
+)
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.claims import record_compiled_claims
@@ -18,8 +24,10 @@ from kb.state import (
     upsert_knowledge,
 )
 
-SYSTEM = """Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
-1. Identifica o tópico principal (cybersecurity, ai, python, typescript, ou geral)
+
+def _system_prompt() -> str:
+    return f"""Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
+1. Identifica o tópico principal ({topic_prompt_options()})
 2. Extrai e organiza os conceitos-chave
 3. Gera um artigo wiki em PORTUGUÊS em markdown com frontmatter YAML, seções claras e wikilinks [[conceito]]
 4. O artigo deve ser auto-contido mas referenciar outros conceitos relacionados com [[wikilinks]]
@@ -156,7 +164,7 @@ def _wiki_path(topic: str, title: str) -> Path:
     from kb.book_import_core import slugify
 
     slug = slugify(title)[:60]
-    folder = WIKI_DIR / topic if topic in TOPICS else WIKI_DIR
+    folder = wiki_topic_dir(topic)
     folder.mkdir(parents=True, exist_ok=True)
     return folder / f"{slug}.md"
 
@@ -188,8 +196,7 @@ def _extract_topic_and_title(
     for line in compiled_markdown.splitlines():
         if line.startswith("topic:"):
             candidate = line.split(":", 1)[1].strip()
-            if candidate in TOPICS:
-                topic = candidate
+            topic = canonical_topic(candidate)
         if line.startswith("title:"):
             title = line.split(":", 1)[1].strip()
     return topic, title
@@ -234,7 +241,7 @@ def compile_to_artifact(
     try:
         response = chat(
             messages=[
-                {"role": "system", "content": SYSTEM},
+                {"role": "system", "content": _system_prompt()},
                 {"role": "user", "content": _build_prompt(raw_path, content)},
             ]
         )
@@ -246,7 +253,7 @@ def compile_to_artifact(
             messages=[
                 {
                     "role": "system",
-                    "content": SYSTEM
+                    "content": _system_prompt()
                     + "\n\nO texto de entrada foi pré-processado para remover ruído de paginação/OCR. "
                     "Se houver lacunas, preserve apenas o conteúdo semanticamente útil.",
                 },

@@ -24,16 +24,16 @@ Se houver conflito:
 
 > Manifesto estruturado do Pi: `.pi/manifest.yaml`
 
-
 **Produto:** Engine de knowledge base mantida por LLM. Coleta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático. Baseado na proposta de Andrej Karpathy.
 
 **Stack:**
+
 - Linguagem: Python 3.11+
 - Framework: Typer (CLI), Rich (terminal UI)
 - Cliente LLM: OpenAI SDK (compatível com OpenCode Go)
 - Armazenamento: JSON (`kb_state/`), Markdown (`wiki/`) dentro do `KB_DATA_DIR` do usuário
 - Busca: contagem simples de palavras-chave em Markdown
-- Versionamento: Git (writes podem gerar commit automático, com opt-out via `--no-commit`)
+- Versionamento: Git com ativação explícita por comando (`--commit`; `--no-commit` segue válido por compatibilidade)
 
 ## Comandos do projeto
 
@@ -57,14 +57,15 @@ pip install -e .
 kb ingest <arquivo>      # Adicionar documento a raw/ do vault do usuário
 kb import-book <arquivo> # Importar EPUB/PDF textual para raw/books/
 kb compile               # Compilar raw/ (recursivo, incluindo raw/books/) → wiki/ + summaries + knowledge
-kb compile --no-commit   # Compilar sem commit git automático
+kb compile --commit      # Compilar e versionar explicitamente
 kb compile --allow-sensitive # Autorizar processamento sensível explicitamente
 kb qa "pergunta"         # Perguntar com routing por fonte nativa
 kb qa "pergunta" -f      # Perguntar e arquivar resposta (file-back)
-kb qa "pergunta" -f --no-commit # File-back sem commit automático
+kb qa "pergunta" -f      # File-back local sem commit por padrão
+kb qa "pergunta" -f --commit # File-back com versionamento explícito
 kb search "termo"        # Buscar na wiki
 kb heal --n 10          # Stochastic heal: N arquivos aleatórios
-kb heal --allow-sensitive --no-commit # Healing sensível/experimental
+kb heal --allow-sensitive --commit # Healing sensível com versionamento explícito
 kb lint                 # Health checks (audit)
 kb jobs list            # Listar jobs agendáveis
 kb jobs run <job>       # Executar job canônico
@@ -87,10 +88,10 @@ kb jobs run <job>       # Executar job canônico
 ## Regras específicas do domínio
 
 - O corpus do usuário deve viver fora do repositório principal, preferencialmente via `KB_DATA_DIR`
-- Writes em wiki/outputs/ podem fazer commit automático dependendo do comando e de `--no-commit`
+- Writes em wiki/outputs/ ficam locais por padrão; `--commit` ativa versionamento no comando atual
 - Chamadas ao provider externo passam por guardrails de conteúdo sensível e podem exigir confirmação
 - `--allow-sensitive` faz opt-in explícito para processar conteúdo sinalizado
-- `--no-commit` preserva writes locais, mas suprime o commit automático do fluxo atual
+- `--commit` ativa versionamento explícito no fluxo atual; `--no-commit` permanece aceito por compatibilidade
 - Conflitos git são raros porque o LLM apenas append/atualiza seções, nunca reescreve (estratégia Pawel Huryn)
 - Stochastic heal processa N arquivos aleatórios por execução (scale para vaults grandes)
 - O LLM nunca escreve a wiki manualmente — tudo é automatizado
@@ -113,15 +114,15 @@ kb/
 
 ## Palavras-chave do domínio
 
-| Termo | Significado |
-|-------|-------------|
-| raw/ | Documentos fonte antes de compilação |
-| wiki | Coleção de .md compilados e versionados |
-| compile | LLM processa raw/ e escreve wiki/ |
-| Q&A | Query contra a wiki com contexto |
-| file-back | Arquivar resposta em `outputs/` por padrão |
-| heal | Correção estocástica: links, stubs, reviewed_at |
-| topic | Classificação gerada/derivada do corpus |
+| Termo       | Significado                                     |
+| ----------- | ----------------------------------------------- |
+| raw/        | Documentos fonte antes de compilação            |
+| wiki        | Coleção de .md compilados e versionados         |
+| compile     | LLM processa raw/ e escreve wiki/               |
+| Q&A         | Query contra a wiki com contexto                |
+| file-back   | Arquivar resposta em `outputs/` por padrão      |
+| heal        | Correção estocástica: links, stubs, reviewed_at |
+| topic       | Classificação gerada/derivada do corpus         |
 | frontmatter | YAML no início de cada .md (title, topic, tags) |
 
 ## Restrições específicas
@@ -129,12 +130,11 @@ kb/
 - Nunca editar wiki manualmente — apenas via CLI/LLM
 - API key só em .env (nunca em código)
 - Não versionar `.obsidian/` e corpus pessoal no repositório principal
-- Preferir `qa -f --no-commit` no fluxo via Obsidian
+- Preferir `qa -f` no fluxo via Obsidian; use `--commit` apenas quando quiser versionar o resultado
 
 ## Fluxo de sessão
 
 Para visão rápida e estruturada de comandos, paths e convenções estáveis, consulte também `.pi/manifest.yaml`.
-
 
 1. `session-open` (context-health, triage)
 2. Trabalho (ingest, compile, qa, heal, lint)

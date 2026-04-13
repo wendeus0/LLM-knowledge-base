@@ -1,0 +1,64 @@
+name: Operational task
+description: Registre manutenção operacional, governança, docs ou housekeeping sem tratar como feature de produto.
+title: "[task] "
+labels:
+  - chore
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use este formulário para tarefas operacionais como documentação, governança, hygiene de repositório, templates, automação leve ou housekeeping.
+
+        Se a mudança alterar comportamento de produto/CLI, use `Feature request`.
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Confirmações
+      options:
+        - label: Verifiquei que isto não é bug reproduzível nem feature request de produto
+          required: true
+        - label: Verifiquei que não existe uma issue aberta equivalente
+          required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Categoria
+      options:
+        - documentação
+        - governança
+        - GitHub templates
+        - automação leve
+        - release/processo
+        - limpeza técnica
+        - outra
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objetivo
+      description: O que precisa ser ajustado?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Escopo e limites
+      description: Descreva o que entra e o que fica explicitamente fora.
+      placeholder: Entra ..., não entra ...
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Como validar
+      description: Quais evidências objetivas encerram a tarefa?
+      placeholder: Review de arquivos, comando local, lint, screenshot da UI do GitHub, etc.
+    validations:
+      required: true
+  - type: input
+    id: refs
+    attributes:
+      label: Referências
+      description: Links para docs, PRs, ADRs ou issues relacionadas.
+      placeholder: "ex.: CONTRIBUTING.md, .github/pull_request_template.md, #123"

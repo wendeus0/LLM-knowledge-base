@@ -25,6 +25,9 @@ source .venv/bin/activate  # Linux/Mac
 # Instalar dependências
 pip install -e ".[llm,dev]"
 
+# Ou usar o atalho local
+make install-dev
+
 # Configurar
 cp .env.example .env
 # Editar .env com KB_API_KEY
@@ -59,8 +62,11 @@ Sem SPEC estável e validável, não prossiga para implementação.
 ### 1. Issues
 
 - Verifique se já existe uma issue relacionada
-- Crie issue com template: `[tipo] descrição breve`
-- Tipos: `bug`, `feat`, `docs`, `refactor`
+- Use os templates em `.github/ISSUE_TEMPLATE/`:
+  - `Bug report` para comportamento incorreto reproduzível
+  - `Feature request` para mudanças de comportamento/escopo que podem evoluir para SPEC
+  - `Operational task` para governança, documentação, hygiene e manutenção operacional
+- Não abra issue pública para vulnerabilidades; siga `SECURITY.md`
 
 ### 2. Branches
 
@@ -94,6 +100,8 @@ git checkout -b docs/atualiza-readme
 3. **Não quebrar** testes existentes
 
 ### 4. Commits
+
+Os comandos do produto que escrevem no corpus do usuário agora operam em modo local por padrão. Use `--commit` apenas quando quiser versionar aquela execução específica.
 
 Formato: Conventional Commits
 
@@ -129,6 +137,11 @@ docs(readme): atualizar instruções de instalação
 ruff check kb              # Lint
 python -m pytest           # Testes
 kb lint                    # Health check da wiki (se aplicável)
+
+# Atalhos parciais para lint/test
+make lint
+make test
+make check                 # cobre ruff + pytest, mas não substitui kb lint
 ```
 
 ### 6. Pull Request

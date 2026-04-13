@@ -288,7 +288,10 @@ def run_job(
         if normalized == "health" and (
             stale_max_pct is not None or disputed_max_pct is not None
         ):
-            from kb.analytics.health import evaluate_health_thresholds, get_health_summary
+            from kb.analytics.health import (
+                evaluate_health_thresholds,
+                get_health_summary,
+            )
 
             summary = get_health_summary()
             ok, violations = evaluate_health_thresholds(
