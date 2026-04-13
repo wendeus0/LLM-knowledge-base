@@ -59,8 +59,11 @@ Sem SPEC estável e validável, não prossiga para implementação.
 ### 1. Issues
 
 - Verifique se já existe uma issue relacionada
-- Crie issue com template: `[tipo] descrição breve`
-- Tipos: `bug`, `feat`, `docs`, `refactor`
+- Use os templates em `.github/ISSUE_TEMPLATE/`:
+  - `Bug report` para comportamento incorreto reproduzível
+  - `Feature request` para mudanças de comportamento/escopo que podem evoluir para SPEC
+  - `Operational task` para governança, documentação, hygiene e manutenção operacional
+- Não abra issue pública para vulnerabilidades; siga `SECURITY.md`
 
 ### 2. Branches
 

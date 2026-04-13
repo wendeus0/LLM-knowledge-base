@@ -1,0 +1,90 @@
+name: Bug report
+description: Relate um bug reproduzível na engine kb.
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use este formulário apenas para bugs reproduzíveis.
+
+        Não use issues públicas para vulnerabilidades de segurança. Nesses casos, siga `SECURITY.md` e abra um GitHub Security Advisory privado.
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Confirmações
+      options:
+        - label: Verifiquei que não existe uma issue aberta para o mesmo problema
+          required: true
+        - label: Li `CONTRIBUTING.md` e confirmei que isto não é uma dúvida de uso nem um report de segurança
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afetada
+      options:
+        - compile
+        - qa
+        - search
+        - heal
+        - lint
+        - jobs
+        - ingest/import-book
+        - infra/config
+        - docs/governance
+        - outra
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Comportamento atual
+      description: Descreva o que aconteceu de forma objetiva.
+      placeholder: O comando/fluxo falhou, retornou resultado incorreto ou quebrou um contrato esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: Descreva o comportamento correto esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Passos para reproduzir
+      description: Liste passos reproduzíveis, inputs e comandos.
+      placeholder: |
+        1. Execute `kb ...`
+        2. Use o arquivo/configuração ...
+        3. Observe o erro/resultado
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências
+      description: Cole traceback, logs, diff ou saída resumida relevante.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Informe sistema, Python, extras instalados e contexto relevante.
+      placeholder: |
+        OS: Ubuntu 24.04
+        Python: 3.11/3.12/3.14
+        Instalação: pip install -e ".[llm,dev]"
+        KB_MODEL: ...
+    validations:
+      required: true
+  - type: input
+    id: references
+    attributes:
+      label: Referências adicionais
+      description: Issue relacionada, commit, SPEC, ADR ou PR prévia.
+      placeholder: "ex.: features/minha-feature/SPEC.md, docs/adr/0014-....md, #123"

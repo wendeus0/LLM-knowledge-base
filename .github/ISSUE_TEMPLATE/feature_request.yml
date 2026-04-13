@@ -1,0 +1,81 @@
+name: Feature request
+description: Proponha uma evolução de produto/CLI/documentação com insumos para SPEC.
+title: "[feat] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use este formulário para mudanças de comportamento, novos fluxos ou novas capacidades.
+
+        Mudanças não triviais neste repositório exigem SPEC. Este template existe para melhorar o intake antes da SPEC.
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Confirmações
+      options:
+        - label: Verifiquei que não existe uma issue aberta equivalente
+          required: true
+        - label: Li `CONTRIBUTING.md` e entendi que a implementação exigirá SPEC quando o escopo não for trivial
+          required: true
+  - type: dropdown
+    id: epic
+    attributes:
+      label: Epic principal
+      options:
+        - compile
+        - qa
+        - search
+        - heal
+        - lint
+        - infra
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema a resolver
+      description: Explique a lacuna atual em termos observáveis.
+      placeholder: Hoje o sistema faz X, mas isso impede Y.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Resultado desejado
+      description: Descreva o comportamento esperado sem entrar em implementação demais.
+      placeholder: Quando ..., o sistema deveria ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critérios iniciais de aceite
+      description: Liste 2-5 critérios verificáveis.
+      placeholder: |
+        - [ ] Critério 1
+        - [ ] Critério 2
+        - [ ] Critério 3
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impacto previsto
+      description: Indique impacto em CLI/API, docs, dados, segurança ou governança.
+      placeholder: CLI ..., docs ..., segurança ..., ADR talvez necessária ...
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validação esperada
+      description: Quais testes ou evidências fariam esta mudança ser aceita?
+      placeholder: Unit ..., integration ..., manual ...
+  - type: input
+    id: spec_path
+    attributes:
+      label: Caminho sugerido para SPEC
+      description: Opcional, se você já souber qual frente abrir.
+      placeholder: "ex.: features/minha-feature/SPEC.md"
