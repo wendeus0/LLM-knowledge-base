@@ -1,0 +1,59 @@
+kb/qa.py
+  6ef5e10e82e710b1 1,7,143
+kb/cli.py
+  6ef5e10e82e710b1 144,147,155,158,191-195,210,218-224
+kb/config.py
+  6ef5e10e82e710b1 26-34,40,51-58,66-67
+kb/git.py
+  6ef5e10e82e710b1 25
+tests/unit/test_book_import_core.py
+  6ef5e10e82e710b1 480-481,498-501
+tests/unit/test_jobs.py
+  6ef5e10e82e710b1 71
+README.md
+  6ef5e10e82e710b1 51,59
+Makefile
+  6ef5e10e82e710b1 17,41
+README.en.md
+  6ef5e10e82e710b1 51,59
+tests/unit/test_git.py
+  6ef5e10e82e710b1 109-126
+kb/compile.py
+  6ef5e10e82e710b1 13,199
+CONTRIBUTING.md
+  6ef5e10e82e710b1 141,144
+tests/unit/test_config.py
+  6ef5e10e82e710b1 29-30,34-39
+kb/jobs.py
+  6ef5e10e82e710b1 53,291-294
+tests/unit/test_cli.py
+  6ef5e10e82e710b1 685-706
+kb/book_import_pdf.py
+  6ef5e10e82e710b1 7-14,25,81-86,89-95,106-107,159-164,194-199
+features/issue-templates-governance/SPEC.md
+  6ef5e10e82e710b1 67
+kb/outputs.py
+  6ef5e10e82e710b1 49
+docs/architecture/ARCHITECTURE.md
+  6ef5e10e82e710b1 257
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "46726a4caca1ab7cc2aed5c35e65b385cbec1a34",
+  "prompts": {
+    "6ef5e10e82e710b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27bf54f57ffe6xCcBEUor2JqNa",
+        "model": "opencode-go/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 155,
+      "total_deletions": 41,
+      "accepted_lines": 155,
+      "overriden_lines": 0
+    }
+  }
+}
