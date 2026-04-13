@@ -64,7 +64,7 @@ Nenhuma. A mudança afeta apenas a interface de criação de issues no GitHub.
 ## Evidências esperadas
 
 - Comandos executados:
-  - `python -c "import pathlib; files = list(pathlib.Path('.github/ISSUE_TEMPLATE').glob('*.yml')); assert files and all(path.read_text(encoding='utf-8').strip() for path in files); print([path.name for path in files])"`
+  - `python -c "import yaml, pathlib; files = list(pathlib.Path('.github/ISSUE_TEMPLATE').glob('*.yml')); assert files; [yaml.safe_load(path.read_text(encoding='utf-8')) for path in files]; print([path.name for path in files])"`
 - Arquivos alterados:
   - `.github/ISSUE_TEMPLATE/config.yml`
   - `.github/ISSUE_TEMPLATE/bug_report.yml`
