@@ -10,6 +10,7 @@ DATA_DIR = Path(os.getenv("KB_DATA_DIR", ROOT)).expanduser()
 RAW_DIR = Path(os.getenv("KB_RAW_DIR", DATA_DIR / "raw")).expanduser()
 WIKI_DIR = Path(os.getenv("KB_WIKI_DIR", DATA_DIR / "wiki")).expanduser()
 OUTPUTS_DIR = Path(os.getenv("KB_OUTPUTS_DIR", DATA_DIR / "outputs")).expanduser()
+ARCHIVE_DIR = Path(os.getenv("KB_ARCHIVE_DIR", DATA_DIR / "archive")).expanduser()
 STATE_DIR = Path(os.getenv("KB_STATE_DIR", DATA_DIR / "kb_state")).expanduser()
 KNOWLEDGE_PATH = STATE_DIR / "knowledge.json"
 LEARNINGS_PATH = STATE_DIR / "learnings.json"

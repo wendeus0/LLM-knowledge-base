@@ -510,6 +510,70 @@ def heal(
         console.print(f"  {icon} {entry['file']} [dim]({entry['action']})[/]")
 
 
+@app.command()
+def archive(
+    stale: bool = typer.Option(
+        False,
+        "--stale",
+        help="Move artigos stale (usa threshold de stale_pct do stats)",
+    ),
+    older_than: int = typer.Option(
+        None,
+        "--older-than",
+        help="Move artigos não editados há N dias",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview sem mover arquivos",
+    ),
+):
+    """Move artigos stale/órfãos de wiki/ para archive/."""
+    from kb.archive import collect_candidates, move_to_archive
+    from kb.config import ARCHIVE_DIR, WIKI_DIR
+
+    try:
+        candidates = collect_candidates(WIKI_DIR, stale=stale, older_than=older_than)
+    except ValueError as exc:
+        console.print(f"[red]Erro:[/] {exc}")
+        raise typer.Exit(code=1)
+
+    if not candidates:
+        console.print("[dim]Nenhum artigo candidato a archive.[/]")
+        raise typer.Exit()
+
+    for c in candidates:
+        try:
+            rel = c["source"].relative_to(WIKI_DIR)
+        except ValueError:
+            console.print(f"[red]Erro:[/] caminho {c['source']} fora de {WIKI_DIR}")
+            raise typer.Exit(code=1)
+        c["dest"] = ARCHIVE_DIR / rel
+
+    if dry_run:
+        table = Table(show_header=True, header_style="bold", box=None, padding=(0, 1))
+        table.add_column("Arquivo", style="cyan")
+        table.add_column("Motivo")
+        table.add_column("Destino", justify="right")
+        for c in candidates:
+            rel = c["source"].relative_to(WIKI_DIR)
+            dest_rel = (
+                c["dest"].relative_to(ARCHIVE_DIR.parent)
+                if c["dest"].is_relative_to(ARCHIVE_DIR.parent)
+                else c["dest"]
+            )
+            table.add_row(str(rel), c["reason"], str(dest_rel))
+        console.print(table)
+        raise typer.Exit()
+
+    log = move_to_archive(candidates, ARCHIVE_DIR, dry_run=False)
+    for entry in log:
+        if entry["action"] == "moved":
+            console.print(f"  [green]→[/] {entry['dest']}")
+        elif entry["action"] == "error":
+            console.print(f"  [red]✗[/] {entry['source']} — {entry.get('detail', '')}")
+
+
 @jobs_app.command("list")
 def jobs_list(
     show_cron: bool = typer.Option(
