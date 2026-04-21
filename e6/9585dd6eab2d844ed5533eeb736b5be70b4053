@@ -1,0 +1,29 @@
+tests/unit/test_diff.py
+  615f3b3fde60e06d 1-243
+features/004-kb-diff/SPEC.md
+  615f3b3fde60e06d 1-55
+kb/diff.py
+  615f3b3fde60e06d 1-87
+features/004-kb-diff/REPORT.md
+  615f3b3fde60e06d 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "e69585dd6eab2d844ed5533eeb736b5be70b4053",
+  "prompts": {
+    "615f3b3fde60e06d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24eceff21ffeqQ03fm5wDoc9Tc",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1049,
+      "overriden_lines": 0
+    }
+  }
+}
