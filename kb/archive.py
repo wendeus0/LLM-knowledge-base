@@ -163,6 +163,8 @@ def move_to_archive(
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if dest.exists():
+                if dest.is_dir():
+                    raise ValueError(f"destino é um diretório: {dest}")
                 _versioned_backup(dest)
             shutil.move(str(src), str(dest))
             log.append({"source": str(src), "dest": str(dest), "action": "moved"})
