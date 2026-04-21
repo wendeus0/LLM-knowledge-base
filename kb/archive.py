@@ -38,7 +38,10 @@ def find_orphans(wiki_dir: Path) -> list[Path]:
     linked = set()
     for p in backlink_sources:
         current = _normalize_link(p.stem)
-        text = p.read_text(encoding="utf-8", errors="replace")
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
         for match in _WIKILINK_RE.finditer(text):
             target = _normalize_link(match.group(1))
             if target != current:
@@ -77,7 +80,7 @@ def collect_candidates(
     older_than: int | None = None,
 ) -> list[dict]:
     """Coleta candidatos a archive segundo critérios ativos."""
-    if not wiki_dir.exists() or not any(wiki_dir.iterdir()):
+    if not wiki_dir.is_dir() or not any(wiki_dir.iterdir()):
         raise ValueError("wiki directory is empty or does not exist")
     if older_than is not None and older_than <= 0:
         raise ValueError("older_than must be a positive integer")
@@ -102,7 +105,7 @@ def collect_candidates(
         try:
             summary = get_health_summary()
             threshold_days = summary.get("stale_days", 0.0)
-        except (KeyError, TypeError, OSError):
+        except (KeyError, TypeError, ValueError, OSError):
             threshold_days = 0.0
         if threshold_days > 0:
             for p in find_stale(wiki_dir, threshold_days):

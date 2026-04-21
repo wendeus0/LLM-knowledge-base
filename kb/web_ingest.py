@@ -5,7 +5,7 @@ import re
 import socket
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import kb.config as _config
 from kb.git import commit
@@ -91,16 +91,17 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
         if not parsed.hostname:
             raise WebIngestError("URL sem hostname.")
         resolved_ip = _resolve_and_validate(parsed.hostname)
-        if parsed.hostname != resolved_ip:
+        if parsed.scheme == "https":
+            pinned_url = url
+        elif parsed.hostname != resolved_ip:
             if ":" in resolved_ip and not resolved_ip.startswith("["):
                 ip_for_url = f"[{resolved_ip}]"
             else:
                 ip_for_url = resolved_ip
-            pinned_url = url.replace(
-                f"{parsed.scheme}://{parsed.hostname}",
-                f"{parsed.scheme}://{ip_for_url}",
-                1,
-            )
+            netloc = ip_for_url
+            if parsed.port:
+                netloc = f"{ip_for_url}:{parsed.port}"
+            pinned_url = urlunparse(parsed._replace(netloc=netloc))
         else:
             pinned_url = url
         host_header = parsed.hostname
