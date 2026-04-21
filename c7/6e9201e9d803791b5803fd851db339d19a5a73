@@ -1,0 +1,52 @@
+features/003-kb-watch/PLAN.md
+  615f3b3fde60e06d 1-65
+features/003-kb-watch/SPEC.md
+  615f3b3fde60e06d 1-92
+tests/unit/test_watch.py
+  615f3b3fde60e06d 1-237
+features/003-kb-watch/TASKS.md
+  615f3b3fde60e06d 1-54
+features/003-kb-watch/.state
+  615f3b3fde60e06d 1
+kb/watch.py
+  615f3b3fde60e06d 1-71
+kb/cmds/watch/__init__.py
+  615f3b3fde60e06d 1
+features/003-kb-watch/REPORT.md
+  615f3b3fde60e06d 1-31
+kb/cmds/watch/run.py
+  615f3b3fde60e06d 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "c76e9201e9d803791b5803fd851db339d19a5a73",
+  "prompts": {
+    "615f3b3fde60e06d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24eceff21ffeqQ03fm5wDoc9Tc",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1650,
+      "overriden_lines": 0
+    },
+    "f7b19f5c5e4dd125": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24e266d52ffehyFom17R1jZNa1",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
