@@ -111,9 +111,7 @@ title: Article
 Content.
 """)
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ):
+        with patch("kb.heal.chat") as mock_chat, patch("kb.heal.commit"):
             mock_chat.return_value = "Healed."
 
             # RED: falha se heal não processa
@@ -138,14 +136,16 @@ title: Test
 Conteúdo substantivo sobre teste.
 """)
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ) as mock_commit, patch("random.sample") as mock_sample:
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("kb.heal.commit") as mock_commit,
+            patch("random.sample") as mock_sample,
+        ):
             mock_chat.return_value = "Healed version of the article"
             article_path = wiki / "ai" / "test.md"
             mock_sample.return_value = [article_path]
 
-            heal(n=1)
+            heal(n=1, no_commit=False)
 
             # RED: falha se commit não foi chamado após mudanças
             mock_commit.assert_called()
@@ -160,9 +160,7 @@ Conteúdo substantivo sobre teste.
 
         (wiki / "typescript" / "test.md").write_text("# Test\nContent")
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ):
+        with patch("kb.heal.chat") as mock_chat, patch("kb.heal.commit"):
             mock_chat.return_value = "OK"
 
             # RED: falha se não retorna list[dict]

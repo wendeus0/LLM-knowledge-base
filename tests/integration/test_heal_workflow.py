@@ -21,9 +21,11 @@ title: Empty Article
 # Empty Article
 """)
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ), patch("random.sample") as mock_sample:
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("kb.heal.commit"),
+            patch("random.sample") as mock_sample,
+        ):
             mock_chat.return_value = "NO_CHANGES"
             mock_sample.return_value = [stub]
 
@@ -49,9 +51,11 @@ Ver [[NonExistent]] para mais info.
 Ver [[XSS]] para outro tópico.
 """)
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ), patch("random.sample") as mock_sample:
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("kb.heal.commit"),
+            patch("random.sample") as mock_sample,
+        ):
             mock_chat.return_value = "Wikilink [[NonExistent]] não existe. Sugestão: remover ou criar artigo."
             mock_sample.return_value = [article]
 
@@ -77,9 +81,11 @@ topic: ai
 Machine Learning é um subcampo da inteligência artificial que permite aos sistemas aprender e melhorar a partir da experiência sem serem programados explicitamente.
 """)
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ), patch("random.sample") as mock_sample:
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("kb.heal.commit"),
+            patch("random.sample") as mock_sample,
+        ):
             mock_chat.return_value = "Processado."
             mock_sample.return_value = [article]
 
@@ -108,9 +114,11 @@ title: Authentication
 A ser completado em breve.
 """)
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ), patch("random.sample") as mock_sample:
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("kb.heal.commit"),
+            patch("random.sample") as mock_sample,
+        ):
             mock_chat.return_value = "Revisado."
             mock_sample.return_value = [stub]
 
@@ -128,25 +136,25 @@ A ser completado em breve.
         raw, wiki = tmp_raw_wiki
         # Criar artigos com conteúdo substantivo
         for i in range(3):
-            (wiki / "python" / f"article{i}.md").write_text(
-                f"""---
+            (wiki / "python" / f"article{i}.md").write_text(f"""---
 title: Article {i}
 ---
 
 # Article {i}
 
 Content with substantial text content for article {i}.
-"""
-            )
+""")
 
-        with patch("kb.heal.chat") as mock_chat, patch(
-            "kb.heal.commit"
-        ) as mock_commit, patch("random.sample") as mock_sample:
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("kb.heal.commit") as mock_commit,
+            patch("random.sample") as mock_sample,
+        ):
             articles = list((wiki / "python").glob("*.md"))[:3]
             mock_chat.side_effect = ["Healed.", "Healed.", "Healed."]
             mock_sample.return_value = articles
 
-            result = heal(n=3)
+            result = heal(n=3, no_commit=False)
 
             # RED: falha se commit não é chamado com mudanças
             assert len(result) > 0

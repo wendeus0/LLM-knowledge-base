@@ -16,6 +16,7 @@ KNOWLEDGE_PATH = STATE_DIR / "knowledge.json"
 LEARNINGS_PATH = STATE_DIR / "learnings.json"
 MANIFEST_PATH = STATE_DIR / "manifest.json"
 CLAIMS_PATH = STATE_DIR / "claims.jsonl"
+AUDIT_PATH = STATE_DIR / "audit.jsonl"
 
 API_KEY = os.getenv("KB_API_KEY")
 BASE_URL = os.getenv("KB_BASE_URL", "https://opencode.ai/zen/go/v1")
