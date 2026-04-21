@@ -1,0 +1,44 @@
+kb/archive.py
+  a5af83d1612c95ed 5,11-25,104-105,147,162-163,166
+features/006-kb-archive/SPEC.md
+  a5af83d1612c95ed 18,35,49,58,91
+tests/unit/test_archive.py
+  a5af83d1612c95ed 92
+kb/web_ingest.py
+  a5af83d1612c95ed 34-36,41,74,94-99,101,104-105
+kb/analytics/health.py
+  a5af83d1612c95ed 7-8,25-32,42,55-57,61-63,77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "c7083d06ea4706c05aa64aba8afe3c383fdbd672",
+  "prompts": {
+    "078aa8cbfe133419": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24df09ccfffes6vbZQQ4OqdF01",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "a5af83d1612c95ed": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24ddb05b3ffeM531T545laoGsn",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 80,
+      "total_deletions": 44,
+      "accepted_lines": 76,
+      "overriden_lines": 0
+    }
+  }
+}
