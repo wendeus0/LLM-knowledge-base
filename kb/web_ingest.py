@@ -1,8 +1,10 @@
 """Ingestão de URLs: baixa HTML, converte para Markdown, salva em raw/."""
 
+import ipaddress
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 import kb.config as _config
 from kb.git import commit
@@ -19,11 +21,60 @@ class WebIngestError(Exception):
     pass
 
 
+_BLOCKED_SCHEMES = {"file", "ftp", "data", "javascript"}
+
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+]
+
+
 def _require_deps() -> None:
     if requests is None or _html2text is None:
         raise WebIngestError(
             "Dependências web não instaladas. Execute: pip install -e .[web]"
         )
+
+
+def _validate_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise WebIngestError(
+            f"Esquema não permitido: {parsed.scheme or 'vazio'}. Use http ou https."
+        )
+    if not parsed.hostname:
+        raise WebIngestError("URL sem hostname.")
+    try:
+        import socket
+
+        resolved = socket.getaddrinfo(
+            parsed.hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+        )
+    except socket.gaierror as exc:
+        raise WebIngestError(
+            f"Não foi possível resolver hostname: {parsed.hostname}"
+        ) from exc
+    seen = set()
+    for family, _, _, _, sockaddr in resolved:
+        addr_str = sockaddr[0]
+        if addr_str in seen:
+            continue
+        seen.add(addr_str)
+        try:
+            addr = ipaddress.ip_address(addr_str)
+        except ValueError:
+            continue
+        for network in _BLOCKED_NETWORKS:
+            if addr in network:
+                raise WebIngestError(
+                    f"URL aponta para endereço de rede interna ({addr}). Não permitido."
+                )
 
 
 def _extract_title(html: str) -> str | None:
@@ -51,6 +102,7 @@ def _url_fallback_slug(url: str) -> str:
 def ingest_url(url: str, no_commit: bool = True) -> Path:
     """Baixa URL, converte para Markdown e salva em raw/."""
     _require_deps()
+    _validate_url(url)
 
     try:
         response = requests.get(

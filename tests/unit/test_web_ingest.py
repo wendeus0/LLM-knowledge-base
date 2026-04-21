@@ -222,3 +222,29 @@ class TestIngestUrl:
             ingest_url("https://example.com/xss", no_commit=False)
 
         mock_commit.assert_called_once()
+
+
+class TestSSRFProtection:
+    def test_should_reject_localhost_url(self):
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://127.0.0.1/admin")
+
+    def test_should_reject_private_network(self):
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://10.0.0.1/secret")
+
+    def test_should_reject_link_local(self):
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://169.254.169.254/metadata")
+
+    def test_should_reject_aws_metadata_endpoint(self):
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://169.254.169.254/latest/meta-data/")
+
+    def test_should_reject_file_scheme(self):
+        with pytest.raises(WebIngestError, match="Esquema não permitido"):
+            ingest_url("file:///etc/passwd")
+
+    def test_should_reject_no_scheme(self):
+        with pytest.raises(WebIngestError, match="Esquema não permitido"):
+            ingest_url("example.com/page")
