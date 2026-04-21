@@ -17,16 +17,16 @@ def find_orphans(wiki_dir: Path) -> list[Path]:
     """Retorna artigos sem backlinks na wiki."""
     if not wiki_dir.exists():
         return []
-    all_md = [
-        p
-        for p in wiki_dir.rglob("*.md")
-        if not p.is_symlink() and p.name != "_index.md"
-    ]
+    backlink_sources = [p for p in wiki_dir.rglob("*.md") if not p.is_symlink()]
+    all_md = [p for p in backlink_sources if p.name != "_index.md"]
     linked = set()
-    for p in all_md:
+    for p in backlink_sources:
+        current = _normalize_link(p.stem)
         text = p.read_text(encoding="utf-8", errors="replace")
         for match in _WIKILINK_RE.finditer(text):
-            linked.add(_normalize_link(match.group(1)))
+            target = _normalize_link(match.group(1))
+            if target != current:
+                linked.add(target)
     return [p for p in all_md if _normalize_link(p.stem) not in linked]
 
 
@@ -105,7 +105,8 @@ def move_to_archive(
 ) -> list[dict]:
     """Move candidatos para archive/. Retorna log da operação."""
     log = []
-    archive_dir.mkdir(parents=True, exist_ok=True)
+    if not dry_run:
+        archive_dir.mkdir(parents=True, exist_ok=True)
     for c in candidates:
         src: Path = c["source"]
         dest = c.get("dest")

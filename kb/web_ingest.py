@@ -45,28 +45,16 @@ def _require_deps() -> None:
         )
 
 
-def _validate_url(url: str) -> None:
-    parsed = urlparse(url)
-    if parsed.scheme not in _ALLOWED_SCHEMES:
-        raise WebIngestError(
-            f"Esquema não permitido: {parsed.scheme or 'vazio'}. Use http ou https."
-        )
-    if not parsed.hostname:
-        raise WebIngestError("URL sem hostname.")
+def _resolve_and_validate(hostname: str) -> str:
+    """Resolve hostname, validates IPs against blocked networks, returns first safe IP."""
     try:
         resolved = socket.getaddrinfo(
-            parsed.hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+            hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
         )
     except socket.gaierror as exc:
-        raise WebIngestError(
-            f"Não foi possível resolver hostname: {parsed.hostname}"
-        ) from exc
-    seen = set()
-    for _family, _, _, _, sockaddr in resolved:
+        raise WebIngestError(f"Não foi possível resolver hostname: {hostname}") from exc
+    for _fam, _, _, _, sockaddr in resolved:
         addr_str = sockaddr[0]
-        if addr_str in seen:
-            continue
-        seen.add(addr_str)
         try:
             addr = ipaddress.ip_address(addr_str)
             if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
@@ -78,10 +66,19 @@ def _validate_url(url: str) -> None:
                 raise WebIngestError(
                     f"URL aponta para endereço de rede interna ({addr}). Não permitido."
                 )
+    for _fam, _, _, _, sockaddr in resolved:
+        return sockaddr[0]
+    raise WebIngestError(f"Sem endereço resolvido para {hostname}")
 
 
 def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
-    """Follow redirects manually, validating each hop against SSRF checks."""
+    """Follow redirects manually, pinning resolved IP to prevent DNS rebinding.
+
+    This is a partial SSRF mitigation: the hostname is resolved once per hop
+    and the connection is made directly to the resolved IP with the original
+    Host header preserved. This eliminates the classic DNS rebinding attack
+    window between validation and connection.
+    """
     for _ in range(max_hops + 1):
         parsed = urlparse(url)
         if parsed.scheme not in _ALLOWED_SCHEMES:
@@ -90,35 +87,23 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
             )
         if not parsed.hostname:
             raise WebIngestError("URL sem hostname.")
-        try:
-            resolved = socket.getaddrinfo(
-                parsed.hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+        resolved_ip = _resolve_and_validate(parsed.hostname)
+        pinned_url = (
+            url.replace(
+                f"{parsed.scheme}://{parsed.hostname}",
+                f"{parsed.scheme}://{resolved_ip}",
+                1,
             )
-        except socket.gaierror as exc:
-            raise WebIngestError(
-                f"Não foi possível resolver hostname: {parsed.hostname}"
-            ) from exc
-        seen = set()
-        for _fam, _, _, _, sockaddr in resolved:
-            addr_str = sockaddr[0]
-            if addr_str in seen:
-                continue
-            seen.add(addr_str)
-            try:
-                addr = ipaddress.ip_address(addr_str)
-                if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
-                    addr = addr.ipv4_mapped
-            except ValueError:
-                continue
-            for network in _BLOCKED_NETWORKS:
-                if addr in network:
-                    raise WebIngestError(
-                        f"URL aponta para endereço de rede interna ({addr}). Não permitido."
-                    )
+            if parsed.hostname != resolved_ip
+            else url
+        )
+        host_header = parsed.hostname
+        if parsed.port:
+            host_header = f"{parsed.hostname}:{parsed.port}"
         response = requests.get(
-            url,
+            pinned_url,
             timeout=15,
-            headers={"User-Agent": "Mozilla/5.0"},
+            headers={"User-Agent": "Mozilla/5.0", "Host": host_header},
             allow_redirects=False,
         )
         if response.status_code in (301, 302, 303, 307, 308):

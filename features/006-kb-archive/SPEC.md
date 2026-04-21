@@ -19,7 +19,7 @@ Quando a wiki cresce, artigos não revisitados ou sem links de entrada acumulam 
 - [P1] `--dry-run` mostra colunas: arquivo, motivo (orphan/stale/older-than), destino
 - [P1] Movimentação preserva estrutura de diretórios relativa a `wiki/` dentro de `archive/`
 - [P1] Nenhum arquivo é deletado; apenas movido de `wiki/` → `archive/`
-- [P2] Arquivos já existentes em `archive/` com mesmo path relativo são sobrescritos silenciosamente
+- [P2] Arquivos já existentes em `archive/` com mesmo path relativo são renomeados com sufixo versionado (`<name>.vN.<timestamp>.md`); o arquivo movido recebe o path original, o existente é preservado com versão incrementada
 
 ## Success criteria
 
