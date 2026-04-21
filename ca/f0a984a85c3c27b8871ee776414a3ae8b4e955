@@ -1,0 +1,23 @@
+kb/archive.py
+  50b9d99449b921a3 166-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "caf0a984a85c3c27b8871ee776414a3ae8b4e955",
+  "prompts": {
+    "50b9d99449b921a3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24dcba654ffeiG7G1fTn61UafU",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
