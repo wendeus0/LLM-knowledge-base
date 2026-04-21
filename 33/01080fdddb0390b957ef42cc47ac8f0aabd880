@@ -1,0 +1,120 @@
+kb/config.py
+  7dd0d40b0ce2b469 13
+kb/cli.py
+  615f3b3fde60e06d 513
+  7dd0d40b0ce2b469 514-576
+features/006-kb-archive/.state
+  7dd0d40b0ce2b469 1
+features/006-kb-archive/REPORT.md
+  7dd0d40b0ce2b469 1-47
+tests/integration/test_archive_cli.py
+  7dd0d40b0ce2b469 1-20
+features/006-kb-archive/PLAN.md
+  7dd0d40b0ce2b469 1-54
+kb/archive.py
+  7dd0d40b0ce2b469 1-142
+tests/unit/test_archive.py
+  7dd0d40b0ce2b469 1-130
+features/006-kb-archive/SPEC.md
+  7dd0d40b0ce2b469 1-92
+features/006-kb-archive/TASKS.md
+  7dd0d40b0ce2b469 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "3301080fdddb0390b957ef42cc47ac8f0aabd880",
+  "prompts": {
+    "615f3b3fde60e06d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24eceff21ffeqQ03fm5wDoc9Tc",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1800,
+      "total_deletions": 62,
+      "accepted_lines": 1652,
+      "overriden_lines": 0
+    },
+    "6ef5e10e82e710b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27bf54f57ffe6xCcBEUor2JqNa",
+        "model": "opencode-go/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 21,
+      "total_deletions": 0,
+      "accepted_lines": 21,
+      "overriden_lines": 0
+    },
+    "7dd0d40b0ce2b469": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24e6b910bffef533PwwQlLOxmW",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 663,
+      "total_deletions": 145,
+      "accepted_lines": 608,
+      "overriden_lines": 0
+    },
+    "c49fe1d9db44dacd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24f38123dffehTheFtPheZHKfa",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1544,
+      "total_deletions": 1481,
+      "accepted_lines": 547,
+      "overriden_lines": 0
+    },
+    "d53bc8b361968939": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_250ed701bffeWj3PipecEc44sD",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 253,
+      "total_deletions": 38,
+      "accepted_lines": 137,
+      "overriden_lines": 0
+    },
+    "e41480a9c6e52e4f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_251026faeffeXlfDlNt1Bwf0k0",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 214,
+      "total_deletions": 33,
+      "accepted_lines": 99,
+      "overriden_lines": 0
+    },
+    "ece92b0031b8f9ea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24f762b05ffepgUmJwZHjJ6np7",
+        "model": "opencode-go/kimi-k2.6"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 525,
+      "total_deletions": 108,
+      "accepted_lines": 287,
+      "overriden_lines": 0
+    }
+  }
+}
