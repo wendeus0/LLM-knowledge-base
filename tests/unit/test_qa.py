@@ -19,11 +19,16 @@ class TestAnswer:
             assert len(result) > 0
             assert isinstance(result, str)
             assert mock_chat.called
-            assert "Fonte selecionada: wiki" in mock_chat.call_args.kwargs["messages"][1]["content"]
+            assert (
+                "Fonte selecionada: wiki"
+                in mock_chat.call_args.kwargs["messages"][1]["content"]
+            )
 
     def test_should_route_raw_questions_to_raw_context(self, tmp_raw_wiki):
         raw, wiki = tmp_raw_wiki
-        (raw / "fonte.md").write_text("Documento bruto com detalhes originais do capítulo.")
+        (raw / "fonte.md").write_text(
+            "Documento bruto com detalhes originais do capítulo."
+        )
 
         with patch("kb.qa.chat") as mock_chat:
             mock_chat.return_value = "Resumo do material bruto."
@@ -65,7 +70,7 @@ A resposta em formato artigo.
 """
             mock_chat.side_effect = [answer_response, article_response]
 
-            result = answer_and_file("test", allow_sensitive=True)
+            result = answer_and_file("test", allow_sensitive=True, no_commit=False)
 
             assert isinstance(result, tuple)
             assert len(result) == 2

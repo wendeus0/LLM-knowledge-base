@@ -14,7 +14,14 @@ def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
     if not enabled:
         return
     try:
-        rel = [str(p.relative_to(ROOT)) for p in paths]
+        rel = []
+        for p in paths:
+            try:
+                rel.append(str(p.relative_to(ROOT)))
+            except ValueError:
+                continue
+        if not rel:
+            return
         _run("add", *rel)
         result = subprocess.run(
             ["git", "-C", str(ROOT), "diff", "--cached", "--quiet"],

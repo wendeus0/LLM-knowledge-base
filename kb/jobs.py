@@ -50,7 +50,7 @@ def _run_lint_job() -> str:
 def _run_review_job() -> str:
     from kb.heal import heal
 
-    processed = heal(3)
+    processed = heal(3, no_commit=False)
     return f"Job review executado ({len(processed)} item(ns) processado(s))."
 
 

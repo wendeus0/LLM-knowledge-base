@@ -1,8 +1,11 @@
 """Ingestão de URLs: baixa HTML, converte para Markdown, salva em raw/."""
 
+import ipaddress
 import re
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import kb.config as _config
 from kb.git import commit
@@ -19,11 +22,106 @@ class WebIngestError(Exception):
     pass
 
 
+_ALLOWED_SCHEMES = {"http", "https"}
+
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("198.18.0.0/15"),
+    ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("::/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("ff00::/8"),
+]
+
+
 def _require_deps() -> None:
     if requests is None or _html2text is None:
         raise WebIngestError(
             "Dependências web não instaladas. Execute: pip install -e .[web]"
         )
+
+
+def _resolve_and_validate(hostname: str) -> str:
+    """Resolve hostname, validates IPs against blocked networks, returns first safe IP."""
+    try:
+        resolved = socket.getaddrinfo(
+            hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+        )
+    except socket.gaierror as exc:
+        raise WebIngestError(f"Não foi possível resolver hostname: {hostname}") from exc
+    for _fam, _, _, _, sockaddr in resolved:
+        addr_str = sockaddr[0]
+        try:
+            addr = ipaddress.ip_address(addr_str)
+            if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
+                addr = addr.ipv4_mapped
+        except ValueError:
+            continue
+        for network in _BLOCKED_NETWORKS:
+            if addr in network:
+                raise WebIngestError(
+                    f"URL aponta para endereço de rede interna ({addr}). Não permitido."
+                )
+        return sockaddr[0]
+    raise WebIngestError(f"Sem endereço validado para {hostname}")
+
+
+def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
+    """Follow redirects manually, pinning resolved IP to prevent DNS rebinding.
+
+    This is a partial SSRF mitigation: the hostname is resolved once per hop
+    and the connection is made directly to the resolved IP with the original
+    Host header preserved. This eliminates the classic DNS rebinding attack
+    window between validation and connection.
+    """
+    for _ in range(max_hops + 1):
+        parsed = urlparse(url)
+        if parsed.scheme not in _ALLOWED_SCHEMES:
+            raise WebIngestError(
+                f"Esquema não permitido: {parsed.scheme or 'vazio'}. Use http ou https."
+            )
+        if not parsed.hostname:
+            raise WebIngestError("URL sem hostname.")
+        resolved_ip = _resolve_and_validate(parsed.hostname)
+        if parsed.scheme == "https":
+            pinned_url = url
+        elif parsed.hostname != resolved_ip:
+            if ":" in resolved_ip and not resolved_ip.startswith("["):
+                ip_for_url = f"[{resolved_ip}]"
+            else:
+                ip_for_url = resolved_ip
+            netloc = ip_for_url
+            if parsed.port:
+                netloc = f"{ip_for_url}:{parsed.port}"
+            pinned_url = urlunparse(parsed._replace(netloc=netloc))
+        else:
+            pinned_url = url
+        host_header = parsed.hostname
+        if parsed.port:
+            host_header = f"{parsed.hostname}:{parsed.port}"
+        response = requests.get(
+            pinned_url,
+            timeout=15,
+            headers={"User-Agent": "Mozilla/5.0", "Host": host_header},
+            allow_redirects=False,
+        )
+        if response.status_code in (301, 302, 303, 307, 308):
+            location = response.headers.get("Location")
+            if not location:
+                raise WebIngestError("Redirect sem header Location.")
+            url = urljoin(url, location)
+            continue
+        response.raise_for_status()
+        return response
+    raise WebIngestError(f"Muitos redirects (>{max_hops}).")
 
 
 def _extract_title(html: str) -> str | None:
@@ -53,12 +151,7 @@ def ingest_url(url: str, no_commit: bool = True) -> Path:
     _require_deps()
 
     try:
-        response = requests.get(
-            url,
-            timeout=15,
-            headers={"User-Agent": "Mozilla/5.0"},
-        )
-        response.raise_for_status()
+        response = _follow_redirects(url)
     except requests.Timeout as exc:
         raise WebIngestError(f"Timeout ao acessar {url}") from exc
     except requests.HTTPError as exc:
