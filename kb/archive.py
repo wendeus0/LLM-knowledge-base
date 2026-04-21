@@ -1,3 +1,4 @@
+import math
 import re
 import shutil
 import time
@@ -8,18 +9,25 @@ from kb.analytics.health import get_health_summary
 _WIKILINK_RE = re.compile(r"\[\[(.*?)\]\]")
 
 
+def _normalize_link(link: str) -> str:
+    return re.sub(r"\s+", "-", link.strip().lower())
+
+
 def find_orphans(wiki_dir: Path) -> list[Path]:
     """Retorna artigos sem backlinks na wiki."""
     if not wiki_dir.exists():
         return []
-    all_md = [p for p in wiki_dir.rglob("*.md") if not p.is_symlink()]
+    all_md = [
+        p
+        for p in wiki_dir.rglob("*.md")
+        if not p.is_symlink() and p.name != "_index.md"
+    ]
     linked = set()
     for p in all_md:
-        text = p.read_text(encoding="utf-8")
+        text = p.read_text(encoding="utf-8", errors="replace")
         for match in _WIKILINK_RE.finditer(text):
-            link = match.group(1).strip()
-            linked.add(link)
-    return [p for p in all_md if p.stem not in linked]
+            linked.add(_normalize_link(match.group(1)))
+    return [p for p in all_md if _normalize_link(p.stem) not in linked]
 
 
 def find_by_age(wiki_dir: Path, days: int) -> list[Path]:
@@ -41,7 +49,9 @@ def find_by_age(wiki_dir: Path, days: int) -> list[Path]:
 
 def find_stale(wiki_dir: Path, threshold_days: float) -> list[Path]:
     """Retorna artigos considerados stale usando threshold em dias."""
-    return find_by_age(wiki_dir, int(threshold_days))
+    if threshold_days <= 0:
+        return []
+    return find_by_age(wiki_dir, math.ceil(threshold_days))
 
 
 def collect_candidates(
@@ -75,13 +85,14 @@ def collect_candidates(
     if stale:
         try:
             summary = get_health_summary()
-            threshold = summary.get("stale_pct", 0.0)
+            threshold_days = summary.get("stale_pct", 0.0)
         except Exception:
-            threshold = 0.0
-        for p in find_stale(wiki_dir, threshold):
-            if p not in seen:
-                seen.add(p)
-                candidates.append({"source": p, "reason": "stale", "dest": None})
+            threshold_days = 0.0
+        if threshold_days > 0:
+            for p in find_stale(wiki_dir, threshold_days):
+                if p not in seen:
+                    seen.add(p)
+                    candidates.append({"source": p, "reason": "stale", "dest": None})
 
     return candidates
 
@@ -103,7 +114,10 @@ def move_to_archive(
         try:
             resolved_dest = dest.resolve()
             resolved_archive = archive_dir.resolve()
-            if not str(resolved_dest).startswith(str(resolved_archive) + "/"):
+            if not (
+                resolved_dest == resolved_archive
+                or resolved_dest.is_relative_to(resolved_archive)
+            ):
                 log.append(
                     {
                         "source": str(src),

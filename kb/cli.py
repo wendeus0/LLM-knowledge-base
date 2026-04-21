@@ -536,7 +536,7 @@ def archive(
         candidates = collect_candidates(WIKI_DIR, stale=stale, older_than=older_than)
     except ValueError as exc:
         console.print(f"[red]Erro:[/] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     if not candidates:
         console.print("[dim]Nenhum artigo candidato a archive.[/]")
@@ -547,7 +547,7 @@ def archive(
             rel = c["source"].relative_to(WIKI_DIR)
         except ValueError:
             console.print(f"[red]Erro:[/] caminho {c['source']} fora de {WIKI_DIR}")
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
         c["dest"] = ARCHIVE_DIR / rel
 
     if dry_run:

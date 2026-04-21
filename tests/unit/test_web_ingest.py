@@ -225,21 +225,61 @@ class TestIngestUrl:
 
 
 class TestSSRFProtection:
-    def test_should_reject_localhost_url(self):
+    def test_should_reject_localhost_url(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(2, 1, 6, "", ("127.0.0.1", 0))],
+        )
         with pytest.raises(WebIngestError, match="rede interna"):
             ingest_url("http://127.0.0.1/admin")
 
-    def test_should_reject_private_network(self):
+    def test_should_reject_private_network(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(2, 1, 6, "", ("10.0.0.1", 0))],
+        )
         with pytest.raises(WebIngestError, match="rede interna"):
             ingest_url("http://10.0.0.1/secret")
 
-    def test_should_reject_link_local(self):
+    def test_should_reject_172_private_range(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(2, 1, 6, "", ("172.16.0.1", 0))],
+        )
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://172.16.0.1/secret")
+
+    def test_should_reject_192_168_private_range(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(2, 1, 6, "", ("192.168.1.1", 0))],
+        )
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://192.168.1.1/secret")
+
+    def test_should_reject_link_local_169(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(2, 1, 6, "", ("169.254.169.254", 0))],
+        )
         with pytest.raises(WebIngestError, match="rede interna"):
             ingest_url("http://169.254.169.254/metadata")
 
-    def test_should_reject_aws_metadata_endpoint(self):
+    def test_should_reject_ipv6_loopback(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(10, 1, 6, "", ("::1", 0, 0, 0))],
+        )
         with pytest.raises(WebIngestError, match="rede interna"):
-            ingest_url("http://169.254.169.254/latest/meta-data/")
+            ingest_url("http://[::1]/admin")
+
+    def test_should_reject_ipv6_ula(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(10, 1, 6, "", ("fd00::1", 0, 0, 0))],
+        )
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("http://[fd00::1]/admin")
 
     def test_should_reject_file_scheme(self):
         with pytest.raises(WebIngestError, match="Esquema não permitido"):

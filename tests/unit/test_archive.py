@@ -1,6 +1,4 @@
 import pytest
-from pathlib import Path
-from unittest.mock import patch
 
 
 def test_archive_moves_orphans(tmp_path):
@@ -18,9 +16,9 @@ def test_archive_moves_orphans(tmp_path):
     assert orphans[0].name == "c.md"
 
 
-def test_archive_older_than_filters_by_mtime(tmp_path, monkeypatch):
-    # RED: falha até 006-kb-archive ser implementada
+def test_archive_older_than_filters_by_mtime(tmp_path):
     from kb.archive import find_by_age
+    import os
     import time
 
     wiki = tmp_path / "wiki"
@@ -30,15 +28,8 @@ def test_archive_older_than_filters_by_mtime(tmp_path, monkeypatch):
     old.write_text("x")
     new.write_text("y")
 
-    # simular old com mtime de 10 dias atrás
     ten_days_ago = time.time() - (10 * 86400)
-    old.touch()
-    monkeypatch.setattr(
-        "kb.archive.Path.stat",
-        lambda self: type(
-            "S", (), {"st_mtime": ten_days_ago if self == old else time.time()}
-        )(),
-    )
+    os.utime(old, (ten_days_ago, ten_days_ago))
 
     result = find_by_age(wiki, days=5)
     assert len(result) == 1
@@ -85,8 +76,8 @@ def test_archive_preserves_directory_structure(tmp_path):
 
 
 def test_archive_stale_uses_threshold(tmp_path, monkeypatch):
-    # RED: falha até 006-kb-archive ser implementada
     from kb.archive import collect_candidates
+    import os
     import time
 
     wiki = tmp_path / "wiki"
@@ -97,13 +88,7 @@ def test_archive_stale_uses_threshold(tmp_path, monkeypatch):
     new.write_text("y")
 
     ten_days_ago = time.time() - (10 * 86400)
-    old.touch()
-    monkeypatch.setattr(
-        "kb.archive.Path.stat",
-        lambda self: type(
-            "S", (), {"st_mtime": ten_days_ago if self == old else time.time()}
-        )(),
-    )
+    os.utime(old, (ten_days_ago, ten_days_ago))
     monkeypatch.setattr("kb.archive.get_health_summary", lambda: {"stale_pct": 5.0})
 
     candidates = collect_candidates(wiki, stale=True)
