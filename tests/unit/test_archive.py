@@ -89,7 +89,7 @@ def test_archive_stale_uses_threshold(tmp_path, monkeypatch):
 
     ten_days_ago = time.time() - (10 * 86400)
     os.utime(old, (ten_days_ago, ten_days_ago))
-    monkeypatch.setattr("kb.archive.get_health_summary", lambda: {"stale_pct": 5.0})
+    monkeypatch.setattr("kb.archive.get_health_summary", lambda: {"stale_days": 5.0})
 
     candidates = collect_candidates(wiki, stale=True)
     assert any(c["source"].name == "old.md" for c in candidates)

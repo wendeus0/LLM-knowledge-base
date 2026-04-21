@@ -2,11 +2,27 @@ import math
 import re
 import shutil
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from kb.analytics.health import get_health_summary
 
 _WIKILINK_RE = re.compile(r"\[\[(.*?)\]\]")
+_VERSIONED_RE = re.compile(r"\.v(\d+)\.\d{8}T\d{6}Z\.md$")
+
+
+def _versioned_backup(dest: Path) -> None:
+    prefix = dest.stem + ".v"
+    max_ver = 0
+    for sibling in dest.parent.iterdir():
+        if not sibling.name.startswith(prefix):
+            continue
+        m = _VERSIONED_RE.search(sibling.name)
+        if m:
+            max_ver = max(max_ver, int(m.group(1)))
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_name = f"{dest.stem}.v{max_ver + 1}.{ts}.md"
+    dest.rename(dest.parent / backup_name)
 
 
 def _normalize_link(link: str) -> str:
@@ -85,8 +101,8 @@ def collect_candidates(
     if stale:
         try:
             summary = get_health_summary()
-            threshold_days = summary.get("stale_pct", 0.0)
-        except Exception:
+            threshold_days = summary.get("stale_days", 0.0)
+        except (KeyError, TypeError, OSError):
             threshold_days = 0.0
         if threshold_days > 0:
             for p in find_stale(wiki_dir, threshold_days):
@@ -128,7 +144,7 @@ def move_to_archive(
                     }
                 )
                 continue
-        except Exception as exc:
+        except (OSError, ValueError) as exc:
             log.append(
                 {
                     "source": str(src),
@@ -143,9 +159,11 @@ def move_to_archive(
             continue
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
+            if dest.exists():
+                _versioned_backup(dest)
             shutil.move(str(src), str(dest))
             log.append({"source": str(src), "dest": str(dest), "action": "moved"})
-        except Exception as exc:
+        except (OSError, ValueError) as exc:
             log.append(
                 {
                     "source": str(src),

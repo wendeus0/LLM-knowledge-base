@@ -31,10 +31,14 @@ _BLOCKED_NETWORKS = [
     ipaddress.ip_network("172.16.0.0/12"),
     ipaddress.ip_network("192.168.0.0/16"),
     ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("198.18.0.0/15"),
+    ipaddress.ip_network("224.0.0.0/4"),
     ipaddress.ip_network("::1/128"),
     ipaddress.ip_network("::/128"),
     ipaddress.ip_network("fc00::/7"),
     ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("ff00::/8"),
 ]
 
 
@@ -66,9 +70,8 @@ def _resolve_and_validate(hostname: str) -> str:
                 raise WebIngestError(
                     f"URL aponta para endereço de rede interna ({addr}). Não permitido."
                 )
-    for _fam, _, _, _, sockaddr in resolved:
         return sockaddr[0]
-    raise WebIngestError(f"Sem endereço resolvido para {hostname}")
+    raise WebIngestError(f"Sem endereço validado para {hostname}")
 
 
 def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
@@ -88,15 +91,18 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
         if not parsed.hostname:
             raise WebIngestError("URL sem hostname.")
         resolved_ip = _resolve_and_validate(parsed.hostname)
-        pinned_url = (
-            url.replace(
+        if parsed.hostname != resolved_ip:
+            if ":" in resolved_ip and not resolved_ip.startswith("["):
+                ip_for_url = f"[{resolved_ip}]"
+            else:
+                ip_for_url = resolved_ip
+            pinned_url = url.replace(
                 f"{parsed.scheme}://{parsed.hostname}",
-                f"{parsed.scheme}://{resolved_ip}",
+                f"{parsed.scheme}://{ip_for_url}",
                 1,
             )
-            if parsed.hostname != resolved_ip
-            else url
-        )
+        else:
+            pinned_url = url
         host_header = parsed.hostname
         if parsed.port:
             host_header = f"{parsed.hostname}:{parsed.port}"
