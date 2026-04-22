@@ -22,7 +22,6 @@ type: project
 
 - Escolher frente principal: llm-wiki-v2-foundation (maior impacto) ou ingest-url/006-kb-archive (commit rápido)
 - Decidir destino de `kb/audit.py` (feature nova, absorver, ou descartar)
-- Limpar features órfãs (`001-wikilink-traversal/` e concluídas sem .state)
 
 **Recommended next front:**
 

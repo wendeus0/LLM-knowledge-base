@@ -14,11 +14,11 @@ type: project
 
 ---
 
-### D2: Commits de mutação são explícitos por comando (`--commit`)
+### D2: Commits de mutação são controlados por comando, padrão local sem commit
 
-**Why:** Rastreabilidade e segurança por padrão. `--no-commit` aceito por compatibilidade histórica mas não é mais o padrão documentado. ADR-0016 formalizou isso.
+**Why:** Rastreabilidade é importante, mas workflows exploratórios e via Obsidian precisam de write local frequente sem poluir histórico Git. ADR-0016 formalizou modo local por padrão.
 
-**How to apply:** Novos fluxos usam `--commit` como ativação explícita. Não assumir commit automático. `--no-commit` funciona mas é legado.
+**How to apply:** novos fluxos operam em modo local por padrão. `--commit` ativa versionamento explícito por execução; `--no-commit` permanece aceito por compatibilidade.
 
 ---
 
@@ -122,4 +122,4 @@ type: project
 
 **Why:** TOPICS hardcoded não escala com o corpus do usuário. Taxonomia derivável em runtime é mais flexível.
 
-**How to apply:** `kb discover` gera e registra tópicos a partir do corpus; compile/heal respeitam tópicos registrados em vez de lista fixa.
+**How to apply:** `KB_TOPICS` env var configura a taxonomia em runtime; quando vazia, a engine usa defaults históricos. compile/heal consomem helpers de config para prompts e resolução de diretório wiki.

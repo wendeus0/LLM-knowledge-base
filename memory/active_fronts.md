@@ -11,7 +11,7 @@ type: project
 **Status:** PLAN_READY (próximo: `test-red`)
 **Branch:** não criada ainda
 **Artefatos:** `features/llm-wiki-v2-foundation/{SPEC.md, PLAN.md, TASKS.md}`
-**Resumo:** Rework da engine de compile com base em SPEC aprovada. Próxima etapa é escrever testes RED.
+**Resumo:** Rework da engine de compile com base em SPEC e PLAN aprovados. Próxima etapa é escrever testes RED.
 
 ---
 
@@ -36,7 +36,7 @@ type: project
 ## Itens sem feature formal
 
 - `kb/audit.py` + `tests/unit/test_audit.py` — módulo de audit implementado mas sem feature SPEC. Decisão pendente: integrar em feature existente, criar feature nova, ou descartar.
-- `features/001-wikilink-traversal/` — diretório órfão sem `.state`. Limpar ou arquivar.
+- `features/_archived/001-wikilink-traversal/` — arquivado nesta PR.
 
 ---
 
@@ -48,4 +48,4 @@ Módulo funcional mas sem SPEC. Opções: (A) criar feature 008-audit, (B) absor
 
 ### Q5: Limpar features órfãs?
 
-`features/001-wikilink-traversal/` sem .state e múltiplos diretórios de features concluídas sem .state (`cli-surface-contract`, `compile-parallel-safe`, `explicit-commit-contract`, etc.). Decisão: arquivar ou deletar.
+**Resolvido:** features concluídas movidas para `features/_archived/` por esta PR. `001-wikilink-traversal` e demais sem .state arquivados.

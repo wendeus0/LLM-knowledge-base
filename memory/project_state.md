@@ -46,10 +46,8 @@ kb/
 
 ## Snapshot local (afeta próxima sessão)
 
-- `CLAUDE.md` modificado (cosmetic, unstaged)
 - Untracked: `kb/audit.py` + `tests/unit/test_audit.py` (módulo de audit sem feature associada)
 - Untracked: `features/ingest-url/` (.state=WORKFLOW_OK), `features/llm-wiki-v2-foundation/` (.state=PLAN_READY)
-- Untracked: `features/001-wikilink-traversal/` (órfão, sem .state)
 
 ## Branches de feature já pushadas
 

@@ -1,6 +1,6 @@
 ---
 title: Wikilink Traversal no QA
-eptic: qa
+epic: qa
 status: done
 ---
 
@@ -12,11 +12,11 @@ O router já enriquece o contexto de QA seguindo wikilinks `[[...]]` dos artigos
 
 ## Requisitos funcionais
 
-- [ ] `kb qa` com `--depth 2` segue wikilinks até 2 níveis de profundidade
-- [ ] `kb qa` com `--no-traverse` desativa traversal (usa apenas busca por palavra-chave)
-- [ ] `kb graph.traverse` respeita budget de tokens, evita ciclos e filtra por relevância
-- [ ] `kb graph.extract_wikilinks` detecta `[[link]]`, `[[Link com espaço]]`, ignora markdown normal
-- [ ] `kb graph.resolve_wikilink` encontra arquivo em `wiki/**/<link>.md` (case-insensitive slug)
+- [x] `kb qa` com `--depth 2` segue wikilinks até 2 níveis de profundidade
+- [x] `kb qa` com `--no-traverse` desativa traversal (usa apenas busca por palavra-chave)
+- [x] `kb graph.traverse` respeita budget de tokens, evita ciclos e filtra por relevância
+- [x] `kb graph.extract_wikilinks` detecta `[[link]]`, `[[Link com espaço]]`, ignora markdown normal
+- [x] `kb graph.resolve_wikilink` encontra arquivo em `wiki/**/<link>.md` (case-insensitive slug)
 
 ## Requisitos técnicos
 
@@ -29,7 +29,7 @@ O router já enriquece o contexto de QA seguindo wikilinks `[[...]]` dos artigos
 Nenhuma breaking change. Flags já existentes:
 
 - `--depth INT` (padrão: 1)
-- `--no-traverse` (padrão: ativado)
+- `--no-traverse` (traversal ativado por padrão; passe --no-traverse para desativar)
 
 ## Testes
 
