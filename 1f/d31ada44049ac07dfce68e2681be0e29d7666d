@@ -1,0 +1,40 @@
+memory/stable_decisions.md
+  cd17a322a4dcc6ad 17,19,21,125
+features/_archived/001-wikilink-traversal/SPEC.md
+  cd17a322a4dcc6ad 3,15-19,32
+memory/active_fronts.md
+  cd17a322a4dcc6ad 14,39,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "1fd31ada44049ac07dfce68e2681be0e29d7666d",
+  "prompts": {
+    "cd17a322a4dcc6ad": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24d4dbae2ffeHiQQ0odWHN7Bzq",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 17,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    },
+    "e6070cc73adc1cd1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24d55ad55ffekfGka2hGqc3inI",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 34,
+      "overriden_lines": 0
+    }
+  }
+}
