@@ -8,17 +8,17 @@ type: project
 
 ### D1: LLM responsável por tudo que vai para `wiki/`
 
-**Why:** O principal insight do projeto continua sendo usar o LLM para compilar, enriquecer e manter a wiki.
+**Why:** O principal insight do projeto é usar o LLM para compilar, enriquecer e manter a wiki.
 
 **How to apply:** Toda escrita em `wiki/` permanece concentrada em `compile`, `heal` e `qa --file-back`.
 
 ---
 
-### D2: Commits de mutação são controlados por comando, não implícitos em todo write
+### D2: Commits de mutação são controlados por comando, padrão local sem commit
 
-**Why:** Rastreabilidade continua importante, mas `compile` já migrou para commit explícito por execução para reduzir side effects e tornar lote paralelo mais seguro.
+**Why:** Rastreabilidade é importante, mas workflows exploratórios e via Obsidian precisam de write local frequente sem poluir histórico Git. ADR-0016 formalizou modo local por padrão.
 
-**How to apply:** novos fluxos não devem assumir commit automático por default. Preserve flags explícitas por comando (`--commit` ou `--no-commit`) e mantenha falha de git fora do caminho crítico quando possível.
+**How to apply:** novos fluxos operam em modo local por padrão. `--commit` ativa versionamento explícito por execução; `--no-commit` permanece aceito por compatibilidade.
 
 ---
 
@@ -40,7 +40,7 @@ type: project
 
 ### D5: Obsidian-first markdown
 
-**Why:** Wikilinks, frontmatter YAML e estrutura de pastas continuam sendo uma interface humana e portátil excelente.
+**Why:** Wikilinks, frontmatter YAML e estrutura de pastas são uma interface humana e portátil excelente.
 
 **How to apply:** Saída compilada deve continuar compatível com Obsidian por padrão.
 
@@ -80,7 +80,7 @@ type: project
 
 ### D10: `qa` deve rotear por fonte nativa antes de responder
 
-**Why:** Nem toda pergunta deve depender só da wiki; o produto agora distingue `wiki`, `raw`, `knowledge` e `learnings`.
+**Why:** Nem toda pergunta deve depender só da wiki; o produto distingue `wiki`, `raw`, `knowledge` e `learnings`.
 
 **How to apply:** Evoluções do `qa` devem preservar roteamento explícito e auditável antes de considerar soluções mais complexas.
 
@@ -88,30 +88,38 @@ type: project
 
 ### D11: controles sensíveis e de commit são explícitos por comando
 
-**Why:** Segurança e rastreabilidade devem permanecer seguras por padrão, com escape hatch apenas consciente e local à execução.
+**Why:** Segurança e rastreabilidade seguras por padrão, com escape hatch apenas consciente e local à execução. Consolidado em ADR-0016.
 
-**How to apply:** `--allow-sensitive` e `--no-commit` são flags por comando; não introduzir configuração global persistente sem nova decisão arquitetural.
+**How to apply:** `--allow-sensitive` e `--commit` são flags por comando; não introduzir configuração global persistente sem nova decisão arquitetural.
 
 ---
 
 ### D12: defesa dupla para qualidade de output do LLM em `compile`
 
-**Why:** O LLM pode envolver output em code fences mesmo com instrução explícita. Depender só do prompt é frágil.
+**Why:** O LLM pode envolver output em code fences mesmo com instrução explícita.
 
-**How to apply:** Toda geração de conteúdo via `compile` aplica `_strip_outer_fence()` após a resposta do LLM, além de instruções explícitas no SYSTEM prompt. Belt-and-suspenders é o padrão para outputs de formato estrito.
+**How to apply:** Toda geração de conteúdo via `compile` aplica `_strip_outer_fence()` após a resposta do LLM, além de instruções explícitas no SYSTEM prompt.
 
 ---
 
 ### D13: Paralelismo seguro em `compile` usa geração paralela e persistência serial
 
-**Why:** estado global (`manifest.json`, `knowledge.json`, `_index.md`) não é seguro para escrita concorrente, mas a geração LLM é paralelizável e traz ganho real de throughput.
+**Why:** estado global não é seguro para escrita concorrente, mas a geração LLM é paralelizável.
 
-**How to apply:** `compile_many()` e fluxos derivados como `import-book --compile` devem paralelizar apenas a fase de geração. Toda persistência, atualização de estado e `_index.md` permanece serial e determinística.
+**How to apply:** `compile_many()` paraleliza apenas a fase de geração. Toda persistência e atualização de estado permanece serial e determinística.
 
 ---
 
 ### D14: Contratos de `book_import_core` favorecem precedência explícita e erro estável
 
-**Why:** importação de EPUB/PDF ficou mais confiável quando as heurísticas ambíguas foram reduzidas e os estados de erro passaram a ser distinguíveis em teste.
+**Why:** importação de EPUB/PDF ficou mais confiável quando as heurísticas ambíguas foram reduzidas.
 
-**How to apply:** em EPUB, `nav` é a fonte canônica de TOC antes de `ncx`; resolução de imagem deve preferir caminho completo/normalizado e devolver `None` em basename ambíguo; em PDF com OCR, sucesso sem texto deve manter o erro estável `Nenhum conteúdo extraível encontrado no PDF`.
+**How to apply:** em EPUB, `nav` é a fonte canônica de TOC antes de `ncx`; resolução de imagem deve preferir caminho completo/normalizado e devolver `None` em basename ambíguo; em PDF com OCR, sucesso sem texto deve manter o erro estável.
+
+---
+
+### D15: Runtime topic taxonomy (ADR-0015)
+
+**Why:** TOPICS hardcoded não escala com o corpus do usuário. Taxonomia derivável em runtime é mais flexível.
+
+**How to apply:** `KB_TOPICS` env var configura a taxonomia em runtime; quando vazia, a engine usa defaults históricos. compile/qa consomem helpers de config para prompts e resolução de diretório wiki.
