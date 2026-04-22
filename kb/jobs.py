@@ -90,6 +90,27 @@ def _run_health_job() -> str:
     return render_health_summary()
 
 
+def _run_discovery_job() -> str:
+    from kb.discovery import run_scheduled_discovery
+
+    result = run_scheduled_discovery(
+        max_per_source=2,
+        compile_after_ingest=True,
+        allow_sensitive=False,
+        no_commit=True,
+    )
+    return (
+        "Job discovery executado.\n"
+        f"- discovered: {result.get('discovered', 0)}\n"
+        f"- ingested: {result.get('ingested', 0)}\n"
+        f"- compiled: {result.get('compiled', 0)}\n"
+        f"- skipped_seen: {result.get('skipped_seen', 0)}\n"
+        f"- compiled_enabled: {result.get('compiled_enabled', False)}\n"
+        f"- seen_urls_path: {result.get('seen_urls_path', '')}\n"
+        f"- failures: {len(result.get('failures', []))}"
+    )
+
+
 _JOB_DEFINITIONS: dict[str, JobDefinition] = {
     "compile": JobDefinition(
         spec=JobSpec(
@@ -163,6 +184,15 @@ _JOB_DEFINITIONS: dict[str, JobDefinition] = {
         ),
         handler=_run_health_job,
     ),
+    "discovery": JobDefinition(
+        spec=JobSpec(
+            name="discovery",
+            schedule="0 */6 * * *",
+            description="Descobrir artigos/papers novos, ingerir em raw/ e compilar para wiki quando houver KB_API_KEY.",
+            category=classify_job_command("discovery"),
+        ),
+        handler=_run_discovery_job,
+    ),
 }
 
 
@@ -205,6 +235,11 @@ def get_jobs_list_rows() -> list[dict[str, str]]:
 
 def get_recommended_cron_chain() -> list[dict[str, str]]:
     return [
+        {
+            "name": "discovery",
+            "schedule": "0 */6 * * *",
+            "purpose": "Descobrir fontes novas e ingerir no kb (raw/wiki).",
+        },
         {
             "name": "decay",
             "schedule": "0 3 * * *",
@@ -251,6 +286,7 @@ def build_operational_cron_lines(
     disputed_max_pct: float | None = None,
 ) -> list[str]:
     commands: dict[str, str] = {
+        "discovery": f"{executable} jobs run discovery",
         "decay": f"{executable} jobs run decay",
         "contradiction-check": f"{executable} jobs run contradiction-check",
         "index-refresh": f"{executable} jobs run index-refresh",

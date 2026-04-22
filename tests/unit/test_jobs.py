@@ -24,6 +24,7 @@ def test_should_list_canonical_jobs():
         "contradiction-check",
         "index-refresh",
         "health",
+        "discovery",
     }
 
 
@@ -41,6 +42,7 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
         patch("kb.compile.update_index") as mock_index_refresh,
         patch("kb.analytics.health.render_health_summary") as mock_health,
         patch("kb.analytics.health.get_health_summary") as mock_health_data,
+        patch("kb.discovery.run_scheduled_discovery") as mock_discovery,
     ):
         mock_targets.return_value = []
         mock_compile_many.return_value = fake_result
@@ -56,6 +58,15 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
         mock_health_data.return_value = {
             "stale_pct": 12.5,
             "disputed_pct": 8.0,
+        }
+        mock_discovery.return_value = {
+            "discovered": 3,
+            "ingested": 2,
+            "compiled": 1,
+            "skipped_seen": 1,
+            "compiled_enabled": True,
+            "seen_urls_path": "/tmp/discovery_seen_urls.json",
+            "failures": [],
         }
 
         assert "compile" in run_job("compile")
@@ -89,6 +100,11 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
         health_result = run_job("health")
         assert "Job health executado" in health_result
         assert "stale_pct" in health_result
+
+        discovery_result = run_job("discovery")
+        assert "Job discovery executado" in discovery_result
+        assert "discovered: 3" in discovery_result
+        assert "ingested: 2" in discovery_result
 
 
 def test_should_fail_with_explicit_error_for_unknown_job():
@@ -184,6 +200,7 @@ def test_recommended_cron_chain_should_follow_fase3_sequence():
     chain = get_recommended_cron_chain()
 
     assert [item["name"] for item in chain] == [
+        "discovery",
         "decay",
         "contradiction-check",
         "index-refresh",
@@ -229,8 +246,9 @@ def test_build_operational_cron_lines_should_include_staggered_chain():
         disputed_max_pct=8.0,
     )
 
-    assert len(lines) == 4
-    assert "jobs run decay" in lines[0]
-    assert "jobs run contradiction-check" in lines[1]
-    assert "jobs run index-refresh" in lines[2]
-    assert "jobs run health --stale-max-pct 20.0 --disputed-max-pct 8.0" in lines[3]
+    assert len(lines) == 5
+    assert "jobs run discovery" in lines[0]
+    assert "jobs run decay" in lines[1]
+    assert "jobs run contradiction-check" in lines[2]
+    assert "jobs run index-refresh" in lines[3]
+    assert "jobs run health --stale-max-pct 20.0 --disputed-max-pct 8.0" in lines[4]

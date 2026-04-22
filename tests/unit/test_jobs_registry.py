@@ -11,6 +11,7 @@ def test_job_catalog_should_use_discover_category_for_known_jobs():
     assert catalog["contradiction-check"].category == "maintenance"
     assert catalog["index-refresh"].category == "pipeline"
     assert catalog["health"].category == "operations"
+    assert catalog["discovery"].category == "content"
 
 
 def test_list_jobs_should_include_category_metadata():
@@ -25,3 +26,4 @@ def test_list_jobs_should_include_category_metadata():
     assert job_map["contradiction-check"].category == "maintenance"
     assert job_map["index-refresh"].category == "pipeline"
     assert job_map["health"].category == "operations"
+    assert job_map["discovery"].category == "content"

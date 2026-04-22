@@ -53,7 +53,6 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     monkeypatch.setattr("kb.config.CLAIMS_PATH", claims_path)
     monkeypatch.setattr("kb.claims.CLAIMS_PATH", claims_path)
     monkeypatch.setattr("kb.config.AUDIT_PATH", state_dir / "audit.jsonl")
-    monkeypatch.setattr("kb.audit.AUDIT_PATH", state_dir / "audit.jsonl")
 
     return raw, wiki
 

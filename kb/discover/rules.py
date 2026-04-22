@@ -11,4 +11,5 @@ INTERNAL_RULES: list[tuple[str, str]] = [
     ("heal", "maintenance"),
     ("lint", "maintenance"),
     ("jobs", "operations"),
+    ("discovery", "content"),
 ]
