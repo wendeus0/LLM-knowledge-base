@@ -4,49 +4,63 @@ description: Estado atual, sprint, branch ativo, marcos
 type: project
 ---
 
-## Estrutura
+## Estado global
 
-Atualizada: 2026-04-08
+Atualizada: 2026-04-21
+
+- **Branch:** `main` (merge PR #31 from `feat/007-baseline-green`)
+- **HEAD:** a5dce5d
+- **Drift:** 0 (alinhada com origin/main)
+- **Tests:** 308/308 passando
+- **Cobertura:** 92%
+- **Lint:** ruff clean
+- **Python:** 3.11+
+
+## Estrutura do pacote
 
 ```text
 kb/
-├── kb/               ← pacote Python
+├── kb/
 │   ├── client.py, compile.py, qa.py, search.py, heal.py, lint.py
 │   ├── router.py, state.py, guardrails.py, jobs.py, git.py, cli.py, config.py
-│   ├── book_import.py, book_import_core.py, graph.py, outputs.py, web_ingest.py
-├── tests/            ← suíte unit + integration (223 passando)
-├── docs/adr/         ← ADRs 0001–0007, 0010
-├── docs/SENSITIVE_CONTENT_POLICY.md ← política operacional de sensibilidade
+│   ├── book_import.py, book_import_core.py, book_import_pdf.py
+│   ├── graph.py, outputs.py, web_ingest.py, archive.py
+│   ├── audit.py, claims.py, doc_gate.py, handoff.py
+│   ├── cmds/{compile,qa,lint,search}/run.py
+│   ├── core/{runner.py, tracking.py}
+│   ├── analytics/{gain.py, health.py, history.py}
+│   └── discover/{registry.py, rules.py}
+├── tests/            ← 308 testes, 92% cobertura
+├── docs/adr/         ← ADRs 0001–0016
+├── docs/SENSITIVE_CONTENT_POLICY.md
 ├── features/         ← SPECs de implementação
-├── pyproject.toml    ← pytest-cov configurado; 96% cobertura real da suíte completa
-├── memory/           ← memória distribuída
-└── .git/             ← branch atual `feat/test-coverage-90`, alinhada a `origin/main` e com diff local da frente
+├── pyproject.toml
+└── memory/           ← memória distribuída (este diretório)
 
 <KB_DATA_DIR>/
-├── raw/              ← documentos fonte
-│   └── books/        ← livros importados em capítulos markdown + metadata.json
+├── raw/              ← documentos fonte + books/
 ├── wiki/             ← markdown compilado
-│   ├── _index.md
-│   ├── summaries/
-│   ├── ai/           ← 14 artigos (12 de EPUB "Building Applications with AI Agents")
-│   ├── cybersecurity/, python/, typescript/
+├── outputs/          ← file-backs de QA
 └── kb_state/         ← manifesto + stores knowledge/learnings
 ```
 
-## Status
+## Snapshot local (afeta próxima sessão)
 
-**Estado atual:** 2026-04-08 — frente `test-coverage-90` concluída localmente e pronta para fechamento documental
+- `CLAUDE.md` modificado (cosmetic, unstaged)
+- Untracked: `kb/audit.py` + `tests/unit/test_audit.py` (módulo de audit sem feature associada)
+- Untracked: `features/ingest-url/` (.state=WORKFLOW_OK), `features/llm-wiki-v2-foundation/` (.state=PLAN_READY)
+- Untracked: `features/001-wikilink-traversal/` (órfão, sem .state)
 
-- ✅ frente `test-coverage-90` levou a suíte para `223` testes passando
-- ✅ cobertura real total em `96%`
-- ✅ módulos-alvo encerrados acima do limiar: `kb/cli.py` `98%`, `kb/client.py` `97%`, `kb/git.py` `100%`, `kb/book_import_core.py` `97%`
-- ✅ quality gate local: `QUALITY_PASS`
-- ✅ security review local: `SECURITY_PASS`
-- ⚠️ fechamento Git ainda depende apenas dos gates finais de escopo/workflow antes de commit/PR
+## Branches de feature já pushadas
 
-## Branches
+002-search-bm25, 003-kb-watch, 004-kb-diff, 005-kb-stats, 006-kb-archive (WORKFLOW_OK)
 
-`feat/test-coverage-90` — branch dedicada criada a partir de `main`; `origin/main...HEAD = 0/0` com diff local ainda não commitado.
+## ADRs
+
+0001–0016. Destaques recentes:
+
+- ADR-0015: runtime topic taxonomy
+- ADR-0016: explicit commit activation (--commit explícito, --no-commit deprecated)
 
 ## Marcos (Milestones)
 
@@ -54,12 +68,13 @@ kb/
 2. **Integração de livros** ✅
 3. **Fundação inspirada em Pal** ✅
 4. **Controles explícitos de execução sensível** ✅
-5. **Expansão funcional** ✅ (outputs store, URL ingest, wikilink traversal, rich book metadata)
-6. **Validação operacional real** ✅ (smoke test real, política sensibilidade, cobertura)
-7. **Qualidade de output LLM** ✅ (fix code fence, 25 artigos restaurados, ADR-0010)
-8. **Compile paralelo seguro** ✅ (geração paralela, persistência serial, batch seguro para `import-book --compile`)
-9. **Cobertura orientada a risco** ✅ (`223` testes, `96%` total, contratos de EPUB/PDF/CLI/git/provider cobertos)
+5. **Expansão funcional** ✅ (outputs, URL ingest, wikilink, rich book metadata)
+6. **Validação operacional real** ✅ (smoke test, política sensibilidade, cobertura)
+7. **Qualidade de output LLM** ✅ (fix code fence, ADR-0010)
+8. **Compile paralelo seguro** ✅ (geração paralela, persistência serial)
+9. **Cobertura orientada a risco** ✅ (308 testes, 92% cobertura)
+10. **Baseline green + SSRF protection** ✅ (PR #31 merged, feat/007-baseline-green)
 
 ## Próximo marco sugerido
 
-10. **Entrega Git limpa da frente atual** — rerodar gates de escopo/workflow e só então commitar/abrir PR
+11. **LLM Wiki v2 Foundation** — rework da engine de compile com base em SPEC aprovada

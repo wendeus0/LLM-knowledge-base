@@ -4,184 +4,26 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
-## Sessão — 2026-04-08 (Coverage 90 close)
+## Sessão — 2026-04-21 (Memory curator + session-open)
 
-**O que foi feito:**
+**Read before acting:**
 
-- frente `test-coverage-90` fechada localmente com foco em `kb/cli.py`, `kb/client.py`, `kb/git.py` e `kb/book_import_core.py`
-- `kb/book_import_core.py` teve contratos estabilizados para precedência `nav`/`ncx`, resolução de imagens e erros estáveis de EPUB/PDF/OCR
-- README, logs operacionais e memória distribuída atualizados com o novo baseline
-- quality gate local concluído com `QUALITY_PASS`
-- security review local concluído com `SECURITY_PASS`
+- `AGENTS.md`, `memory/MEMORY.md`, `PENDING_LOG.md`, `ERROR_LOG.md`
 
-**O que falta:**
+**Current state:**
 
-- rerodar `feature-scope-guard` e `enforce-workflow`
-- então seguir para `git-flow-manager` com ação explícita de commit/push/PR
-- validar `compile_many()` com provider real em lote pequeno
+- Branch `main`, HEAD a5dce5d (merge PR #31 from feat/007-baseline-green)
+- 308/308 testes, 92% cobertura, ruff clean, sem drift de origin
+- Três features prontas para ação: `llm-wiki-v2-foundation` (PLAN_READY), `ingest-url` (WORKFLOW_OK), `006-kb-archive` (WORKFLOW_OK)
+- `kb/audit.py` + testes sem feature associada — decisão pendente
+- Memória distribuída atualizada nesta sessão
 
-**Métricas da sessão:**
+**Open points:**
 
-- suíte completa: `223` testes passando
-- cobertura total real: `96%`
-- `kb/cli.py`: `98%`
-- `kb/client.py`: `97%`
-- `kb/git.py`: `100%`
-- `kb/book_import_core.py`: `97%`
+- Escolher frente principal: llm-wiki-v2-foundation (maior impacto) ou ingest-url/006-kb-archive (commit rápido)
+- Decidir destino de `kb/audit.py` (feature nova, absorver, ou descartar)
+- Limpar features órfãs (`001-wikilink-traversal/` e concluídas sem .state)
 
-**Prompt de retomada:**
+**Recommended next front:**
 
-> Retome o projeto `kb` na branch `feat/test-coverage-90`. A frente `test-coverage-90` está pronta do ponto de vista técnico: `223` testes passam, a cobertura total está em `96%`, `kb/cli.py` está em `98%`, `kb/client.py` em `97%`, `kb/git.py` em `100%` e `kb/book_import_core.py` em `97%`; quality gate e security review locais passaram, e a branch está alinhada com `origin/main` (`0/0`). O próximo passo não é código: emitir `feature-scope-guard` e `enforce-workflow`, e só então seguir para commit/push/PR.
-
----
-
-## Sessão — 2026-04-08 (Compile parallel hardening close)
-
-**O que foi feito:**
-
-- `kb/compile.py` foi refatorado para separar geração (`compile_to_artifact`) e persistência (`persist_artifact`)
-- `compile_many()` passou a fazer geração paralela e persistência serial determinística, com falhas agregadas por arquivo
-- `kb compile` ganhou `--workers` e `--commit`; o default agora é escrita local sem commit
-- `import-book --compile` foi alinhado ao mesmo contrato de batch seguro quando `workers > 1`
-- `tests/conftest.py` ganhou compatibilidade para ambientes sem `pytest-cov` em `addopts`
-- `pyproject.toml` voltou a incluir `kb/cli.py` no relatório real de cobertura
-- suíte completa rerodada com `pytest-cov`: `139` testes passando, cobertura total `78%`
-
-**O que falta:**
-
-- revisar e mergear o PR da branch `feat/compile-parallel-hardening`
-- subir cobertura de `kb/cli.py`, `kb/book_import_core.py` e `kb/git.py`
-- validar `compile_many()` com provider real em lote pequeno
-- avaliar harmonizar o modelo de commit explícito nos demais comandos
-
-**Métricas da sessão:**
-
-- suíte completa: `139` testes passando
-- cobertura total real: `78%`
-- `kb/compile.py`: `91%`
-- `kb/cli.py`: `60%`
-- `kb/jobs.py`: `93%`
-
-**Prompt de retomada:**
-
-> Retome o projeto `kb` na branch `feat/compile-parallel-hardening`. O hardening de compile paralelo seguro foi concluído, `import-book --compile` já usa o mesmo contrato de batch seguro, `kb/cli.py` voltou a aparecer no relatório real de cobertura e a suíte completa está verde com 139 testes passando e 78% de cobertura total. Próximas ações: (1) revisar/mergear o PR aberto desta branch; (2) subir cobertura de `kb/cli.py`, `kb/book_import_core.py` e `kb/git.py`; (3) validar `compile_many()` com provider real e múltiplos workers.
-
----
-
-## Sessão — 2026-04-07 (Repo hygiene / corpus extraction)
-
-**O que foi feito:**
-
-- Corpus pessoal extraído do repositório principal para `<KB_DATA_DIR>`
-- Diretórios `raw/`, `wiki/`, `outputs/` e `kb_state/` removidos do repo principal e realocados para o diretório externo
-- `kb/config.py` atualizado para suportar `KB_DATA_DIR` e overrides específicos (`KB_RAW_DIR`, `KB_WIKI_DIR`, `KB_OUTPUTS_DIR`, `KB_STATE_DIR`)
-- `.env.example`, README, `docs/OBSIDIAN.md`, `.pi/manifest.yaml`, `AGENTS.md` e `CLAUDE.md` atualizados para separar engine vs. corpus
-- `examples/` criado com seed neutro mínimo para onboarding
-- `.gitignore` ajustado para não versionar corpus local nem `.obsidian/`
-- Fluxo validado após migração: `kb search` passou a ler o corpus em `<KB_DATA_DIR>`
-
-**O que falta:**
-
-- Mergear PR#19 (feat/wikilink-traversal → main)
-- Corrigir 8 testes falhando em `test_web_ingest.py` (mock setup pré-existente)
-- Neutralizar referências históricas restantes a corpus temático pessoal em docs de arquitetura/ADR
-- Avaliar tornar `TOPICS` configurável em vez de fixo no código
-
-**Métricas da sessão:**
-
-- Engine e corpus: desacoplados
-- Diretório de dados ativo: `<KB_DATA_DIR>`
-- Seed neutro criado: `examples/raw/getting-started.md`
-- Configuração suportada: `KB_DATA_DIR`, `KB_RAW_DIR`, `KB_WIKI_DIR`, `KB_OUTPUTS_DIR`, `KB_STATE_DIR`
-
-**Prompt de retomada:**
-
-> Retome o projeto `kb` após a higienização do repositório. A engine está separada do corpus pessoal, que agora vive em `<KB_DATA_DIR>`, e o projeto suporta `KB_DATA_DIR`. Próximas ações: (1) revisar/neutralizar docs históricos ainda acoplados ao corpus antigo; (2) corrigir 8 testes de `test_web_ingest.py`; (3) avaliar tornar `TOPICS` configurável.
-
----
-
-## Sessão — 2026-04-07 (Obsidian integration close)
-
-**O que foi feito:**
-
-- Integração operacional com Obsidian consolidada usando o plugin `obsidian-terminal`
-- A estratégia com `Shell Commands` foi descartada por fragilidade de PATH/working directory e falta de input dinâmico para `qa`
-- Profile integrado do plugin configurado com shell login (`/bin/zsh --login` no Linux)
-- Fluxo validado no terminal integrado do Obsidian com `kb qa "Como implementar um orquestrador em meu workflow?" --allow-sensitive`
-- README atualizado com menção explícita ao plugin adotado e tutorial de uso
-- `docs/OBSIDIAN.md` criado com passo a passo operacional completo
-
-**O que falta:**
-
-- Mergear PR#19 (feat/wikilink-traversal → main)
-- Corrigir 8 testes falhando em `test_web_ingest.py` (mock setup pré-existente)
-- Refinar guardrail para falso positivo de nomes de variável em código técnico
-- Opcional: configurar hotkeys/profile defaults no `obsidian-terminal`
-
-**Métricas da sessão:**
-
-- Vault Obsidian: operacional
-- Plugin adotado: `obsidian-terminal`
-- Comando validado no Obsidian: `kb qa`
-- Documentação atualizada: `README.md`, `docs/OBSIDIAN.md`, logs de sessão
-
-**Prompt de retomada:**
-
-> Retome o projeto `kb` após a consolidação da integração com Obsidian. O vault `wiki/` está operacional com `obsidian-terminal`, `kb qa` já rodou com sucesso dentro do Obsidian e o README/tutorial foram atualizados. Próximas ações: (1) mergear PR#19; (2) corrigir 8 testes de `test_web_ingest.py`; (3) refinar o guardrail de sensibilidade para exemplos de código.
-
----
-
-## Sessão — 2026-04-07 (Sprint close)
-
-**O que foi feito:**
-
-- Smoke test completo com OpenCode Go real: `search`, `lint`, `qa`, `heal`, `import-book --compile` OK
-- EPUB "Building Applications with AI Agents" importado → 12 artigos em `wiki/ai/`
-- `docs/SENSITIVE_CONTENT_POLICY.md` criado — critérios para `--allow-sensitive` e `--no-commit`
-- pytest-cov instalado; 80% cobertura baseline; HTML em `htmlcov/`
-- ADR-0001 atualizado — A3 (extração de pacote) rejeitada formalmente
-- ADR-0010 criado — defesa dupla para output do LLM (prompt + `_strip_outer_fence()`)
-- Root cause de code fence wrapping identificado e corrigido:
-  - SYSTEM prompt em `compile.py` atualizado com instrução "SEM code fences"
-  - `_strip_outer_fence()` adicionado como defesa defensiva em `compile_file()`
-  - 25 artigos em `wiki/ai/` e `wiki/summaries/ai/` corrigidos manualmente
-- PR#19 aberto (branch `feat/wikilink-traversal`) com todas as entregas do sprint
-
-**O que falta:**
-
-- Merge PR#19 (feat/wikilink-traversal → main)
-- Corrigir 8 testes falhando em `test_web_ingest.py` (mock setup pré-existente)
-- Instalar Shell Commands plugin no Obsidian (passo manual do usuário)
-- Refinar guardrail para falso positivo de nomes de variável em código técnico
-
-**Métricas do sprint:**
-
-- Testes: 113 passando, 8 falhando (pré-existentes, test_web_ingest.py)
-- Cobertura: 80% total
-- Wiki: 14 artigos em wiki/ai/, 11 summaries
-- ADRs: 0001–0007, 0010
-
-**Prompt de retomada:**
-
-> Retome o projeto `kb` após o sprint de 2026-04-07. As entregas deste sprint: smoke test real OK, EPUB importado (12 artigos wiki/ai/), política de sensibilidade criada, pytest-cov 80%, fix de code fence em compile.py, PR#19 aberto. Próximas ações: (1) mergear PR#19; (2) corrigir 8 testes falhando em test_web_ingest.py (mock AttributeError); (3) instalar Shell Commands no Obsidian (passo manual).
-
----
-
-## Sessão — 2026-04-06
-
-**O que foi feito:**
-
-- revisão da violation P2 do PR#15 (`feat/rich-book-import-metadata`)
-- fix aplicado em `kb/book_import_core.py:173`: `_resolve_href` agora recebe `unquote(src)` para alinhar paths resolvidos com keys do `image_map` (built from decoded manifest hrefs)
-- PR#15 description atualizada via `gh pr edit 15`
-- sprint-close executado: logs, memória e handoff atualizados
-
----
-
-## Sprint close — 2026-04-03
-
-**O que foi feito neste ciclo:**
-
-- fundação inspirada em Pal: routing por fonte, stores, manifesto, summaries, jobs, guardrails, flags `--allow-sensitive`/`--no-commit`
-- ADRs `0006` e `0007` criados
-- baseline validada com **85 testes passando**
+> Comece pela frente de maior impacto: `llm-wiki-v2-foundation` está em PLAN_READY. Crie branch `feat/008-llm-wiki-v2-foundation` (verifique numeração em `features/`), rode `test-red` para gerar testes RED a partir da SPEC/PLAN/TASKS, e avance para `green-refactor`. Se preferir algo rápido primeiro, commit `ingest-url` e `006-kb-archive` via `git-flow-manager` (ambas WORKFLOW_OK).

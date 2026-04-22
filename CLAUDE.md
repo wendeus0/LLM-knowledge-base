@@ -24,8 +24,8 @@ Se houver conflito:
 
 > Manifesto estruturado do Pi: `.pi/manifest.yaml`
 
-
 **kb** é uma engine de knowledge base mantida por LLM. A ideia é automática:
+
 - Jogue documentos em `raw/` do seu vault/corpus local
 - LLM compila para `wiki/` em markdown estruturado
 - Faça perguntas contra a wiki
@@ -37,7 +37,6 @@ Baseado em proposta de Andrej Karpathy: "LLMs Turn Raw Research Into a Living Kn
 ## Como começar
 
 Para contexto rápido e estruturado do projeto, paths e comandos principais, consulte também `.pi/manifest.yaml`.
-
 
 ```bash
 # 1. Instalar
@@ -101,6 +100,7 @@ KB_DATA_DIR=<caminho-para-seu-llm-wiki>
 Validação explícita: quando `KB_BASE_URL` aponta para OpenCode Go, o projeto aceita apenas nomes de modelo compatíveis e sem prefixo (ex.: `kimi-k2.5`, `minimax-2.7`, `glm-5`). Exemplo inválido: `opencode-go/kimi-k2.5`.
 
 Para modelos locais (Ollama):
+
 ```
 KB_BASE_URL=http://localhost:11434/v1
 KB_API_KEY=ollama
@@ -119,6 +119,18 @@ KB_MODEL=qwen2.5-coder:7b
 4. **Git automático** — writes no corpus local podem gerar commit (estratégia Pawel Huryn: append/update, nunca rewrite)
 5. **Sem RAG sofisticado** — TF-IDF simples + busca de palavra-chave funciona bem até ~100 artigos/400K palavras
 6. **Obsidian oficial** — o frontend recomendado é o Obsidian apontando para `<KB_DATA_DIR>/wiki`
+
+## Contexto técnico atual
+
+**Última feature:** 006-kb-archive (2026-04-21)
+**Stack:** Python 3.11+, Typer, Rich
+**Build:** `pip install -e .`
+**Testes:** `python -m pytest`
+**Alterações recentes:**
+
+- 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/ com preview dry-run
+- 005-kb-stats: comando `kb stats` para dashboard de métricas da wiki (artigos, claims, histórico)
+- 004-kb-diff: comando `kb diff` para diff de wiki/ via git com formatação Rich
 
 ## Próximos passos
 

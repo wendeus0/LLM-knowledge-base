@@ -6,92 +6,46 @@ type: project
 
 ## Frentes ativas
 
-### F1–F6: Validação operacional, política sensibilidade, pytest-cov, book2md, smoke test, EPUB
+### F11: llm-wiki-v2-foundation
 
-**Status:** Todas concluídas (2026-04-07)
-
-**Resultado resumido:**
-
-- F1 (smoke test): `search`, `lint`, `qa`, `heal`, `import-book --compile` OK com OpenCode Go
-- F2 (política sensibilidade): `docs/SENSITIVE_CONTENT_POLICY.md` criado
-- F3 (book2md): A3 rejeitada em ADR-0001; núcleo em `kb/book_import_core.py`
-- F4 (merge PRs #14 e #15): mergeados conforme confirmação do usuário
-- F5 (pytest-cov): 80% cobertura baseline; HTML em `htmlcov/`
-- F6 (EPUB): "Building Applications with AI Agents" importado → 12 artigos em `wiki/ai/`
+**Status:** PLAN_READY (próximo: `test-red`)
+**Branch:** não criada ainda
+**Artefatos:** `features/llm-wiki-v2-foundation/{SPEC.md, PLAN.md, TASKS.md}`
+**Resumo:** Rework da engine de compile com base em SPEC aprovada. Próxima etapa é escrever testes RED.
 
 ---
 
-## Frentes concluídas nesta sessão
+### F12: ingest-url
 
-### F7: Hardening de compile paralelo seguro
-
-**Status:** Concluído (2026-04-08)
-
-**Resultado resumido:**
-
-- `compile` agora separa geração e persistência (`compile_to_artifact` + `persist_artifact`)
-- `compile_many()` faz geração paralela e persistência serial em ordem de entrada
-- `kb compile` recebeu `--workers` e `--commit`
-- `import-book --compile` reaproveita o mesmo modelo de lote seguro quando `workers > 1`
-- suíte completa verde com cobertura real atualizada
+**Status:** WORKFLOW_OK (próximo: `git-flow-manager`)
+**Branch:** não criada ainda (código em main como untracked)
+**Artefatos:** `features/ingest-url/{PLAN.md, TASKS.md, REPORT.md}`
+**Resumo:** Web ingest com proteção SSRF. Pronta para commit/push. Precisa de branch + PR.
 
 ---
 
-## Frentes abertas para próxima sessão
+### F13: 006-kb-archive
 
-### F8: Aumentar cobertura dos módulos mais fracos
-
-**Status:** Concluído (2026-04-08)
-
-**Problema:** a suíte estava verde, mas a cobertura ainda estava concentrada em poucos fluxos.
-
-**Resultado resumido:**
-
-- `223` testes passando e `96%` de cobertura total
-- `kb/cli.py` em `98%`
-- `kb/client.py` em `97%`
-- `kb/git.py` em `100%`
-- `kb/book_import_core.py` em `97%`
-- contratos de EPUB/PDF consolidados por testes de helper + integração
+**Status:** WORKFLOW_OK (próximo: `git-flow-manager`)
+**Branch:** pushada como `feat/006-kb-archive`
+**Artefatos:** `features/006-kb-archive/`
+**Resumo:** Comando `kb archive` para arquivar documentos. Pronta para commit/push.
 
 ---
 
-### F9: Migração final QA+Compile e instrumentação unificada por comando
+## Itens sem feature formal
 
-**Status:** Concluído (2026-04-12)
-
-**Resultado resumido:**
-
-- `qa` migrado para `kb/cmds/qa/run.py` e CLI roteando por `execute_qa_command`
-- `compile` migrado para `kb/cmds/compile/run.py` e CLI roteando por `execute_compile_command`
-- tracking unificado com `category` em `kb/core/tracking.py`
-- `jobs run <name>` registrando execução com categoria no tracking
-- `kb/analytics/history.py` e `kb/analytics/gain.py` exibindo categoria por comando
-- suíte alvo verde: `53 passed`
-
----
-
-### F10: Validar concorrência com provider real
-
-**Status:** Aberto
-
-**Problema:** a concorrência foi validada com mocks/interleaving controlado, mas não sob carga real do provider.
-
-**Próximo passo:** rodar `kb compile --workers 4` contra um conjunto real pequeno e observar latência, estabilidade e ausência de corrupção de estado.
+- `kb/audit.py` + `tests/unit/test_audit.py` — módulo de audit implementado mas sem feature SPEC. Decisão pendente: integrar em feature existente, criar feature nova, ou descartar.
+- `features/001-wikilink-traversal/` — diretório órfão sem `.state`. Limpar ou arquivar.
 
 ---
 
 ## Decisões abertas
 
-### Q1: O fluxo de livro importado deve sempre passar por `compile`?
+### Q4: O que fazer com kb/audit.py?
 
-**Estado:** mantido como `--compile` opcional; padrão operacional recomendado = com `--compile` para livros técnicos.
-**Atualização:** quando usado com `workers > 1`, o lote segue o mesmo contrato de `compile_many()`.
+Módulo funcional mas sem SPEC. Opções: (A) criar feature 008-audit, (B) absorver em llm-wiki-v2-foundation, (C) descartar.
 
-### Q2: `--no-commit` por comando ou política configurável?
+### Q5: Limpar features órfãs?
 
-**Estado:** segue por comando; `kb compile` já migrou para `--commit` explícito, mas outros comandos ainda usam `--no-commit` como opt-out.
-
-### Q3: Quando promover `book2md` a distribuição formal?
-
-**Estado:** encerrado; sem demanda. Critério de reabertura: necessidade real de instalar fora do workspace.
+`features/001-wikilink-traversal/` sem .state e múltiplos diretórios de features concluídas sem .state (`cli-surface-contract`, `compile-parallel-safe`, `explicit-commit-contract`, etc.). Decisão: arquivar ou deletar.
