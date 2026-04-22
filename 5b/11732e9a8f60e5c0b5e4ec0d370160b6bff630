@@ -1,0 +1,29 @@
+features/llm-wiki-v2-foundation/PLAN.md
+  7786c5c24ee74075 1-7,31,37
+features/llm-wiki-v2-foundation/TASKS.md
+  7786c5c24ee74075 1-6,15
+tests/unit/test_claims_audit.py
+  7786c5c24ee74075 114
+features/llm-wiki-v2-foundation/REPORT.md
+  7786c5c24ee74075 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "5b11732e9a8f60e5c0b5e4ec0d370160b6bff630",
+  "prompts": {
+    "7786c5c24ee74075": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "58fc157f-71be-409c-ad84-fdd46bc0a13d",
+        "model": "custom:GLM-5.1-(Z.AI-Coding-Plan)-4"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 24,
+      "total_deletions": 4,
+      "accepted_lines": 24,
+      "overriden_lines": 0
+    }
+  }
+}
