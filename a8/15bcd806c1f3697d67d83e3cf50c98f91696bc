@@ -1,0 +1,23 @@
+memory/stable_decisions.md
+  cd17a322a4dcc6ad 125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "a815bcd806c1f3697d67d83e3cf50c98f91696bc",
+  "prompts": {
+    "cd17a322a4dcc6ad": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24d4dbae2ffeHiQQ0odWHN7Bzq",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
