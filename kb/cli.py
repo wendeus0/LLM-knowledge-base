@@ -609,6 +609,10 @@ def discovery_run(
     """Executa discovery + ingest com deduplicação por URLs já vistas."""
     from kb.discovery import run_scheduled_discovery
 
+    if max_per_source < 1:
+        console.print("[red]Erro:[/] --max-per-source deve ser >= 1.")
+        raise typer.Exit(code=1)
+
     try:
         result = run_scheduled_discovery(
             queries=query or None,
@@ -619,7 +623,7 @@ def discovery_run(
         )
     except Exception as exc:
         console.print(f"[red]Erro no discovery:[/] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     console.print("[bold]Discovery concluído[/]")
     console.print(f"- queries: {', '.join(result.get('queries', []))}")
