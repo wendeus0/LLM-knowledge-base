@@ -1,0 +1,63 @@
+memory/next_steps.md
+  859d9d7714a9f7f8 11,13-14
+  5af3aa121adea03d 9-10,16,18,20-25,27,29-34,36,38,40,42-45,49
+CLAUDE.md
+  5af3aa121adea03d 132-133
+features/008-kb-stats/SPEC.md
+  5af3aa121adea03d 1-73
+docs/reports/COVERAGE_2026-04-22.md
+  5af3aa121adea03d 1-9,13-32,35-38,41,43-44
+  859d9d7714a9f7f8 10-12,33-34,39-40,42
+memory/project_state.md
+  859d9d7714a9f7f8 11-14,18,50-51
+  5af3aa121adea03d 9,15-17
+ERROR_LOG.md
+  859d9d7714a9f7f8 25-26
+docs/reports/DEBT_2026-04-22.md
+  5af3aa121adea03d 1-8,10-14,18-22,25-33,35
+  859d9d7714a9f7f8 9,15-17,23-24,34,36
+memory/active_fronts.md
+  859d9d7714a9f7f8 54
+  5af3aa121adea03d 16-17,20,22,24-27,29,31-34,38,40-41,47-53,55,57,59,61
+features/009-kb-diff/SPEC.md
+  5af3aa121adea03d 1-73
+memory/handoff.md
+  859d9d7714a9f7f8 7,16-17,21,23,25-31,35-37,41
+  5af3aa121adea03d 12,18-20,22,24,39
+PENDING_LOG.md
+  859d9d7714a9f7f8 32,36-46,52
+  5af3aa121adea03d 23-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "9ef09602d821416a62108b1c0ba3ce310afced0f",
+  "prompts": {
+    "5af3aa121adea03d": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "b70d616a-4cf8-49ab-b153-15e24c650383",
+        "model": "custom:Claude-Opus-4.7-(Sirius)-1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 286,
+      "overriden_lines": 0
+    },
+    "859d9d7714a9f7f8": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f5348461-dc82-489d-bc8b-a9a550c27fb9",
+        "model": "custom:GLM-5.1-(Z.AI-Coding-Plan)-4"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 58,
+      "total_deletions": 60,
+      "accepted_lines": 71,
+      "overriden_lines": 0
+    }
+  }
+}
