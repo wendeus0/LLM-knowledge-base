@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "8d78dc0a08ab562e674e11d54bbc9fa1c8b2551d",
+  "prompts": {
+    "a173f67b7783481b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24d990f7cffeDR46GlnBvQrutp",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 134,
+      "total_deletions": 315,
+      "accepted_lines": 134,
+      "overriden_lines": 0
+    }
+  }
+}
