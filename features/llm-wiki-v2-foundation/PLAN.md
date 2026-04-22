@@ -1,3 +1,10 @@
+---
+title: "PLAN — Completar Fase 1 — Fundação claim-centric (audit + schema + contratos)"
+feature: llm-wiki-v2-foundation
+status: approved
+date: 2026-04-21
+---
+
 # PLAN — Completar Fase 1 — Fundação claim-centric (audit + schema + contratos)
 
 **Branch:** feat/llm-wiki-v2-foundation
@@ -21,13 +28,13 @@
 
 ### Novos módulos
 
-- `kb/audit.py` — CRUD append-only de eventos de auditoria em `kb_state/audit/events.jsonl`
+- `kb/audit.py` — CRUD append-only de eventos de auditoria em `kb_state/audit.jsonl` (via `AUDIT_PATH`)
 - `tests/unit/test_audit.py` — testes de audit log
 
 ### Módulos modificados
 
 - `kb/claims.py` — adicionar `schema_version` em novos claims; invocar `audit.record_event` nas transições de status e supersession
-- `kb/config.py` — adicionar `AUDIT_PATH = STATE_DIR / "audit" / "events.jsonl"`
+- `kb/config.py` — adicionar `AUDIT_PATH = STATE_DIR / "audit.jsonl"`
 - `kb/jobs.py` — jobs `decay` e `contradiction-check` já invocam claims; garantir que audit events sejam gerados via claims.py
 - `tests/unit/test_claims.py` — assertions de `schema_version` nos claims criados
 

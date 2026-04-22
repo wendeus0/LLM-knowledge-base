@@ -1,3 +1,9 @@
+---
+title: "TASKS — Completar Fase 1 — Fundação claim-centric (audit + schema + contratos)"
+feature: llm-wiki-v2-foundation
+status: done
+---
+
 # TASKS — Completar Fase 1 — Fundação claim-centric (audit + schema + contratos)
 
 **Spec:** features/llm-wiki-v2-foundation/SPEC.md
@@ -6,7 +12,7 @@
 
 ## Fase 1 — Setup
 
-- [x] [T-001] [P1] Adicionar `AUDIT_PATH` em `kb/config.py` e garantir diretório `kb_state/audit/`
+- [x] [T-001] [P1] Adicionar `AUDIT_PATH` em `kb/config.py` apontando para `kb_state/audit.jsonl`
 
 ## Fase 2 — Foundational (P1)
 

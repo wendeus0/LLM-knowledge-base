@@ -111,7 +111,7 @@ def test_read_claims_without_schema_version_fallback(tmp_raw_wiki):
     import json
     from kb.config import CLAIMS_PATH
 
-    raw, wiki = tmp_raw_wiki
+    _ = tmp_raw_wiki
     old_claim = {
         "id": "old-001",
         "text": "Claim legado sem schema_version",

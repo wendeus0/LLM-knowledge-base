@@ -1,3 +1,10 @@
+---
+title: "REPORT — Completar Fase 1 — Fundação claim-centric (audit + schema + contratos)"
+feature: llm-wiki-v2-foundation
+status: done
+date: 2026-04-22
+---
+
 # REPORT — Completar Fase 1 — Fundação claim-centric (audit + schema + contratos)
 
 ## Resumo executivo
