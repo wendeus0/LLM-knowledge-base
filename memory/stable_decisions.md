@@ -122,4 +122,4 @@ type: project
 
 **Why:** TOPICS hardcoded não escala com o corpus do usuário. Taxonomia derivável em runtime é mais flexível.
 
-**How to apply:** `KB_TOPICS` env var configura a taxonomia em runtime; quando vazia, a engine usa defaults históricos. compile/heal consomem helpers de config para prompts e resolução de diretório wiki.
+**How to apply:** `KB_TOPICS` env var configura a taxonomia em runtime; quando vazia, a engine usa defaults históricos. compile/qa consomem helpers de config para prompts e resolução de diretório wiki.
