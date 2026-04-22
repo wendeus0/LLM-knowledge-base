@@ -1,0 +1,91 @@
+features/_archived/wikilink-traversal/SPEC.md
+  a173f67b7783481b 1-106
+memory/project_state.md
+  a173f67b7783481b 7,9-19,23,26-35,37-38,41,43,47-54,56,58,60,62-63,71-76,80
+features/_archived/issue-templates-governance/SPEC.md
+  a173f67b7783481b 1-77
+features/_archived/makefile-workflow/PLAN.md
+  a173f67b7783481b 1-24
+features/_archived/infra-alignment-phase-1/SPEC.md
+  a173f67b7783481b 1-74
+features/_archived/explicit-commit-contract/SPEC.md
+  a173f67b7783481b 1-93
+features/_archived/sensitive-execution-controls/NOTES.md
+  a173f67b7783481b 1-20
+memory/stable_decisions.md
+  a173f67b7783481b 11,17,19,21,43,83,91,93,99,101,107,109,115,117-125
+features/_archived/jobs-and-git-operational-contract/SPEC.md
+  a173f67b7783481b 1-76
+features/_archived/explicit-commit-contract/TASKS.md
+  a173f67b7783481b 1-8
+features/_archived/compile-parallel-safe/SPEC.md
+  a173f67b7783481b 1-83
+features/_archived/001-wikilink-traversal/PLAN.md
+  a173f67b7783481b 1-33
+features/_archived/001-wikilink-traversal/TASKS.md
+  a173f67b7783481b 1-10
+features/_archived/pal-foundation-phase-1/NOTES.md
+  a173f67b7783481b 1-22
+features/_archived/issue-templates-governance/PLAN.md
+  a173f67b7783481b 1-28
+memory/active_fronts.md
+  a173f67b7783481b 9,11-14,18,20-23,27,29-32,36,38-39,45,47,49,51
+features/_archived/infra-alignment-phase-1/TASKS.md
+  a173f67b7783481b 1-8
+features/_archived/explicit-commit-contract/PLAN.md
+  a173f67b7783481b 1-41
+features/_archived/makefile-workflow/TASKS.md
+  a173f67b7783481b 1-7
+features/_archived/outputs-store/SPEC.md
+  a173f67b7783481b 1-68
+features/_archived/compile-parallel-safe/REPORT.md
+  a173f67b7783481b 1-52
+features/_archived/test-coverage-90/REPORT.md
+  a173f67b7783481b 1-66
+features/_archived/makefile-workflow/SPEC.md
+  a173f67b7783481b 1-77
+memory/next_steps.md
+  a173f67b7783481b 9-12,14-15,17-18,22-25,27,29-30,32-34,39-45,47
+features/_archived/lint-report-contract/SPEC.md
+  a173f67b7783481b 1-73
+features/_archived/pal-foundation-phase-1/SPEC.md
+  a173f67b7783481b 1-77
+features/_archived/cli-surface-contract/SPEC.md
+  a173f67b7783481b 1-75
+features/_archived/sensitive-execution-controls/SPEC.md
+  a173f67b7783481b 1-75
+features/_archived/search-keyword-contract/SPEC.md
+  a173f67b7783481b 1-83
+features/_archived/issue-templates-governance/TASKS.md
+  a173f67b7783481b 1-7
+features/_archived/test-coverage-90/SPEC.md
+  a173f67b7783481b 1-68
+features/_archived/001-wikilink-traversal/SPEC.md
+  a173f67b7783481b 1-56
+memory/handoff.md
+  a173f67b7783481b 7,9,11,13,15-19,21,23-25,27,29
+features/_archived/infra-alignment-phase-1/PLAN.md
+  a173f67b7783481b 1-37
+CLAUDE.md
+  a173f67b7783481b 28,103,123-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "88efe510ae838e367a634c81c1ea5cb9f0ea198e",
+  "prompts": {
+    "a173f67b7783481b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_24d990f7cffeDR46GlnBvQrutp",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1538,
+      "total_deletions": 2,
+      "accepted_lines": 1680,
+      "overriden_lines": 0
+    }
+  }
+}
