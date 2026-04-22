@@ -155,6 +155,7 @@ def apply_decay_cycle(days_forward: int = 0) -> int:
 
     now = _now() + timedelta(days=days_forward)
     updated = 0
+    pending_events: list[tuple[str, str, dict, str]] = []
     for claim in claims:
         if claim.get("status") != "active":
             continue
@@ -167,14 +168,16 @@ def apply_decay_cycle(days_forward: int = 0) -> int:
         if decayed < 0.3:
             claim["status"] = "stale"
             claim["updated_at"] = _to_iso(now)
-            record_event(
-                event_type="claim_status_changed",
-                claim_id=claim["id"],
-                payload={"old_status": "active", "new_status": "stale", "confidence": round(decayed, 3)},
-                source="decay",
-            )
+            pending_events.append((
+                "claim_status_changed",
+                claim["id"],
+                {"old_status": "active", "new_status": "stale", "confidence": round(decayed, 3)},
+                "decay",
+            ))
 
     _write_claims(claims)
+    for event_type, claim_id, payload, source in pending_events:
+        record_event(event_type=event_type, claim_id=claim_id, payload=payload, source=source)
     return updated
 
 
@@ -209,6 +212,7 @@ def run_contradiction_check() -> dict[str, int]:
     claims = _read_claims()
     updated = 0
     now = _to_iso(_now())
+    pending_events: list[tuple[str, str, dict, str]] = []
 
     by_bucket: dict[tuple[str, str], list[dict]] = {}
     for claim in claims:
@@ -238,15 +242,17 @@ def run_contradiction_check() -> dict[str, int]:
                     if claim.get("status") != "disputed":
                         claim["status"] = "disputed"
                         claim["updated_at"] = now
-                        record_event(
-                            event_type="claim_status_changed",
-                            claim_id=claim["id"],
-                            payload={"old_status": "active", "new_status": "disputed"},
-                            source="contradiction-check",
-                        )
+                        pending_events.append((
+                            "claim_status_changed",
+                            claim["id"],
+                            {"old_status": "active", "new_status": "disputed"},
+                            "contradiction-check",
+                        ))
                         updated += 1
 
     _write_claims(claims)
+    for event_type, claim_id, payload, source in pending_events:
+        record_event(event_type=event_type, claim_id=claim_id, payload=payload, source=source)
 
     disputed = sum(1 for c in claims if c.get("status") == "disputed")
     active = sum(1 for c in claims if c.get("status") == "active")
