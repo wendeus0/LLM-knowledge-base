@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import re
@@ -11,6 +10,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote_plus
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover — Windows
+    fcntl = None  # type: ignore[assignment]
 
 try:
     from defusedxml import ElementTree as ET
@@ -61,11 +65,21 @@ def _load_seen_urls() -> set[str]:
     return {u for u in urls if isinstance(u, str)}
 
 
+def _lock_ex(fileno: int) -> None:
+    if fcntl is not None:
+        fcntl.flock(fileno, fcntl.LOCK_EX)
+
+
+def _unlock(fileno: int) -> None:
+    if fcntl is not None:
+        fcntl.flock(fileno, fcntl.LOCK_UN)
+
+
 def _merge_and_save_seen_urls(seen: set[str]) -> None:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     lock_path = STATE_DIR / "discovery_seen_urls.lock"
     with open(lock_path, "w") as lock_f:
-        fcntl.flock(lock_f.fileno(), fcntl.LOCK_EX)
+        _lock_ex(lock_f.fileno())
         try:
             on_disk = _load_seen_urls()
             merged = on_disk | seen
@@ -85,7 +99,7 @@ def _merge_and_save_seen_urls(seen: set[str]) -> None:
                 Path(tmp_path).unlink(missing_ok=True)
                 raise
         finally:
-            fcntl.flock(lock_f.fileno(), fcntl.LOCK_UN)
+            _unlock(lock_f.fileno())
 
 
 def _clean_text(value: str) -> str:
@@ -199,6 +213,27 @@ def run_scheduled_discovery(
         skipped_seen, failures, created_files, compiled_enabled, seen_urls_path.
     """
     queries = [q.strip() for q in (queries or DEFAULT_QUERIES) if q.strip()]
+
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    run_lock_path = STATE_DIR / "discovery.run.lock"
+    run_lock_f = open(run_lock_path, "w")
+    _lock_ex(run_lock_f.fileno())
+    try:
+        return _run_discovery_inner(
+            queries, max_per_source, compile_after_ingest, allow_sensitive, no_commit
+        )
+    finally:
+        _unlock(run_lock_f.fileno())
+        run_lock_f.close()
+
+
+def _run_discovery_inner(
+    queries: list[str],
+    max_per_source: int,
+    compile_after_ingest: bool,
+    allow_sensitive: bool,
+    no_commit: bool,
+) -> dict:
     seen = _load_seen_urls()
 
     discovered = 0
@@ -226,6 +261,7 @@ def run_scheduled_discovery(
                     raw_path = ingest_url(item.url, no_commit=no_commit)
                     ingested += 1
                     created_files.append(str(raw_path))
+                    seen.add(item.url)
                 except WebIngestError as exc:
                     failures.append(f"ingest:{item.url}: {exc}")
                     continue
@@ -239,11 +275,8 @@ def run_scheduled_discovery(
                         )
                         compiled += 1
                         created_files.append(str(wiki_path))
-                        seen.add(item.url)
                     except Exception as exc:
                         failures.append(f"compile:{raw_path.name}: {exc}")
-                else:
-                    seen.add(item.url)
 
     _merge_and_save_seen_urls(seen)
 
