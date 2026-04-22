@@ -13,39 +13,49 @@ type: project
 **Artefatos:** `features/llm-wiki-v2-foundation/{SPEC.md, PLAN.md, TASKS.md}`
 **Resumo:** Rework da engine de compile com base em SPEC e PLAN aprovados. Próxima etapa é escrever testes RED.
 
----
-
-### F12: ingest-url
-
-**Status:** WORKFLOW_OK (próximo: `git-flow-manager`)
-**Branch:** não criada ainda (código em main como untracked)
-**Artefatos:** `features/ingest-url/{PLAN.md, TASKS.md, REPORT.md}`
-**Resumo:** Web ingest com proteção SSRF. Pronta para commit/push. Precisa de branch + PR.
+**Escopo absorvido:** `kb/audit.py` + `tests/unit/test_audit.py` (untracked) passam a pertencer a esta feature — entregam RF-07 (trilha de auditoria).
 
 ---
 
-### F13: 006-kb-archive
+## Frentes em backlog (SPEC draft)
 
-**Status:** WORKFLOW_OK (próximo: `git-flow-manager`)
-**Branch:** pushada como `feat/006-kb-archive`
-**Artefatos:** `features/006-kb-archive/`
-**Resumo:** Comando `kb archive` para arquivar documentos. Pronta para commit/push.
+### F14: 008-kb-stats
+
+**Status:** SPEC draft
+**Esforço:** ~3h
+**Artefatos:** `features/008-kb-stats/SPEC.md`
+**Resumo:** Comando `kb stats` para dashboard Rich de métricas da wiki. Primitivas já existem em `kb/analytics/` (health, history, gain) e `kb/claims.py`.
+
+### F15: 009-kb-diff
+
+**Status:** SPEC draft
+**Esforço:** ~2h
+**Artefatos:** `features/009-kb-diff/SPEC.md`
+**Resumo:** Comando `kb diff` para visualizar diff de `wiki/` via git com formatação Rich. Wrap de `git diff` — zero dependências novas.
 
 ---
 
-## Itens sem feature formal
+## Frentes concluídas nesta rodada
 
-- `kb/audit.py` + `tests/unit/test_audit.py` — módulo de audit implementado mas sem feature SPEC. Decisão pendente: integrar em feature existente, criar feature nova, ou descartar.
-- `features/_archived/001-wikilink-traversal/` — arquivado nesta PR.
+- **F12: ingest-url** — mergeado via PR #32 (commit `6072c1d`) + artefatos docs via PR #32.
+- **F13: 006-kb-archive** — mergeado via PR #31 (commit `5f56418`) + arquivamento via PR #33 (commit `6150b4a`).
 
 ---
 
 ## Decisões abertas
 
-### Q4: O que fazer com kb/audit.py?
+_(nenhuma)_
 
-Módulo funcional mas sem SPEC. Opções: (A) criar feature 008-audit, (B) absorver em llm-wiki-v2-foundation, (C) descartar.
+## Decisões resolvidas nesta rodada
 
-### Q5: Limpar features órfãs?
+### Q4: O que fazer com kb/audit.py? — **Resolvido (opção B)**
 
-**Resolvido:** features concluídas movidas para `features/_archived/` por esta PR. `001-wikilink-traversal` e demais sem .state arquivados.
+`kb/audit.py` e `tests/unit/test_audit.py` ficam untracked até `llm-wiki-v2-foundation` iniciar; serão commitados na branch da feature como parte de RF-07.
+
+### Q5: Limpar features órfãs? — **Resolvido**
+
+Features concluídas movidas para `features/_archived/`. `001-wikilink-traversal` e demais sem `.state` arquivados.
+
+### Q6: kb diff e kb stats fantasmas em CLAUDE.md — **Resolvido**
+
+`CLAUDE.md:132-133` citava "004-kb-diff" e "005-kb-stats" como entregues, mas não existem no `cli.py`. Corrigido para (backlog) 008/009. SPECs draft criadas em `features/008-kb-stats/` e `features/009-kb-diff/`.

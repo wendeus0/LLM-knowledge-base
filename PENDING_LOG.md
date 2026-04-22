@@ -20,23 +20,36 @@ Pendências e decisões abertas.
 | P1         | Rerodar suíte completa com cobertura real e incluir `kb/cli.py` no relatório                                           | ✅ Concluído — `139` testes passando; cobertura total `78%`; `kb/cli.py` em `60%`                                                                            | 2026-04-08 |
 | P1         | Elevar cobertura total para >=90% e fechar gaps em `kb/cli.py`, `kb/client.py`, `kb/git.py` e `kb/book_import_core.py` | ✅ Concluído — `223` testes passando; cobertura total `96%`; `kb/cli.py` `98%`, `kb/client.py` `97%`, `kb/git.py` `100%`, `kb/book_import_core.py` `97%`     | 2026-04-08 |
 | P1         | Tirar a frente atual de `main` e finalizar o fluxo Git em branch dedicada                                              | ✅ Concluído parcialmente — branch `feat/test-coverage-90` criada; ainda faltam `feature-scope-guard`, `enforce-workflow` e ação explícita de commit/push/PR | 2026-04-08 |
-| P2         | Embeddings + RAG híbrido                                                                                               | Pendente (futuro)                                                                                                                                            | 2026-04-03 |
+| P2         | Embeddings + RAG híbrido                                                                                               | Pendente (futuro) — escopo coberto por RF-05 de `llm-wiki-v2-foundation`                                                                                     | 2026-04-03 |
+| P1         | Fechar `ingest-url` via PR                                                                                             | ✅ Concluído — PR #32 mergeado (commit `6072c1d`) + artefatos docs                                                                                            | 2026-04-22 |
+| P1         | Fechar `006-kb-archive` via PR                                                                                         | ✅ Concluído — PR #31 mergeado (`5f56418`) + PR #33 arquivamento (`6150b4a`)                                                                                  | 2026-04-22 |
+| P2         | Triar backlog de 10 propostas de feature do usuário                                                                    | ✅ Concluído — 3 ondas priorizadas em `memory/next_steps.md`; item BM25 descartado (já entregue)                                                              | 2026-04-22 |
+| P2         | Decidir destino de `kb/audit.py`                                                                                       | ✅ Resolvido — integrar em `llm-wiki-v2-foundation` como parte de RF-07 (commit na branch da feature)                                                         | 2026-04-22 |
+| P2         | Corrigir referências fantasmas a `kb diff`/`kb stats` em `CLAUDE.md`                                                   | ✅ Concluído — refs marcadas como (backlog) 008/009; SPECs draft criadas                                                                                     | 2026-04-22 |
 
 ## P0 (Bloqueadores)
 
-- Nenhum bloqueador aberto no fechamento desta sessão.
+- Nenhum bloqueador. Baseline verde: 311/311 passed (branch `fix/baseline-green-2026-04-22`).
 
 ## P1 (Importante)
+
+**Frente ativa: `llm-wiki-v2-foundation`**
+
+- Status: PLAN_READY → próximo: `test-red` em branch dedicada
+- `kb/audit.py` + `tests/unit/test_audit.py` já commitados em `fix/baseline-green-2026-04-22` (também pertencem a RF-07)
+- SPEC, PLAN, TASKS em `features/llm-wiki-v2-foundation/`
+
+**Cobertura de `kb/discovery.py`**
+
+- 25% — módulo novo (PR #34) sem testes dedicados
+- Criar `tests/unit/test_discovery.py` cobrindo run loop, lock, seen-tracking
 
 **Fechamento da frente `test-coverage-90`**
 
 - baseline atual: `223` testes passando, cobertura total real `96%`
 - módulos-alvo concluídos acima do limiar: `kb/cli.py` `98%`, `kb/client.py` `97%`, `kb/git.py` `100%`, `kb/book_import_core.py` `97%`
-- quality gate e security review locais concluídos sem ressalvas bloqueantes
 - branch dedicada criada: `feat/test-coverage-90`
-- `feature-scope-guard` já foi aceito com `SCOPE_WARNING`; evidências de `SPEC_VALID` e RED foram recuperadas para destravar a validação formal do fluxo
-- próxima ação operacional é `git-flow-manager`, seguido de commit/push/PR somente quando solicitado explicitamente
-- recomendação aceita: separar `kb/outputs.py` e limpezas de lint de testes não relacionados em commit `chore(lint)` distinto do commit principal da feature
+- pendente: `git-flow-manager` + push/PR quando solicitado
 
 ## P2 (Nice-to-have)
 

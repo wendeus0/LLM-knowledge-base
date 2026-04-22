@@ -129,8 +129,8 @@ KB_MODEL=qwen2.5-coder:7b
 **Alterações recentes:**
 
 - 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/ com preview dry-run
-- 005-kb-stats: comando `kb stats` para dashboard de métricas da wiki (artigos, claims, histórico)
-- 004-kb-diff: comando `kb diff` para diff de wiki/ via git com formatação Rich
+- (backlog) 008-kb-stats: comando `kb stats` para dashboard de métricas da wiki
+- (backlog) 009-kb-diff: comando `kb diff` para diff de wiki/ via git com formatação Rich
 
 ## Próximos passos
 

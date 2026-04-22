@@ -6,15 +6,16 @@ type: project
 
 ## Estado global
 
-Atualizada: 2026-04-21
+Atualizada: 2026-04-22
 
-- **Branch:** `main` (merge PR #31 from `feat/007-baseline-green`)
-- **HEAD:** a5dce5d
-- **Drift:** 0 (alinhada com origin/main)
-- **Tests:** 308/308 passando
-- **Cobertura:** 92%
-- **Lint:** ruff clean
-- **Python:** 3.11+
+- **Branch:** `fix/baseline-green-2026-04-22` (3 commits acima de `main @ bc92c60`)
+- **Drift:** 0 (baseada em origin/main)
+- **Tests:** `311 passed, 0 failed` ✅ (baseline verde)
+- **Cobertura:** 90%+ (web_ingest restaura cobertura com `[web]` instalado)
+- **Lint:** ruff `kb/` clean
+- **Python:** 3.11+ (venv Python 3.14)
+
+> Baseline restaurada nesta sessão. Causas: (1) `pip install -e .[web]` restaurou 18 testes de web_ingest; (2) fix de `kb/audit.py` (runtime AUDIT_PATH) restaurou 3 testes de audit.
 
 ## Estrutura do pacote
 
@@ -46,8 +47,8 @@ kb/
 
 ## Snapshot local (afeta próxima sessão)
 
-- Untracked: `kb/audit.py` + `tests/unit/test_audit.py` (módulo de audit sem feature associada)
-- Untracked: `features/ingest-url/` (.state=WORKFLOW_OK), `features/llm-wiki-v2-foundation/` (.state=PLAN_READY)
+- Untracked: `features/llm-wiki-v2-foundation/` (.state=PLAN_READY)
+- `kb/audit.py` e `tests/unit/test_audit.py` agora tracked (commit f78d903)
 
 ## Branches de feature já pushadas
 

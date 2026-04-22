@@ -6,42 +6,44 @@ type: project
 
 ## Imediato (próxima sessão)
 
-1. **Escolher frente principal**
-   - `llm-wiki-v2-foundation` (PLAN_READY → test-red) — maior impacto, rework da engine
-   - `ingest-url` (WORKFLOW_OK → git-flow-manager) — commit rápido
-   - `006-kb-archive` (WORKFLOW_OK → git-flow-manager) — commit rápido
+1. **Iniciar `llm-wiki-v2-foundation` em branch dedicada**
+   - Status atual: PLAN_READY → próximo: `test-red`
+   - `kb/audit.py` + `tests/unit/test_audit.py` já commitados (RF-07 entregue parcialmente)
 
-2. **Decidir sobre kb/audit.py**
-   - Integrar em feature existente, criar feature nova, ou descartar
+2. **Criar `tests/unit/test_discovery.py`**
+   - `kb/discovery.py` cobertura 25% — módulo novo (PR #34) sem testes dedicados
 
-3. **Limpeza de features órfãs**
-   - `features/001-wikilink-traversal/` e diretórios concluídos sem .state
+## Backlog priorizado (3 ondas — triagem 2026-04-22)
 
-## Médio prazo
+### Onda 1 — features pequenas, alto retorno (após v2-foundation desbloquear)
 
-4. **[P2] Validar `compile_many()` contra provider real**
-   - Usar pequeno lote com `--workers 4`
-   - Confirmar ausência de corrupção em `kb_state/` e `_index.md`
+| # | Feature | Esforço | Status |
+|---|---------|---------|--------|
+| 007 | `kb watch` (compile automático via watchdog) | ~4h | idéia — sem SPEC |
+| 008 | `kb stats` (dashboard Rich) | ~3h | SPEC draft |
+| 009 | `kb diff` (git diff formatado) | ~2h | SPEC draft |
+| 010 | ingest DOCX | ~3h | idéia — sem SPEC |
 
-5. **[P2] Consolidar ergonomia do Obsidian**
-   - Base operacional; sem bloqueador técnico
+### Onda 2 — features grandes (após v2-foundation entregar contratos estáveis)
 
-6. **[P2] Refinar guardrail de credenciais**
-   - Falso positivo em nomes de variável em blocos de código
+| # | Feature | Esforço | Bloqueio |
+|---|---------|---------|----------|
+| 011 | `kb export` (HTML/PDF/EPUB) | ~6-8h | nenhum |
+| 012 | MCP Server | ~8-12h + ADR | depende de v2 expor claims/retrieval |
+| 013 | ingest RSS/Atom | ~4h | depende de hook `on_schedule` (RF-06 v2) |
+| 014 | ingest CSV/TSV | ~2h | nice-to-have, valor limitado |
 
-7. **[P2] Completar separação engine vs. corpus**
-   - TOPICS já migrando para runtime taxonomy (ADR-0015)
-   - Neutralizar referências históricas restantes
+### Descartado
 
-8. **[P2] Embeddings + RAG híbrido**
-   - Reavaliar quando wiki ultrapassar ~200 artigos
+- **BM25 / semântica** como feature isolada — BM25 já entregue em `kb/search.py:42-86`. Parte semântica (embeddings) é RF-05 de `llm-wiki-v2-foundation`.
 
-## Backlog (ideias do usuário)
+## Médio prazo (P2 herdado)
 
-9. MCP Server para integração externa
-10. Mais formatos de importação
-11. kb export (wiki → formato portátil)
+3. **Validar `compile_many()` contra provider real** com `--workers 4`
+4. **Refinar guardrail de credenciais** (falso positivo em nomes de variável)
+5. **Completar separação engine vs. corpus** (neutralizar refs históricas em ADRs)
+6. **Embeddings + RAG híbrido** — reavaliar quando wiki > ~200 artigos
 
 ## Bloqueadores
 
-- Nenhum. Baseline verde: 308/308 testes, 92% cobertura, ruff clean, main alinhada.
+Nenhum. Baseline verde: 308/308 testes, 92% cobertura, ruff clean, main alinhada.
