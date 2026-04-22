@@ -13,18 +13,17 @@
 **Validações:**
 
 - **quality-gate:** `QUALITY_PASS_WITH_GAPS` — 16/16 testes da feature passando; 4 falhas pré-existentes fora do escopo (heal, git, jobs)
-- **security-review:** `EXECUTED (SECURITY_PASS_WITH_NOTES)` — SSRF médio em `requests.get(url)` sem validação de private IPs; YAML quoting manual de baixo risco
+- **security-review:** `EXECUTED (SECURITY_PASS_WITH_NOTES)` — SSRF mitigado via `_BLOCKED_NETWORKS`, `_resolve_and_validate()` e redirect pinning em `_follow_redirects()`; `_yaml_quote` manual de baixo risco; `RequestException` capturada em `ingest_url()`
 - **code-review:** `EXECUTED (REVIEW_OK_WITH_NOTES)` — cobertura de exception `RequestException` não testada; teste `test_should_ingest_multiple_urls` não valida confirmação "Adicionado:"
 
 **Riscos residuais:**
 
-- `kb/web_ingest.py:83` → `requests.get(url)` sem filtro de private IPs → SSRF em ambientes cloud (metadata endpoints)
-- `kb/web_ingest.py:48` → `_yaml_quote` manual não cobre todos os escapes YAML → frontmatter corrompido com títulos maliciosos
-- `tests/unit/test_web_ingest.py` linhas 93-94 → `RequestException` não coberto por teste → regressão silenciosa em erros de rede não-HTTP/timeout
+- `kb/web_ingest.py` `_follow_redirects()` → SSRF mitigado: hostname resolvido via `_resolve_and_validate()`, IP validado contra `_BLOCKED_NETWORKS`, redirect com IP pinado e Host header preservado
+- `kb/web_ingest.py` `_yaml_quote()` → escape manual de `\` e `"` — não cobre caracteres YAML especiais (`:`, `#`, newlines) em títulos
+- `tests/unit/test_web_ingest.py` → `RequestException` capturada em `ingest_url()` (linhas 159-160) mas sem teste dedicado → regressão silenciosa em erros de rede não-HTTP/timeout
 
 **Follow-ups:**
 
-- Adicionar validação de URL (bloquear private ranges, localhost) em feature futura
 - Substituir `_yaml_quote` por `yaml.safe_dump` ou `json.dumps` para serialização robusta
 - Completar cobertura de `RequestException` com mock de `ConnectionError`
 
