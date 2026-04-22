@@ -1,0 +1,31 @@
+CONTRIBUTING.md
+  859d9d7714a9f7f8 284
+README.md
+  859d9d7714a9f7f8 4-6,201,229,286,297-299
+README.en.md
+  859d9d7714a9f7f8 4-6,191,219,269,280-282
+pyproject.toml
+  859d9d7714a9f7f8 5
+LICENSE
+  859d9d7714a9f7f8 1-661
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "215bdcc42d2cfc031d8e633146e1cb9d967b1ba7",
+  "prompts": {
+    "859d9d7714a9f7f8": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "f5348461-dc82-489d-bc8b-a9a550c27fb9",
+        "model": "custom:Claude-Opus-4.7-(Sirius)-1"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 850,
+      "total_deletions": 15,
+      "accepted_lines": 850,
+      "overriden_lines": 0
+    }
+  }
+}
