@@ -1,9 +1,9 @@
 # kb — LLM-powered Knowledge Base Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-223%20passing-brightgreen.svg)]()
-[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
+[![Tests](https://img.shields.io/badge/tests-311%20passing-brightgreen.svg)]()
+[![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen.svg)]()
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 An LLM-maintained knowledge base engine that ingests raw documents, compiles them into a structured markdown wiki, answers questions against the wiki, and performs automated health checks and healing. Inspired by [Andrej Karpathy](https://karpathy.ai/)'s vision for AI-assisted knowledge systems.
 
@@ -188,7 +188,7 @@ kb/
 │   ├── core/            ← runner + SQLite tracking
 │   ├── discover/        ← command classification
 │   └── analytics/       ← metrics and command history
-├── tests/               ← 223 tests (96% coverage)
+├── tests/               ← 311 tests (90%+ coverage)
 ├── docs/                ← product documentation
 ├── features/            ← per-feature SPECs
 └── examples/            ← neutral examples
@@ -216,7 +216,7 @@ Full C4 diagrams: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITEC
 
 ## Testing
 
-Validated baseline as of 2026-04-08: 223 tests passing, 96% total coverage.
+Validated baseline as of 2026-04-22: 311 tests passing, 90%+ total coverage.
 
 ```bash
 pytest                                    # all tests
@@ -266,7 +266,7 @@ Per-module coverage: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_
 - [x] Stochastic healing and lint
 - [x] Claim lifecycle
 - [x] Canonical jobs and health gate
-- [x] Full test suite (223 tests, 96% coverage)
+- [x] Full test suite (311 tests, 90%+ coverage)
 - [x] Obsidian integration
 - [x] No-commit mode and allow-sensitive
 - [x] Session handoff
@@ -277,4 +277,6 @@ Per-module coverage: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_
 
 ## License
 
-MIT
+GNU Affero General Public License v3.0 — see [LICENSE](LICENSE).
+
+AGPL-3.0 ensures modifications and network uses (SaaS, APIs) stay open: any fork or service exposed to users must make the corresponding source available under the same license.

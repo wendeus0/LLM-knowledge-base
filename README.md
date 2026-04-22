@@ -1,9 +1,9 @@
 # kb — Engine de Knowledge Base mantida por LLM
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-223%20passing-brightgreen.svg)]()
-[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
+[![Tests](https://img.shields.io/badge/tests-311%20passing-brightgreen.svg)]()
+[![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen.svg)]()
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 Engine de knowledge base mantida por LLM. Ingesta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático. Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas de conhecimento assistidos por IA.
 
@@ -198,7 +198,7 @@ kb/
 │   ├── core/             ← runner + tracking SQLite
 │   ├── discover/         ← classificação de comandos
 │   └── analytics/        ← métricas e histórico de comandos
-├── tests/               ← 223 testes (96% cobertura)
+├── tests/               ← 311 testes (90%+ cobertura)
 ├── docs/                ← documentação do produto
 ├── features/            ← SPECs por feature
 └── examples/            ← exemplos neutros
@@ -226,7 +226,7 @@ Diagramas completos: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHI
 
 ## Testes
 
-Baseline validada em 2026-04-08: 223 testes passando, 96% de cobertura total.
+Baseline validada em 2026-04-22: 311 testes passando, 90%+ de cobertura total.
 
 ```bash
 pytest                                    # todos os testes
@@ -283,7 +283,7 @@ Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_impor
 - [x] Stochastic healing e lint
 - [x] Claims com ciclo de vida
 - [x] Jobs canônicos e health gate
-- [x] Suite de testes completa (223 testes, 96% cobertura)
+- [x] Suite de testes completa (311 testes, 90%+ cobertura)
 - [x] Integração com Obsidian
 - [x] Modo no-commit e allow-sensitive
 - [x] Handoff de sessão
@@ -294,4 +294,6 @@ Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_impor
 
 ## Licença
 
-MIT
+GNU Affero General Public License v3.0 — veja [LICENSE](LICENSE).
+
+O AGPL-3.0 garante que modificações e usos em rede (SaaS, APIs) permaneçam abertos: qualquer fork ou serviço exposto a usuários deve disponibilizar o código-fonte correspondente sob a mesma licença.

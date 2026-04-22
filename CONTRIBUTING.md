@@ -281,4 +281,4 @@ Critérios de aprovação:
 
 ## Licença
 
-Ao contribuir, você concorda que suas contribuições serão licenciadas sob MIT.
+Ao contribuir, você concorda que suas contribuições serão licenciadas sob AGPL-3.0.

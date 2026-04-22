@@ -2,6 +2,7 @@
 name = "kb"
 dynamic = ["version"]
 description = "LLM-powered personal knowledge base"
+license = { text = "AGPL-3.0-or-later" }
 requires-python = ">=3.11"
 dependencies = [
     "defusedxml>=0.7",
