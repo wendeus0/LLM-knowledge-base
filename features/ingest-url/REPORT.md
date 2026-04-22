@@ -8,7 +8,7 @@
 **Escopo alterado (histórico — PR `#13`):**
 
 - `kb/web_ingest.py` — constantes extraídas (`_ALLOWED_SCHEMES`, `_BLOCKED_NETWORKS`), helpers `_resolve_and_validate()`, `_follow_redirects()`, `_extract_title()`, `_slugify()`, `_yaml_quote()`, `_url_fallback_slug()`; frontmatter construído inline em `ingest_url()`; conversão HTML→Markdown via `html2text.HTML2Text()` inline
-- `tests/unit/test_web_ingest.py` — testes cobrindo REQ-1 a REQ-9 (detecção de URL, download, conversão, frontmatter, erro HTTP, timeout, slug, fallback, commit) + 8 testes SSRF (localhost, redes privadas, IPv6, esquemas) — **não** possui testes para REQ-7 (deps ausentes) nem REQ-10 (múltiplas URLs)
+- `tests/unit/test_web_ingest.py` — testes cobrindo REQ-1 a REQ-6, REQ-8 e REQ-9 (detecção de URL, download, conversão, frontmatter, erro HTTP, timeout, slug, fallback, commit) + 8 testes SSRF (localhost, redes privadas, IPv6, esquemas) — **não** possui testes para REQ-7 (deps ausentes) nem REQ-10 (múltiplas URLs)
 - `tests/unit/test_cli.py` — teste `test_should_ingest_url` (CLI chama `ingest_url`) e `test_should_handle_web_ingest_error` — **não** possui teste de múltiplas URLs via CLI
 - `features/ingest-url/SPEC.md` — clarificada vs. código existente
 - `CLAUDE.md` — contexto técnico atualizado
