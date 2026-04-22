@@ -5,6 +5,8 @@ __pycache__/
 dist/
 *.egg-info/
 .coverage
+htmlcov/
+.pi/tasks/*.json
 
 # Local corpus / vault data (recommended outside this repository)
 /raw/
