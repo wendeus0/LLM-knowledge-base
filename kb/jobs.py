@@ -97,7 +97,7 @@ def _run_discovery_job() -> str:
         max_per_source=2,
         compile_after_ingest=True,
         allow_sensitive=False,
-        no_commit=True,
+        no_commit=False,
     )
     seen_urls_display = Path(result.get("seen_urls_path", "")).name
     return (

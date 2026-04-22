@@ -61,24 +61,31 @@ def _load_seen_urls() -> set[str]:
     return {u for u in urls if isinstance(u, str)}
 
 
-def _save_seen_urls(urls: set[str]) -> None:
+def _merge_and_save_seen_urls(seen: set[str]) -> None:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-        "urls": sorted(urls),
-    }
-    content = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
-    fd, tmp_path = tempfile.mkstemp(dir=STATE_DIR, suffix=".json")
-    try:
-        with open(fd, "w", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            f.write(content)
-            f.flush()
-            os.fsync(f.fileno())
-        SEEN_URLS_PATH.replace(tmp_path)
-    except BaseException:
-        Path(tmp_path).unlink(missing_ok=True)
-        raise
+    lock_path = STATE_DIR / "discovery_seen_urls.lock"
+    with open(lock_path, "w") as lock_f:
+        fcntl.flock(lock_f.fileno(), fcntl.LOCK_EX)
+        try:
+            on_disk = _load_seen_urls()
+            merged = on_disk | seen
+            payload = {
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "urls": sorted(merged),
+            }
+            content = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+            fd, tmp_path = tempfile.mkstemp(dir=STATE_DIR, suffix=".json")
+            try:
+                with open(fd, "w", encoding="utf-8") as f:
+                    f.write(content)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp_path, SEEN_URLS_PATH)
+            except BaseException:
+                Path(tmp_path).unlink(missing_ok=True)
+                raise
+        finally:
+            fcntl.flock(lock_f.fileno(), fcntl.LOCK_UN)
 
 
 def _clean_text(value: str) -> str:
@@ -232,12 +239,13 @@ def run_scheduled_discovery(
                         )
                         compiled += 1
                         created_files.append(str(wiki_path))
+                        seen.add(item.url)
                     except Exception as exc:
                         failures.append(f"compile:{raw_path.name}: {exc}")
+                else:
+                    seen.add(item.url)
 
-                seen.add(item.url)
-
-    _save_seen_urls(seen)
+    _merge_and_save_seen_urls(seen)
 
     return {
         "queries": queries,
