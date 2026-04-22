@@ -6,6 +6,7 @@ import json
 import os
 import re
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,11 @@ try:
     import fcntl
 except ImportError:  # pragma: no cover — Windows
     fcntl = None  # type: ignore[assignment]
+
+try:
+    import msvcrt
+except ImportError:  # pragma: no cover — POSIX
+    msvcrt = None  # type: ignore[assignment]
 
 try:
     from defusedxml import ElementTree as ET
@@ -68,11 +74,26 @@ def _load_seen_urls() -> set[str]:
 def _lock_ex(fileno: int) -> None:
     if fcntl is not None:
         fcntl.flock(fileno, fcntl.LOCK_EX)
+    elif msvcrt is not None:
+        msvcrt.locking(fileno, msvcrt.LK_NBLCK, 1)
 
 
 def _unlock(fileno: int) -> None:
     if fcntl is not None:
         fcntl.flock(fileno, fcntl.LOCK_UN)
+    elif msvcrt is not None:
+        msvcrt.locking(fileno, msvcrt.LK_UNLCK, 1)
+
+
+@contextmanager
+def _run_lock(lock_path: Path):
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as f:
+        _lock_ex(f.fileno())
+        try:
+            yield
+        finally:
+            _unlock(f.fileno())
 
 
 def _merge_and_save_seen_urls(seen: set[str]) -> None:
@@ -214,17 +235,11 @@ def run_scheduled_discovery(
     """
     queries = [q.strip() for q in (queries or DEFAULT_QUERIES) if q.strip()]
 
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
     run_lock_path = STATE_DIR / "discovery.run.lock"
-    run_lock_f = open(run_lock_path, "w")
-    _lock_ex(run_lock_f.fileno())
-    try:
+    with _run_lock(run_lock_path):
         return _run_discovery_inner(
             queries, max_per_source, compile_after_ingest, allow_sensitive, no_commit
         )
-    finally:
-        _unlock(run_lock_f.fileno())
-        run_lock_f.close()
 
 
 def _run_discovery_inner(
