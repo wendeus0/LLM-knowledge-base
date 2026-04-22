@@ -99,6 +99,7 @@ def _run_discovery_job() -> str:
         allow_sensitive=False,
         no_commit=True,
     )
+    seen_urls_display = Path(result.get("seen_urls_path", "")).name
     return (
         "Job discovery executado.\n"
         f"- discovered: {result.get('discovered', 0)}\n"
@@ -106,7 +107,7 @@ def _run_discovery_job() -> str:
         f"- compiled: {result.get('compiled', 0)}\n"
         f"- skipped_seen: {result.get('skipped_seen', 0)}\n"
         f"- compiled_enabled: {result.get('compiled_enabled', False)}\n"
-        f"- seen_urls_path: {result.get('seen_urls_path', '')}\n"
+        f"- seen_urls_path: {seen_urls_display}\n"
         f"- failures: {len(result.get('failures', []))}"
     )
 
