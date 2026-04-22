@@ -3,6 +3,46 @@ from typer.testing import CliRunner
 from kb.cli import app
 
 
+def test_jobs_list_should_include_discovery_in_recommended_chain(monkeypatch):
+    from kb import jobs as jobs_module
+
+    monkeypatch.setattr(
+        jobs_module,
+        "get_jobs_list_rows",
+        lambda: [
+            {
+                "name": "discovery",
+                "schedule": "0 */6 * * *",
+                "description": "Discovery",
+                "extra": "",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        jobs_module,
+        "get_recommended_cron_chain",
+        lambda: [
+            {
+                "name": "discovery",
+                "schedule": "0 */6 * * *",
+                "purpose": "Descobrir fontes novas",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        jobs_module,
+        "build_operational_cron_lines",
+        lambda executable, stale_max_pct, disputed_max_pct: [
+            "0 */6 * * * kb jobs run discovery"
+        ],
+    )
+
+    result = runner.invoke(app, ["jobs", "list"])
+    assert result.exit_code == 0
+    assert "discovery" in result.stdout
+    assert "kb jobs run discovery" in result.stdout
+
+
 runner = CliRunner()
 
 

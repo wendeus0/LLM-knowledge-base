@@ -267,6 +267,40 @@ kb heal --n 20 --commit
 
 ---
 
+#### `kb discovery run`
+
+Executa discovery de fontes (arXiv + Google News), ingere conteúdos em `raw/` e opcionalmente compila para `wiki/` quando `KB_API_KEY` está disponível.
+
+**Parâmetros:**
+
+| Parâmetro                    | Tipo        | Obrigatório | Padrão        | Descrição                                                                      |
+| ---------------------------- | ----------- | ----------- | ------------- | ------------------------------------------------------------------------------ |
+| `--query`                    | `List[str]` | Não         | queries default | Query(s) de discovery; pode repetir a flag para múltiplos tópicos             |
+| `--max-per-source`           | int         | Não         | `2`           | Limite de itens por fonte para cada query                                      |
+| `--compile/--no-compile`     | Flag        | Não         | `--compile`   | Compila automaticamente os itens ingeridos quando houver provider configurado |
+| `--allow-sensitive`          | Flag        | Não         | `False`       | Permite processamento sensível durante compile                                 |
+| `--no-commit/--commit`       | Flag        | Não         | `--no-commit` | Mantém modo local por padrão; `--commit` versiona os artefatos                |
+
+**Exemplo:**
+
+```bash
+# Discovery padrão (queries canônicas)
+kb discovery run
+
+# Discovery com queries explícitas
+kb discovery run --query "llm agents" --query "rag eval" --max-per-source 3
+
+# Discovery sem compile
+kb discovery run --no-compile
+```
+
+**Retorno:**
+
+- Sucesso: resumo com `discovered`, `ingested`, `compiled`, `skipped_seen`, `failures` e `seen_urls_path`
+- Código: `0` em sucesso, `1` em falha operacional
+
+---
+
 ## API Python
 
 ### Configuração (`kb.config`)

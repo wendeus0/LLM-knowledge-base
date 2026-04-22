@@ -30,12 +30,16 @@ app = typer.Typer(
         "lint  [--allow-sensitive]\n\n"
         "heal  [--n/-n INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
         "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron  |  jobs doc-gate\n\n"
+        "discovery run  [--query TEXTO] [--max-per-source INT] [--compile/--no-compile]"
+        " [--allow-sensitive] [--no-commit|--commit]\n\n"
         "handoff create --scope <texto> [--summary] [--next-steps] [--evidence] [--decisions]"
     ),
 )
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
+discovery_app = typer.Typer(help="Descoberta automatizada e ingestão periódica")
 handoff_app = typer.Typer(help="Handoff operacional de sessão")
 app.add_typer(jobs_app, name="jobs")
+app.add_typer(discovery_app, name="discovery")
 app.add_typer(handoff_app, name="handoff")
 console = Console()
 
@@ -572,6 +576,59 @@ def archive(
             console.print(f"  [green]→[/] {entry['dest']}")
         elif entry["action"] == "error":
             console.print(f"  [red]✗[/] {entry['source']} — {entry.get('detail', '')}")
+
+
+@discovery_app.command("run")
+def discovery_run(
+    query: List[str] = typer.Option(
+        None,
+        "--query",
+        help="Query de discovery (pode repetir; padrão usa queries canônicas).",
+    ),
+    max_per_source: int = typer.Option(
+        2,
+        "--max-per-source",
+        help="Máximo de itens por fonte para cada query.",
+    ),
+    compile_after_ingest: bool = typer.Option(
+        True,
+        "--compile/--no-compile",
+        help="Compilar automaticamente itens ingeridos quando houver KB_API_KEY.",
+    ),
+    allow_sensitive: bool = typer.Option(
+        False,
+        "--allow-sensitive",
+        help="Permite processamento sensível durante compile quando habilitado.",
+    ),
+    no_commit: bool = typer.Option(
+        True,
+        "--no-commit/--commit",
+        help="Padrão local sem commit; use --commit para versionar arquivos gerados.",
+    ),
+):
+    """Executa discovery + ingest com deduplicação por URLs já vistas."""
+    from kb.discovery import run_scheduled_discovery
+
+    try:
+        result = run_scheduled_discovery(
+            queries=query or None,
+            max_per_source=max_per_source,
+            compile_after_ingest=compile_after_ingest,
+            allow_sensitive=allow_sensitive,
+            no_commit=no_commit,
+        )
+    except Exception as exc:
+        console.print(f"[red]Erro no discovery:[/] {exc}")
+        raise typer.Exit(code=1)
+
+    console.print("[bold]Discovery concluído[/]")
+    console.print(f"- queries: {', '.join(result.get('queries', []))}")
+    console.print(f"- discovered: {result.get('discovered', 0)}")
+    console.print(f"- ingested: {result.get('ingested', 0)}")
+    console.print(f"- compiled: {result.get('compiled', 0)}")
+    console.print(f"- skipped_seen: {result.get('skipped_seen', 0)}")
+    console.print(f"- failures: {len(result.get('failures', []))}")
+    console.print(f"- seen_urls_path: {result.get('seen_urls_path', '')}")
 
 
 @jobs_app.command("list")

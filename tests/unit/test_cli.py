@@ -618,6 +618,80 @@ class TestQaCommand:
         assert call_kwargs["no_traverse"] is False
 
 
+class TestDiscoveryCommand:
+    def test_discovery_run_should_execute_pipeline_and_print_summary(self):
+        with (
+            patch("kb.cli.console.print") as mock_print,
+            patch("kb.discovery.run_scheduled_discovery") as mock_run,
+        ):
+            mock_run.return_value = {
+                "queries": ["llm agents"],
+                "discovered": 4,
+                "ingested": 3,
+                "compiled": 2,
+                "skipped_seen": 1,
+                "failures": [],
+                "created_files": ["/tmp/raw/a.md", "/tmp/wiki/a.md"],
+                "compiled_enabled": True,
+                "seen_urls_path": "/tmp/kb_state/discovery_seen_urls.json",
+            }
+
+            result = runner.invoke(app, ["discovery", "run", "--max-per-source", "3"])
+
+        assert result.exit_code == 0
+        mock_run.assert_called_once_with(
+            queries=None,
+            max_per_source=3,
+            compile_after_ingest=True,
+            allow_sensitive=False,
+            no_commit=True,
+        )
+        printed = "\n".join(str(call.args[0]) for call in mock_print.call_args_list if call.args)
+        assert "Discovery concluído" in printed
+        assert "discovered: 4" in printed
+        assert "ingested: 3" in printed
+        assert "seen_urls_path" in printed
+
+    def test_discovery_run_should_support_multiple_queries_and_no_compile(self):
+        with (
+            patch("kb.cli.console.print"),
+            patch("kb.discovery.run_scheduled_discovery") as mock_run,
+        ):
+            mock_run.return_value = {
+                "queries": ["q1", "q2"],
+                "discovered": 0,
+                "ingested": 0,
+                "compiled": 0,
+                "skipped_seen": 0,
+                "failures": [],
+                "created_files": [],
+                "compiled_enabled": False,
+                "seen_urls_path": "/tmp/kb_state/discovery_seen_urls.json",
+            }
+
+            result = runner.invoke(
+                app,
+                [
+                    "discovery",
+                    "run",
+                    "--query",
+                    "q1",
+                    "--query",
+                    "q2",
+                    "--no-compile",
+                ],
+            )
+
+        assert result.exit_code == 0
+        mock_run.assert_called_once_with(
+            queries=["q1", "q2"],
+            max_per_source=2,
+            compile_after_ingest=False,
+            allow_sensitive=False,
+            no_commit=True,
+        )
+
+
 class TestImportBookCommand:
     def test_should_skip_existing_import_when_no_force(self, tmp_path):
         book_path = tmp_path / "book.epub"
