@@ -25,16 +25,16 @@ Completamos a Fase 1 da fundação claim-centric: trilha de auditoria append-onl
 ## Validações executadas
 
 - **Testes da feature:** 22 testes (claims_audit + discovery + claims + audit) — todos passando
-- **Suite completa:** `327 passed, 0 failed` — verde
+- **Suíte completa:** `327 passed, 0 failed` — verde
 - **Cobertura total:** 91%
 - **Lint:** `ruff check kb` — All checks passed
 
 ## Riscos residuais
 
 - Race condition em audit log append-only sem lock explícito (volume baixo esperado)
-- `_read_claims` não faz fallback explícito para claims sem `schema_version` — funciona via `.get()` mas não é testado com escrita pelo código novo
+- `_read_claims` não faz fallback explícito para claims sem `schema_version` — funciona via `.get()` e está coberto pelo teste `test_read_claims_without_schema_version_fallback`, mas nenhum caminho do código novo escreve claims sem `schema_version`
 
-## Follow-ups
+## Acompanhamentos
 
 - Fase 2: retrieval híbrido (embeddings + grafo)
 - Fase 3: jobs de manutenção (decay/consolidation/lint) atualizando estado
