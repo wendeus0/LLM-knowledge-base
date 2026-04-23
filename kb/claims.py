@@ -9,6 +9,7 @@ import re
 import uuid
 from pathlib import Path
 
+from kb.audit import record_event
 from kb.config import CLAIMS_PATH
 from kb.state import ensure_state_dirs, normalize_source_path
 
@@ -88,6 +89,7 @@ def record_compiled_claims(
         claim_id = str(uuid.uuid4())
         base = round(_base_confidence(text, topic), 3)
         entry = {
+            "schema_version": "1.0",
             "id": claim_id,
             "text": text,
             "topic": topic,
@@ -114,10 +116,25 @@ def record_compiled_claims(
             previous["status"] = "superseded"
             previous["updated_at"] = _to_iso(now)
             previous.setdefault("relationships", {})["superseded_by"] = replacement
+            record_event(
+                event_type="claim_superseded",
+                claim_id=previous["id"],
+                payload={"new_claim_id": replacement},
+                source="compile",
+            )
         new_claims[0]["relationships"]["supersedes"] = active_same_source[0]["id"]
 
     claims.extend(new_claims)
     _write_claims(claims)
+
+    for claim in new_claims:
+        record_event(
+            event_type="claim_created",
+            claim_id=claim["id"],
+            payload={"topic": topic, "source": str(normalized_source)},
+            source="compile",
+        )
+
     return new_claims
 
 
@@ -138,6 +155,7 @@ def apply_decay_cycle(days_forward: int = 0) -> int:
 
     now = _now() + timedelta(days=days_forward)
     updated = 0
+    pending_events: list[tuple[str, str, dict, str]] = []
     for claim in claims:
         if claim.get("status") != "active":
             continue
@@ -150,8 +168,16 @@ def apply_decay_cycle(days_forward: int = 0) -> int:
         if decayed < 0.3:
             claim["status"] = "stale"
             claim["updated_at"] = _to_iso(now)
+            pending_events.append((
+                "claim_status_changed",
+                claim["id"],
+                {"old_status": "active", "new_status": "stale", "confidence": round(decayed, 3)},
+                "decay",
+            ))
 
     _write_claims(claims)
+    for event_type, claim_id, payload, source in pending_events:
+        record_event(event_type=event_type, claim_id=claim_id, payload=payload, source=source)
     return updated
 
 
@@ -186,6 +212,7 @@ def run_contradiction_check() -> dict[str, int]:
     claims = _read_claims()
     updated = 0
     now = _to_iso(_now())
+    pending_events: list[tuple[str, str, dict, str]] = []
 
     by_bucket: dict[tuple[str, str], list[dict]] = {}
     for claim in claims:
@@ -215,9 +242,17 @@ def run_contradiction_check() -> dict[str, int]:
                     if claim.get("status") != "disputed":
                         claim["status"] = "disputed"
                         claim["updated_at"] = now
+                        pending_events.append((
+                            "claim_status_changed",
+                            claim["id"],
+                            {"old_status": "active", "new_status": "disputed"},
+                            "contradiction-check",
+                        ))
                         updated += 1
 
     _write_claims(claims)
+    for event_type, claim_id, payload, source in pending_events:
+        record_event(event_type=event_type, claim_id=claim_id, payload=payload, source=source)
 
     disputed = sum(1 for c in claims if c.get("status") == "disputed")
     active = sum(1 for c in claims if c.get("status") == "active")
