@@ -122,15 +122,28 @@ KB_MODEL=qwen2.5-coder:7b
 
 ## Contexto técnico atual
 
-**Última feature:** 006-kb-archive (2026-04-21)
+**Feature ativa:** 010-multi-vault-foundation
 **Stack:** Python 3.11+, Typer, Rich
 **Build:** `pip install -e .`
 **Testes:** `python -m pytest`
 **Alterações recentes:**
 
-- 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/ com preview dry-run
-- (backlog) 008-kb-stats: comando `kb stats` para dashboard de métricas da wiki
-- (backlog) 009-kb-diff: comando `kb diff` para diff de wiki/ via git com formatação Rich
+- 010-multi-vault-foundation: fundação para múltiplos vaults sob `KB_DATA_DIR`
+- (mergeado) llm-wiki-v2-foundation: fundação da wiki v2 (PR #35)
+- (mergeado) ingest-url: ingestão a partir de URL (PR #32)
+- 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/
+- (backlog) 008-kb-stats, 009-kb-diff
+
+## Layout de docs
+
+- `docs/architecture/` — apenas SDD.md, TDD.md, SPEC_FORMAT.md (artefatos arquiteturais vivos); `_archived/` guarda predecessores
+- `docs/adr/` — ADRs duráveis
+- `docs/reports/` — relatórios datados (cobertura, débito, auditoria, conformidade)
+- `docs/research/` — blueprints, sínteses e pesquisa exploratória
+- `docs/policies/` — DATA_POLICY, ARTIFACT_POLICY
+- `docs/council/` — debates multi-agente sobre decisões abertas
+- `docs/handoffs/` — handoffs operacionais gerados por `kb handoff create`
+- `docs/templates/`, `docs/facts/`, `docs/API.md`, `docs/OBSIDIAN.md`, `docs/DEPLOYMENT.md`, `docs/SENSITIVE_CONTENT_POLICY.md` — referência operacional
 
 ## Próximos passos
 
