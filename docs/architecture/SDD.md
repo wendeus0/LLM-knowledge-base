@@ -16,14 +16,14 @@ Engine CLI que mantém uma knowledge base viva a partir de documentos brutos: in
 
 ## Arquitetura em Camadas
 
-```
+```text
 ┌──────────────────────────────────────────────────────┐
 │                  CLI (Typer + Rich)                  │  kb/cli.py
 │  ingest · import-book · compile · qa · search       │
 │  lint · heal · archive · jobs · discovery · handoff │
 ├──────────────────────────────────────────────────────┤
 │              Orquestração de comandos                │  kb/cmds/ · kb/core/
-│  cmds: compile · qa · search · lint · watch         │
+│  cmds: compile · qa · search · lint                 │
 │  core: runner · tracking                            │
 ├──────────────────────────────────────────────────────┤
 │                      Domínio                         │  kb/*.py
@@ -101,7 +101,7 @@ Analytics: `gain`, `health`, `history` (métricas sobre o corpus). Discover: `re
 
 ## Fluxo de Dados
 
-```
+```text
 kb ingest doc.md|URL
   → copia/scrape → raw/ → state.record_ingest() → [--commit] git.commit()
 
