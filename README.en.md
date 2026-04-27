@@ -1,7 +1,7 @@
 # kb — LLM-powered Knowledge Base Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-311%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-321%20passing-brightgreen.svg)]()
 [![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen.svg)]()
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
@@ -163,7 +163,7 @@ Full guide: [docs/OBSIDIAN.md](docs/OBSIDIAN.md) (Portuguese)
 # Engine repository
 kb/
 ├── kb/                  ← Python package / engine
-│   ├── cli.py           ← Typer CLI (680 lines)
+│   ├── cli.py           ← Typer CLI (827 lines)
 │   ├── client.py        ← OpenAI SDK wrapper + model validation
 │   ├── compile.py       ← raw → wiki via LLM (parallel)
 │   ├── qa.py            ← Q&A with routing and wikilink traversal
@@ -173,7 +173,7 @@ kb/
 │   ├── jobs.py          ← canonical jobs + health gate
 │   ├── claims.py        ← claim lifecycle
 │   ├── book_import.py   ← EPUB/PDF facade
-│   ├── book_import_core.py ← core parsing (1100+ lines)
+│   ├── book_import_core.py ← core parsing (~930 lines)
 │   ├── router.py        ← source routing
 │   ├── graph.py         ← wikilink traversal
 │   ├── guardrails.py    ← sensitive content detection
@@ -188,7 +188,7 @@ kb/
 │   ├── core/            ← runner + SQLite tracking
 │   ├── discover/        ← command classification
 │   └── analytics/       ← metrics and command history
-├── tests/               ← 311 tests (90%+ coverage)
+├── tests/               ← 321 tests (90%+ coverage)
 ├── docs/                ← product documentation
 ├── features/            ← per-feature SPECs
 └── examples/            ← neutral examples
@@ -201,7 +201,7 @@ kb/
 └── kb_state/            ← manifest + knowledge + learnings + claims
 ```
 
-Full C4 diagrams: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) (Portuguese)
+Architectural details: [docs/architecture/SDD.md](docs/architecture/SDD.md) (Portuguese)
 
 ## Conventions
 
@@ -211,12 +211,12 @@ Full C4 diagrams: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITEC
 - **Git:** corpus writes stay local by default; use `--commit` to version the current run
 - **LLM:** the LLM never manually writes the wiki — everything goes through the CLI
 - **Sensitivity:** `--allow-sensitive` is an explicit opt-in to bypass guardrails
-- **Spec Driven Development:** no non-trivial change without a SPEC
+- **SPEC required:** no non-trivial change without a SPEC
 - **Test Driven Development:** new behavior starts RED before GREEN
 
 ## Testing
 
-Validated baseline as of 2026-04-22: 311 tests passing, 90%+ total coverage.
+Validated baseline as of 2026-04-22: 321 tests passing, 90%+ total coverage.
 
 ```bash
 pytest                                    # all tests
@@ -235,9 +235,8 @@ Per-module coverage: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_
 | [CONTEXT.md](CONTEXT.md)                                               | Macro context, principles, SDD+TDD flow (Portuguese) |
 | [AGENTS.md](AGENTS.md)                                                 | Operational conventions (Portuguese)                 |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                                     | Contribution rules and gates (Portuguese)            |
-| [docs/architecture/SDD.md](docs/architecture/SDD.md)                   | Spec Driven Development (Portuguese)                 |
+| [docs/architecture/SDD.md](docs/architecture/SDD.md)                   | Software Design Document — layers, modules, flows, decisions (Portuguese) |
 | [docs/architecture/TDD.md](docs/architecture/TDD.md)                   | Test conventions (Portuguese)                        |
-| [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | Full C4 architecture (Portuguese)                    |
 | [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md)   | SPEC format (Portuguese)                             |
 | [docs/API.md](docs/API.md)                                             | CLI + Python API reference (Portuguese)              |
 | [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                   | Obsidian integration guide (Portuguese)              |
@@ -266,7 +265,7 @@ Per-module coverage: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_
 - [x] Stochastic healing and lint
 - [x] Claim lifecycle
 - [x] Canonical jobs and health gate
-- [x] Full test suite (311 tests, 90%+ coverage)
+- [x] Full test suite (321 tests, 90%+ coverage)
 - [x] Obsidian integration
 - [x] No-commit mode and allow-sensitive
 - [x] Session handoff

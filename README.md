@@ -1,7 +1,7 @@
 # kb — Engine de Knowledge Base mantida por LLM
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-311%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-321%20passing-brightgreen.svg)]()
 [![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen.svg)]()
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
@@ -173,7 +173,7 @@ Guia completo: [docs/OBSIDIAN.md](docs/OBSIDIAN.md)
 # Repositório da engine
 kb/
 ├── kb/                  ← pacote Python / engine
-│   ├── cli.py           ← CLI Typer (680 linhas)
+│   ├── cli.py           ← CLI Typer (827 linhas)
 │   ├── client.py         ← wrapper OpenAI SDK + validação de modelo
 │   ├── compile.py        ← raw → wiki via LLM (paralelo)
 │   ├── qa.py             ← Q&A com routing e wikilink traversal
@@ -183,7 +183,7 @@ kb/
 │   ├── jobs.py           ← jobs canônicos + health gate
 │   ├── claims.py         ← ciclo de vida de claims
 │   ├── book_import.py    ← facade EPUB/PDF
-│   ├── book_import_core.py ← parsing core (1100+ linhas)
+│   ├── book_import_core.py ← parsing core (~930 linhas)
 │   ├── router.py         ← routing por fonte
 │   ├── graph.py          ← wikilink traversal
 │   ├── guardrails.py     ← detecção de conteúdo sensível
@@ -198,7 +198,7 @@ kb/
 │   ├── core/             ← runner + tracking SQLite
 │   ├── discover/         ← classificação de comandos
 │   └── analytics/        ← métricas e histórico de comandos
-├── tests/               ← 311 testes (90%+ cobertura)
+├── tests/               ← 321 testes (90%+ cobertura)
 ├── docs/                ← documentação do produto
 ├── features/            ← SPECs por feature
 └── examples/            ← exemplos neutros
@@ -211,7 +211,7 @@ kb/
 └── kb_state/            ← manifesto + knowledge + learnings + claims
 ```
 
-Diagramas completos: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+Detalhes arquiteturais: [docs/architecture/SDD.md](docs/architecture/SDD.md)
 
 ## Convenções
 
@@ -221,12 +221,12 @@ Diagramas completos: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHI
 - **Git:** writes no corpus ficam locais por padrão; use `--commit` para versionar na execução atual
 - **LLM:** o LLM nunca escreve a wiki manualmente — tudo via CLI
 - **Sensibilidade:** `--allow-sensitive` é opt-in explícito para bypass de guardrails
-- **Spec Driven Development:** nenhuma mudança não trivial sem SPEC
+- **SPEC obrigatória:** nenhuma mudança não trivial sem SPEC
 - **Test Driven Development:** comportamento novo nasce RED antes de GREEN
 
 ## Testes
 
-Baseline validada em 2026-04-22: 311 testes passando, 90%+ de cobertura total.
+Baseline validada em 2026-04-22: 321 testes passando, 90%+ de cobertura total.
 
 ```bash
 pytest                                    # todos os testes
@@ -252,11 +252,10 @@ Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_impor
 | [CONTEXT.md](CONTEXT.md)                                               | Contexto macro, princípios e fluxo SDD+TDD |
 | [AGENTS.md](AGENTS.md)                                                 | Convenções e contexto operacional          |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                                     | Regras de contribuição e gates             |
-| [docs/architecture/SDD.md](docs/architecture/SDD.md)                   | Spec Driven Development                    |
+| [docs/architecture/SDD.md](docs/architecture/SDD.md)                   | Software Design Document — camadas, módulos, fluxos, decisões |
 | [docs/architecture/TDD.md](docs/architecture/TDD.md)                   | Convenções de teste                        |
-| [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | Arquitetura C4 completa                    |
 | [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md)   | Formato de SPEC                            |
-| [docs/API.md](docs/API.md)                                             | Referência CLI + Python API (813 linhas)   |
+| [docs/API.md](docs/API.md)                                             | Referência CLI + Python API (879 linhas)   |
 | [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                   | Integração com Obsidian                    |
 | [docs/adr/](docs/adr/)                                                 | 16 ADRs (0001-0016)                        |
 | [SECURITY.md](SECURITY.md)                                             | Política de segurança                      |
@@ -283,7 +282,7 @@ Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_impor
 - [x] Stochastic healing e lint
 - [x] Claims com ciclo de vida
 - [x] Jobs canônicos e health gate
-- [x] Suite de testes completa (311 testes, 90%+ cobertura)
+- [x] Suite de testes completa (321 testes, 90%+ cobertura)
 - [x] Integração com Obsidian
 - [x] Modo no-commit e allow-sensitive
 - [x] Handoff de sessão
