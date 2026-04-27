@@ -84,7 +84,7 @@ Engine CLI que mantém uma knowledge base viva a partir de documentos brutos: in
 
 ### `kb/cmds/` — orquestração por comando
 
-`compile`, `qa`, `search`, `lint`, `watch`. Encapsulam a lógica chamada pelo `cli.py`, mantendo o entry point fino.
+`compile`, `qa`, `search`, `lint`. Encapsulam a lógica chamada pelo `cli.py`, mantendo o entry point fino.
 
 ### `kb/core/` — execução
 
@@ -134,14 +134,17 @@ kb heal --n N
 title: <título em português>
 topic: <tópico canônico ou "general">
 tags: [tag1, tag2]
-source: raw|qa|book|web
+source: <nome do arquivo origem em raw/>   # ou "qa" para file-back de Q&A
 reviewed_at: <ISO-8601>
 ```
 
 ```jsonc
 // kb_state/manifest.json — registro de ingestão e compilação
-{ "source": "raw/<path>", "kind": "raw|book|web", "ingested_at": "...",
-  "compiled_to": "wiki/<topic>/<slug>.md", "compiled_at": "..." }
+// status="ingested" após record_ingest; vira "compiled" após mark_compiled
+{ "source": "raw/<path>", "kind": "raw|book|web", "status": "ingested" }
+{ "source": "raw/<path>", "kind": "raw", "status": "compiled",
+  "article": "<path para wiki/<topic>/<slug>.md>",
+  "summary": "<path para summary>", "topic": "<topic>", "title": "<título>" }
 
 // kb_state/knowledge.json — sumários estruturados por artigo
 { "source": "wiki/<topic>/<slug>.md", "title": "...", "topic": "...",

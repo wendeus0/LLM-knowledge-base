@@ -140,10 +140,10 @@ KB_MODEL=qwen2.5-coder:7b
 - `docs/adr/` — ADRs duráveis
 - `docs/reports/` — relatórios datados (cobertura, débito, auditoria, conformidade)
 - `docs/research/` — blueprints, sínteses e pesquisa exploratória
-- `docs/policies/` — DATA_POLICY, ARTIFACT_POLICY, SENSITIVE_CONTENT_POLICY
+- `docs/policies/` — DATA_POLICY, ARTIFACT_POLICY
 - `docs/council/` — debates multi-agente sobre decisões abertas
 - `docs/handoffs/` — handoffs operacionais gerados por `kb handoff create`
-- `docs/templates/`, `docs/facts/`, `docs/API.md`, `docs/OBSIDIAN.md`, `docs/DEPLOYMENT.md` — referência operacional
+- `docs/templates/`, `docs/facts/`, `docs/API.md`, `docs/OBSIDIAN.md`, `docs/DEPLOYMENT.md`, `docs/SENSITIVE_CONTENT_POLICY.md` — referência operacional
 
 ## Próximos passos
 
