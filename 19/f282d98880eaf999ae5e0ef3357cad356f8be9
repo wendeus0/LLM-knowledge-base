@@ -1,0 +1,25 @@
+CLAUDE.md
+  d8bb536551a3f73a 143,146
+docs/architecture/SDD.md
+  d8bb536551a3f73a 87,137,143-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "19f282d98880eaf999ae5e0ef3357cad356f8be9",
+  "prompts": {
+    "d8bb536551a3f73a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99354099-0dd1-4eec-adc8-8f0ac984662e",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 6,
+      "accepted_lines": 3539,
+      "overriden_lines": 0
+    }
+  }
+}
