@@ -1,0 +1,23 @@
+docs/architecture/SDD.md
+  d8bb536551a3f73a 199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "e3728ac30712f2662d5b6d29fba5dd1c57ca3313",
+  "prompts": {
+    "d8bb536551a3f73a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99354099-0dd1-4eec-adc8-8f0ac984662e",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Wendel Silva",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 3531,
+      "overriden_lines": 0
+    }
+  }
+}
