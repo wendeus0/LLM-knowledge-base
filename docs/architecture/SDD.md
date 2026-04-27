@@ -196,4 +196,4 @@ reviewed_at: <ISO-8601>
 - LLM não escreve a wiki manualmente — toda escrita passa pelo pipeline
 - Sem RAG/embeddings até o corpus exigir (>500 artigos)
 - OpenCode Go aceita apenas modelos sem prefixo (`kimi-k2.5`, `minimax-2.7`, `glm-5`)
-- `repo_mode: solo` — fix proativo de issues encontrados no caminho permitido
+- `repo_mode: solo` — contribuidor único; permite fix proativo de issues encontrados durante o trabalho
