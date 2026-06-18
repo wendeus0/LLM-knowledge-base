@@ -202,6 +202,18 @@ def _extract_topic_and_title(
     return topic, title
 
 
+def _topic_from_source(raw_path: Path) -> str | None:
+    try:
+        rel = raw_path.resolve().relative_to(RAW_DIR.resolve())
+    except ValueError:
+        return None
+    if len(rel.parts) >= 2:
+        candidate = canonical_topic(rel.parts[0])
+        if candidate != "general":
+            return candidate
+    return None
+
+
 def _write_summary(
     article_path: Path,
     topic: str,
@@ -266,6 +278,12 @@ def compile_to_artifact(
 
     compiled_markdown = _strip_outer_fence(response)
     topic, title = _extract_topic_and_title(compiled_markdown, raw_path.stem)
+    dir_topic = _topic_from_source(raw_path)
+    if dir_topic:
+        topic = dir_topic
+        compiled_markdown = re.sub(
+            r"(?m)^topic:.*$", f"topic: {dir_topic}", compiled_markdown, count=1
+        )
     return CompileArtifact(
         raw_path=raw_path,
         source_name=raw_path.name,

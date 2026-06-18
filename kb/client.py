@@ -1,7 +1,27 @@
 from kb.config import API_KEY, BASE_URL, MODEL
 
 OPENCODE_GO_BASE_URL_FRAGMENT = "opencode.ai/zen/go"
-OPENCODE_GO_ALLOWED_MODELS = {"kimi-k2.5", "minimax-2.7", "glm-5"}
+OPENCODE_GO_ALLOWED_MODELS = {
+    "kimi-k2.7-code",
+    "kimi-k2.6",
+    "kimi-k2.5",
+    "minimax-m3",
+    "minimax-m2.7",
+    "minimax-m2.5",
+    "glm-5.1",
+    "glm-5",
+    "deepseek-v4-pro",
+    "deepseek-v4-flash",
+    "qwen3.7-max",
+    "qwen3.7-plus",
+    "qwen3.6-plus",
+    "qwen3.5-plus",
+    "mimo-v2-pro",
+    "mimo-v2-omni",
+    "mimo-v2.5-pro",
+    "mimo-v2.5",
+    "hy3-preview",
+}
 RESOURCE_LIMIT_ERROR_MARKERS = (
     "error 1102",
     "worker exceeded resource limits",
