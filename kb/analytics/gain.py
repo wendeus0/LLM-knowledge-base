@@ -13,7 +13,6 @@ def render_gain_summary(limit: int = 10) -> str:
     lines = [
         "Job metrics executado.",
         f"- total_runs: {data['total_runs']}",
-        f"- avg_savings_pct: {data['avg_savings_pct']}",
         f"- window_7d_runs: {history_7d['total_runs']}",
         f"- window_7d_failures: {history_7d['failure_runs']}",
         f"- window_7d_avg_duration_ms: {history_7d['avg_duration_ms']}",
@@ -24,7 +23,7 @@ def render_gain_summary(limit: int = 10) -> str:
         lines.append("- recent:")
         for item in recent:
             lines.append(
-                f"  • {item['command']} | save={item['savings_pct']}% | exit={item['exit_code']} | {item['duration_ms']}ms"
+                f"  • {item['command']} | exit={item['exit_code']} | {item['duration_ms']}ms"
             )
 
     by_command = history_7d.get("by_command", {})
@@ -32,7 +31,7 @@ def render_gain_summary(limit: int = 10) -> str:
         lines.append("- by_command_7d:")
         for cmd, info in by_command.items():
             lines.append(
-                f"  • {cmd} [{info['category']}]: runs={info['runs']} fails={info['failures']} avg_save={info['avg_savings_pct']}% avg_ms={info['avg_duration_ms']}"
+                f"  • {cmd} [{info['category']}]: runs={info['runs']} fails={info['failures']} avg_ms={info['avg_duration_ms']}"
             )
 
     return "\n".join(lines)

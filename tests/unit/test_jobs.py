@@ -34,7 +34,7 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
     with (
         patch("kb.compile.discover_compile_targets") as mock_targets,
         patch("kb.compile.compile_many") as mock_compile_many,
-        patch("kb.cmds.lint.run.execute_lint_command") as mock_lint,
+        patch("kb.lint.lint_wiki") as mock_lint,
         patch("kb.heal.heal") as mock_heal,
         patch("kb.analytics.gain.get_gain_summary") as mock_metrics,
         patch("kb.claims.apply_decay_cycle") as mock_decay,
@@ -51,7 +51,6 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
         mock_contradiction.return_value = {"disputed": 2, "active": 1}
         mock_metrics.return_value = {
             "total_runs": 2,
-            "avg_savings_pct": 33.3,
             "recent": [],
         }
         mock_health.return_value = "Job health executado.\n- stale_pct: 12.5"
@@ -83,7 +82,6 @@ def test_should_run_jobs_via_underlying_modules(tmp_raw_wiki):
 
         metrics_result = run_job("metrics")
         assert "Job metrics executado." in metrics_result
-        assert "33.3" in metrics_result
 
         decay_result = run_job("decay")
         assert "Job decay executado" in decay_result

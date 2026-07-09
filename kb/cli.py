@@ -434,13 +434,28 @@ def qa(
 @app.command()
 def search(query: str = typer.Argument(..., help="Termos de busca")):
     """Busca artigos na wiki por palavra-chave."""
-    from kb.cmds.search.run import execute_search_command
+    from pathlib import Path
 
-    lines = execute_search_command(query)
+    from kb.search import search as do_search
+
+    results = do_search(query)
+    if not results:
+        console.print("[yellow]Nenhum resultado encontrado.[/]")
+        raise typer.Exit()
+
+    lines = []
+    for r in results:
+        rel = (
+            r["path"].relative_to(Path.cwd())
+            if r["path"].is_relative_to(Path.cwd())
+            else r["path"]
+        )
+        lines.append(f"[bold]{r['path'].stem}[/] [dim]({rel})[/] score={r['score']}")
+        if r["snippet"]:
+            lines.append(f"  [dim]{r['snippet'][:120]}[/]")
+
     for line in lines:
         console.print(line)
-    if len(lines) == 1 and "Nenhum resultado" in lines[0]:
-        raise typer.Exit()
 
 
 @app.command()
@@ -452,12 +467,12 @@ def lint(
     ),
 ):
     """Executa health checks LLM sobre a wiki (relatório apenas)."""
-    from kb.cmds.lint.run import execute_lint_command
     from kb.guardrails import SensitiveContentError, summarize_findings
+    from kb.lint import lint_wiki
 
     console.print("[dim]Auditando wiki...[/]\n")
     try:
-        console.print(Markdown(execute_lint_command(allow_sensitive=allow_sensitive)))
+        console.print(Markdown(lint_wiki(allow_sensitive=allow_sensitive)))
     except SensitiveContentError as exc:
         console.print(f"[yellow]{summarize_findings(exc)}[/]")
         if not (
@@ -467,7 +482,7 @@ def lint(
             )
         ):
             raise typer.Exit(code=1) from None
-        console.print(Markdown(execute_lint_command(allow_sensitive=True)))
+        console.print(Markdown(lint_wiki(allow_sensitive=True)))
 
 
 @app.command()
