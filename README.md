@@ -4,11 +4,11 @@
 [![Tests](https://github.com/wendeus0/LLM-knowledge-base/actions/workflows/tests.yml/badge.svg)](https://github.com/wendeus0/LLM-knowledge-base/actions/workflows/tests.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-Engine de knowledge base mantida por LLM. Ingesta documentos brutos, compila para wiki em markdown, responde perguntas contra a wiki, faz health checks e healing automático. Inspirado na [proposta de Andrej Karpathy](https://karpathy.ai/) sobre sistemas de conhecimento assistidos por IA.
+Transforme leitura bruta em conhecimento vivo: você ingere documentos, URLs e livros inteiros; um LLM compila tudo em uma wiki markdown estruturada e navegável no Obsidian, responde perguntas com base nela e a mantém saudável de forma autônoma. Baseado na [proposta de Andrej Karpathy](https://karpathy.ai/) de knowledge bases mantidas por LLM.
 
 > [English version](README.en.md)
 
-> Este repositório contém a **engine** (`kb`), testes e documentação. O **corpus/vault do usuário** deve ficar fora daqui, em um diretório próprio apontado por `KB_DATA_DIR`.
+> Este repositório contém a **engine** (`kb`), testes e documentação. O **corpus/vault do usuário** vive fora daqui, em um diretório apontado por `KB_DATA_DIR`.
 
 ## Visão Geral
 
@@ -18,20 +18,31 @@ O `kb` implementa um ciclo central de 4 etapas:
 Ingest → Compile → Q&A / Search → Heal / Lint
 ```
 
-- **Ingest** — coleta documentos e URLs para `raw/`
-- **Compile** — transforma `raw/` em wiki estruturada via LLM
-- **Q&A** — consulta a wiki com routing por fonte e traversal de wikilinks
-- **Heal / Lint** — manutenção estocástica e auditoria automática
+- **Ingest** — coleta documentos, URLs e livros (EPUB/PDF) para `raw/`
+- **Compile** — transforma `raw/` em wiki estruturada via LLM, com validação do output
+- **Q&A / Search** — consulta a wiki com routing por fonte, traversal de wikilinks e busca híbrida
+- **Heal / Lint** — manutenção estocástica com backup e auditoria automática
 
-Características principais:
+### Pipeline LLM com validação real
 
-- Busca híbrida (keyword + BM25 + RRF)
-- Claims com ciclo de vida (confiança, supersessão, decaimento)
-- Health gate com thresholds configuráveis
-- Catálogo de jobs canônicos agendáveis (`jobs cron`)
-- Guardrails de conteúdo sensível com opt-in explícito (`--allow-sensitive`)
-- Git com commit explícito por comando (`--commit`; `--no-commit` segue válido)
-- Frontend recomendado: Obsidian via `obsidian-terminal`
+- Output do LLM **validado antes de persistir**: frontmatter obrigatório, strip de code fences, erro limpo por arquivo — lixo não vira artigo
+- **Templates de artigo versionados** na engine (`kb/templates/`), com override por vault em `<KB_DATA_DIR>/templates/` — a estrutura da wiki é sua, sem tocar código
+- **Compile ciente de livro**: capítulos importados carregam título, autor e posição no livro (via `metadata.json`) para o prompt
+- **Healing com rede de segurança**: backup versionado + validação anti-perda antes de qualquer sobrescrita; escrita atômica em todos os artefatos
+
+### Conhecimento estruturado
+
+- Busca híbrida (keyword + BM25 + RRF) sem dependência externa
+- Claims com ciclo de vida (confiança, supersessão, decaimento) e trilha de auditoria append-only
+- Q&A com file-back: cada resposta pode virar artigo ou output versionável
+
+### Operação
+
+- Jobs canônicos agendáveis (`jobs cron`) + health gate com thresholds
+- Dashboard de métricas (`kb stats`) e diff visual da wiki (`kb diff`)
+- Guardrails de conteúdo sensível com opt-in explícito; proteção SSRF na ingestão de URLs
+- Git com commit explícito por comando (`--commit`)
+- CI com matriz Python 3.11–3.13 e gate de cobertura (85%)
 
 ## Comandos
 
@@ -42,6 +53,8 @@ Características principais:
 | `compile`        | Compilar `raw/` → wiki via LLM (paralelo)         | `kb compile --workers 4`                                |
 | `qa`             | Perguntar com routing por fonte                   | `kb qa "pergunta" -f --commit`                          |
 | `search`         | Busca híbrida (keyword + BM25 + RRF)              | `kb search "termo"`                                     |
+| `stats`          | Dashboard de métricas da wiki                     | `kb stats --json`                                       |
+| `diff`           | Diff visual da wiki via git                       | `kb diff --stat --since HEAD~3`                         |
 | `heal`           | Correção estocástica de N arquivos                | `kb heal --n 10`                                        |
 | `lint`           | Auditoria da wiki via LLM                         | `kb lint`                                               |
 | `archive`        | Mover artigos stale/órfãos de wiki/ → archive/    | `kb archive --stale --dry-run`                          |
@@ -59,7 +72,7 @@ Características principais:
 git clone https://github.com/wendeus0/LLM-knowledge-base
 cd LLM-knowledge-base
 
-# Base (ingest, search, jobs, handoff)
+# Base (ingest, search, stats, diff, jobs, handoff)
 pip install -e .
 
 # Com suporte a LLM (compile, qa, heal, lint)
@@ -111,6 +124,7 @@ Estrutura esperada em `KB_DATA_DIR`:
   wiki/         ← markdown compilado
   outputs/      ← file-backs de QA
   kb_state/     ← manifesto + knowledge + learnings + claims + tracking
+  templates/    ← (opcional) override dos templates de artigo
 ```
 
 ## Uso Rápido
@@ -136,14 +150,17 @@ kb qa "Resuma este corpus" -f
 # Arquivar e versionar explicitamente
 kb qa "Resuma este corpus" -f --commit
 
+# Ver a saúde da wiki
+kb stats
+
+# Ver o que mudou desde o último commit
+kb diff --stat
+
 # Conteúdo sensível (opt-in explícito)
 kb compile --allow-sensitive
 
 # Health check local
 kb heal --n 5
-
-# Health check com versionamento explícito
-kb heal --n 5 --commit
 kb lint
 
 # Importar livros
@@ -152,6 +169,10 @@ kb import-book ~/Downloads/book.epub ~/Downloads/book.pdf --compile
 # OCR para PDFs escaneados
 kb import-book ~/Downloads/scan.pdf --ocr --chunk-pages 10
 ```
+
+## Templates de artigo
+
+A estrutura dos artigos compilados vive em templates versionados — `kb/templates/article.md` (documentos avulsos) e `kb/templates/chapter.md` (capítulos de livro, com contexto do livro no frontmatter). Para customizar sem tocar na engine, coloque sua versão em `<KB_DATA_DIR>/templates/` e ela passa a valer para o seu vault.
 
 ## Obsidian
 
@@ -173,65 +194,77 @@ Guia completo: [docs/OBSIDIAN.md](docs/OBSIDIAN.md)
 ```
 # Repositório da engine
 kb/
-├── kb/                  ← pacote Python / engine
-│   ├── cli.py           ← CLI Typer (680 linhas)
-│   ├── client.py         ← wrapper OpenAI SDK + validação de modelo
-│   ├── compile.py        ← raw → wiki via LLM (paralelo)
-│   ├── qa.py             ← Q&A com routing e wikilink traversal
-│   ├── search.py         ← busca híbrida (keyword + BM25 + RRF)
-│   ├── heal.py           ← healing estocástico
-│   ├── lint.py           ← auditoria via LLM
-│   ├── jobs.py           ← jobs canônicos + health gate
-│   ├── claims.py         ← ciclo de vida de claims
-│   ├── book_import.py    ← facade EPUB/PDF
-│   ├── book_import_core.py ← parsing core (1100+ linhas)
-│   ├── router.py         ← routing por fonte
-│   ├── graph.py          ← wikilink traversal
-│   ├── guardrails.py     ← detecção de conteúdo sensível
-│   ├── state.py          ← persistência JSON
-│   ├── outputs.py        ← file-back store
-│   ├── web_ingest.py     ← URL → Markdown
-│   ├── git.py            ← explicit commit helper
-│   ├── handoff.py        ← handoff de sessão
-│   ├── doc_gate.py       ← conformidade documental
-│   ├── config.py         ← variáveis de ambiente e constantes
-│   ├── cmds/             ← camada de execução (RTK-style)
-│   ├── core/             ← runner + tracking SQLite
-│   ├── discover/         ← classificação de comandos
-│   └── analytics/        ← métricas e histórico de comandos
-├── tests/               ← 311 testes (90%+ cobertura)
-├── docs/                ← documentação do produto
-├── features/            ← SPECs por feature
-└── examples/            ← exemplos neutros
+├── kb/                     ← pacote Python / engine
+│   ├── cli.py              ← CLI Typer (10 comandos + grupos jobs/discovery/handoff)
+│   ├── client.py           ← wrapper OpenAI SDK + validação provider/modelo
+│   ├── compile.py          ← raw → wiki via LLM (paralelo, validação de output, contexto de livro)
+│   ├── templates/          ← templates de artigo/capítulo (override por vault)
+│   ├── templates_loader.py ← resolução engine ↔ vault
+│   ├── frontmatter.py      ← parser único de frontmatter YAML plano
+│   ├── qa.py               ← Q&A com routing e wikilink traversal
+│   ├── search.py           ← busca híbrida (keyword + BM25 + RRF)
+│   ├── stats.py            ← agregação de métricas (dashboard)
+│   ├── diff.py             ← git diff da wiki formatado
+│   ├── heal.py             ← healing estocástico (validação + backup versionado)
+│   ├── lint.py             ← auditoria via LLM
+│   ├── archive.py          ← arquivamento de artigos stale/órfãos
+│   ├── jobs.py             ← jobs canônicos + health gate
+│   ├── claims.py           ← ciclo de vida de claims
+│   ├── audit.py            ← trilha append-only de eventos de claims
+│   ├── discovery.py        ← descoberta arXiv/news + ingestão agendável
+│   ├── book_import.py      ← facade EPUB/PDF
+│   ├── book_import_core.py ← parser EPUB (TOC, HTML→MD, metadata)
+│   ├── book_import_pdf.py  ← extração PDF (PyMuPDF; OCR opcional)
+│   ├── router.py           ← routing por fonte
+│   ├── graph.py            ← wikilink traversal
+│   ├── guardrails.py       ← detecção de conteúdo sensível
+│   ├── web_ingest.py       ← URL → Markdown (proteção SSRF)
+│   ├── state.py            ← persistência JSON
+│   ├── outputs.py          ← file-back store
+│   ├── fsutil.py           ← escrita atômica
+│   ├── git.py              ← commit explícito
+│   ├── handoff.py          ← handoff de sessão
+│   ├── doc_gate.py         ← conformidade documental
+│   ├── config.py           ← variáveis de ambiente e constantes
+│   ├── cmds/               ← camada de execução (compile, qa)
+│   ├── core/               ← tracking SQLite de execuções
+│   ├── discover/           ← classificação declarativa de comandos
+│   └── analytics/          ← saúde de claims + histórico de comandos
+├── tests/                  ← 405 testes (92% de cobertura; gate de 85% no CI)
+├── docs/                   ← documentação do produto
+├── features/               ← SPECs por feature
+└── examples/               ← exemplos neutros
 
 # Corpus do usuário (fora do repositório)
 <KB_DATA_DIR>/
-├── raw/                 ← documentos fonte + books/
-├── wiki/                ← markdown compilado e versionado
-├── outputs/             ← file-backs de QA
-└── kb_state/            ← manifesto + knowledge + learnings + claims
+├── raw/                    ← documentos fonte + books/
+├── wiki/                   ← markdown compilado e versionado
+├── outputs/                ← file-backs de QA
+├── kb_state/               ← manifesto + knowledge + learnings + claims
+└── templates/              ← (opcional) override dos templates
 ```
 
-Diagramas completos: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+Design e evolução da arquitetura: [docs/architecture/SDD.md](docs/architecture/SDD.md)
 
 ## Convenções
 
 - **Corpus separado:** `raw/`, `wiki/`, `outputs/`, `kb_state/` vivem em `KB_DATA_DIR`, fora do repositório
-- **Frontmatter YAML:** cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `translated_by`, `reviewed_at`
+- **Frontmatter YAML:** cada artigo compilado inclui `title`, `topic`, `tags`, `source`, `translated_by`; `reviewed_at` é carimbado pelo heal
+- **Templates:** estrutura do artigo definida em `kb/templates/`, customizável por vault
 - **Tradução:** artigos compilados são gerados em português
 - **Git:** writes no corpus ficam locais por padrão; use `--commit` para versionar na execução atual
-- **LLM:** o LLM nunca escreve a wiki manualmente — tudo via CLI
+- **LLM:** o LLM nunca escreve a wiki manualmente — tudo via CLI, com validação de output antes de persistir
 - **Sensibilidade:** `--allow-sensitive` é opt-in explícito para bypass de guardrails
 - **Spec Driven Development:** nenhuma mudança não trivial sem SPEC
 - **Test Driven Development:** comportamento novo nasce RED antes de GREEN
 
-## Testes
+## Testes e CI
 
-Baseline validada em 2026-04-22: 311 testes passando, 90%+ de cobertura total.
+405 testes (unit + integração), 92% de cobertura total. O CI roda pytest e ruff em Python 3.11, 3.12 e 3.13 a cada PR, com gate de cobertura em 85%.
 
 ```bash
 pytest                                    # todos os testes
-pytest --cov=kb --cov-report=html         # com cobertura
+pytest --cov=kb --cov-report=html         # com cobertura HTML
 pytest tests/unit/                        # apenas unitários
 pytest tests/integration/                 # apenas integração
 ruff check kb tests                       # lint
@@ -244,23 +277,20 @@ make test-integration
 make check
 ```
 
-Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_import_core.py` 97%, `compile.py` 91%.
-
 ## Documentação
 
-| Documento                                                              | Descrição                                  |
-| ---------------------------------------------------------------------- | ------------------------------------------ |
-| [CONTEXT.md](CONTEXT.md)                                               | Contexto macro, princípios e fluxo SDD+TDD |
-| [AGENTS.md](AGENTS.md)                                                 | Convenções e contexto operacional          |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                                     | Regras de contribuição e gates             |
-| [docs/architecture/SDD.md](docs/architecture/SDD.md)                   | Spec Driven Development                    |
-| [docs/architecture/TDD.md](docs/architecture/TDD.md)                   | Convenções de teste                        |
-| [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | Arquitetura C4 completa                    |
-| [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md)   | Formato de SPEC                            |
-| [docs/API.md](docs/API.md)                                             | Referência CLI + Python API (813 linhas)   |
-| [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                   | Integração com Obsidian                    |
-| [docs/adr/](docs/adr/)                                                 | 16 ADRs (0001-0016)                        |
-| [SECURITY.md](SECURITY.md)                                             | Política de segurança                      |
+| Documento                                                            | Descrição                                  |
+| -------------------------------------------------------------------- | ------------------------------------------ |
+| [CONTEXT.md](CONTEXT.md)                                             | Contexto macro, princípios e fluxo SDD+TDD |
+| [AGENTS.md](AGENTS.md)                                               | Convenções e contexto operacional          |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                   | Regras de contribuição e gates             |
+| [docs/architecture/SDD.md](docs/architecture/SDD.md)                 | Software Design Document                   |
+| [docs/architecture/TDD.md](docs/architecture/TDD.md)                 | Convenções de teste                        |
+| [docs/architecture/SPEC_FORMAT.md](docs/architecture/SPEC_FORMAT.md) | Formato de SPEC                            |
+| [docs/API.md](docs/API.md)                                           | Referência CLI + Python API                |
+| [docs/OBSIDIAN.md](docs/OBSIDIAN.md)                                 | Integração com Obsidian                    |
+| [docs/adr/](docs/adr/)                                               | ADRs (0001–0016)                           |
+| [SECURITY.md](SECURITY.md)                                           | Política de segurança                      |
 
 ## Stack
 
@@ -273,25 +303,24 @@ Cobertura por módulo: `git.py` 100%, `cli.py` 98%, `client.py` 97%, `book_impor
 | Busca         | Keyword + BM25 + RRF (sem dependência externa)            |
 | Versionamento | Git                                                       |
 | Testes        | pytest + pytest-cov                                       |
-| Lint          | ruff                                                      |
+| Lint / CI     | ruff + GitHub Actions (matriz 3.11–3.13)                  |
 
 ## Roadmap
 
 - [x] Sistema base de ingestão e compilação
-- [x] Importação de livros (EPUB/PDF)
+- [x] Importação de livros (EPUB/PDF) com metadata rica
 - [x] Q&A com file-back e routing por fonte
 - [x] Busca híbrida (keyword + BM25 + RRF)
-- [x] Stochastic healing e lint
-- [x] Claims com ciclo de vida
-- [x] Jobs canônicos e health gate
-- [x] Suite de testes completa (311 testes, 90%+ cobertura)
+- [x] Stochastic healing com backup e validação
+- [x] Claims com ciclo de vida + trilha de auditoria
+- [x] Jobs canônicos, health gate e discovery (arXiv/news)
 - [x] Integração com Obsidian
-- [x] Modo no-commit e allow-sensitive
-- [x] Handoff de sessão
-- [x] Tracking SQLite de comandos
-- [x] Conformidade documental (doc-gate)
+- [x] Validação estruturada do output do LLM no compile
+- [x] Templates de artigo com override por vault + compile ciente de livro
+- [x] Dashboard de métricas (`kb stats`) e diff da wiki (`kb diff`)
+- [x] CI com matriz 3.11–3.13 e gate de cobertura
+- [ ] Multi-vault (SPEC pronta em `features/010-multi-vault-foundation/`)
 - [ ] Embeddings + RAG híbrido
-- [ ] Multi-agent specialization
 
 ## Licença
 

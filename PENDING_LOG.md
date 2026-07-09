@@ -53,6 +53,11 @@ Pendências e decisões abertas.
 
 ## P2 (Nice-to-have)
 
+**[deferido] docs/API.md sem o grupo `jobs` e `handoff create`**
+
+- Origem: sanitização do README 2026-07-09 — `stats`/`diff`/`archive` documentados; `jobs list|run|gate|cron|doc-gate` e `handoff create` seguem fora da referência CLI
+- Fechar num ciclo próprio de docs (5+ subcomandos, seção nova)
+
 **[deferido] Coluna `savings_pct` órfã no schema de tracking.db**
 
 - Origem: refactor/dead-code-cut 2026-07-09 (plano de robustez, Task 9)
