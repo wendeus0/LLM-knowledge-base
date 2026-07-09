@@ -53,8 +53,8 @@ def _stamp_reviewed(text: str) -> str:
 def _backup(path):
     backup_dir = WIKI_DIR / ".heal_backup"
     backup_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup_path = backup_dir / f"{path.stem}.{ts}.md"
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    backup_path = backup_dir / f"{path.parent.name}.{path.stem}.{ts}.md"
     shutil.copy2(path, backup_path)
 
 
@@ -65,6 +65,8 @@ def _is_valid_heal_output(original, response):
     if original_meta and not response_meta:
         return False
     if original_meta.get("title") and response_meta.get("title") != original_meta["title"]:
+        return False
+    if any(key != "reviewed_at" and key not in response_meta for key in original_meta):
         return False
     if len(response) < 0.5 * len(original):
         return False

@@ -139,10 +139,12 @@ def answer_and_file(
     topic = "general"
     title = question[:50]
     meta, _ = parse(article)
-    if "topic" in meta:
-        topic = canonical_topic(meta["topic"])
-    if "title" in meta:
-        title = meta["title"]
+    topic_value = meta.get("topic", "")
+    if isinstance(topic_value, str) and topic_value.strip():
+        topic = canonical_topic(topic_value)
+    title_value = meta.get("title", "")
+    if isinstance(title_value, str) and title_value.strip():
+        title = title_value.strip()
 
     if to_wiki:
         slug = re.sub(r"[^a-z0-9-]", "-", title.lower())[:60].strip("-")

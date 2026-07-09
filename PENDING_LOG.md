@@ -66,6 +66,12 @@ Pendências e decisões abertas.
 - Unificar 4 variantes de slugify
 - `kb/config.py` resolve paths no import (pré-requisito da SPEC 010-multi-vault)
 
+**[deferido] fsync do diretório pós-os.replace em fsutil**
+
+- Origem: triagem de reviews de bot 2026-07-09 (finding 39.12, cubic)
+- Crash imediatamente após `atomic_write_text` pode perder o rename; fsync do dir pai fecharia a janela
+- Deferido: durabilidade extrema para dados regeneráveis (raw/ persiste como fonte)
+
 **Falso positivo no guardrail de credenciais**
 
 - `OPENAI_API_KEY` como nome de variável em exemplos de código (não credencial real) dispara `SensitiveContentError`
