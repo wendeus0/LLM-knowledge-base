@@ -1,8 +1,7 @@
 # kb — LLM-powered Knowledge Base Engine
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-311%20passing-brightgreen.svg)]()
-[![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen.svg)]()
+[![Tests](https://github.com/wendeus0/LLM-knowledge-base/actions/workflows/tests.yml/badge.svg)](https://github.com/wendeus0/LLM-knowledge-base/actions/workflows/tests.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 An LLM-maintained knowledge base engine that ingests raw documents, compiles them into a structured markdown wiki, answers questions against the wiki, and performs automated health checks and healing. Inspired by [Andrej Karpathy](https://karpathy.ai/)'s vision for AI-assisted knowledge systems.
@@ -45,6 +44,8 @@ Key features:
 | `search`         | Hybrid search (keyword + BM25 + RRF)           | `kb search "term"`                                       |
 | `heal`           | Stochastic healing of N files                  | `kb heal --n 10`                                         |
 | `lint`           | Wiki audit via LLM                             | `kb lint`                                                |
+| `archive`        | Move stale/orphan articles from wiki/ → archive/ | `kb archive --stale --dry-run`                         |
+| `discovery run`  | Discover and ingest new sources (arXiv, news)  | `kb discovery run --query "llm agents"`                  |
 | `jobs list`      | List canonical jobs                            | `kb jobs list`                                           |
 | `jobs run`       | Run a job (`compile`, `review`, `decay`, etc.) | `kb jobs run compile`                                    |
 | `jobs gate`      | Health gate with thresholds                    | `kb jobs gate --stale-max-pct 15`                        |

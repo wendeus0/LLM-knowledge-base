@@ -4,58 +4,39 @@ description: Frentes ativas + decisões abertas
 type: project
 ---
 
-## Frentes ativas
+## Frente ativa
 
-### F11: llm-wiki-v2-foundation
+### Plano de robustez do core (2026-07-09)
 
-**Status:** PLAN_READY (próximo: `test-red`)
-**Branch:** não criada ainda
-**Artefatos:** `features/llm-wiki-v2-foundation/{SPEC.md, PLAN.md, TASKS.md}`
-**Resumo:** Rework da engine de compile com base em SPEC e PLAN aprovados. Próxima etapa é escrever testes RED.
-
-**Escopo absorvido:** `kb/audit.py` + `tests/unit/test_audit.py` (untracked) passam a pertencer a esta feature — entregam RF-07 (trilha de auditoria).
+**Status:** em execução — plano em `docs/superpowers/plans/2026-07-09-core-robustness.md`
+**Branches:** uma por fase (chore/truth-sync → ci/test-gate → fix/pipeline-hardening → feat/article-template → refactor/dead-code-cut → test/uncovered-modules → feat/008 → feat/009 → feat/010-spec), empilhadas até merge
+**Resumo:** review completo (4 lentes) → hardening do pipeline ingest→compile→qa→heal, template de artigo como artefato core (engine + override por vault), cortes de código morto, CI com pytest+ruff, cobertura de módulos nus, backlog 008/009 e SPEC de 010.
 
 ---
 
 ## Frentes em backlog (SPEC draft)
 
-### F14: 008-kb-stats
-
-**Status:** SPEC draft
-**Esforço:** ~3h
-**Artefatos:** `features/008-kb-stats/SPEC.md`
-**Resumo:** Comando `kb stats` para dashboard Rich de métricas da wiki. Primitivas já existem em `kb/analytics/` (health, history, gain) e `kb/claims.py`.
-
-### F15: 009-kb-diff
-
-**Status:** SPEC draft
-**Esforço:** ~2h
-**Artefatos:** `features/009-kb-diff/SPEC.md`
-**Resumo:** Comando `kb diff` para visualizar diff de `wiki/` via git com formatação Rich. Wrap de `git diff` — zero dependências novas.
+### 008-kb-stats — comando `kb stats` (dashboard Rich). Primitivas em `kb/analytics/` e `kb/claims.py`. ~3h.
+### 009-kb-diff — comando `kb diff` (git diff da wiki com Rich). Wrap de git, zero deps novas. ~2h.
+### 010-multi-vault-foundation — **meta real, SPEC pendente** (decisão do dono 2026-07-09). Task 13 do plano produz o draft; HITL do dono antes de avançar. Pré-requisito citado: `kb/config.py` resolve paths no import.
 
 ---
 
-## Frentes concluídas nesta rodada
+## Frentes concluídas
 
-- **F12: ingest-url** — mergeado via PR #32 (commit `6072c1d`) + artefatos docs via PR #32.
-- **F13: 006-kb-archive** — mergeado via PR #31 (commit `5f56418`) + arquivamento via PR #33 (commit `6150b4a`).
+- **llm-wiki-v2-foundation** — mergeada via PR #35 (`4835419`); artefatos em `features/_archived/`.
+- **ingest-url** — mergeada via PR #32 (`6072c1d`).
+- **006-kb-archive** — mergeada via PR #31 + arquivamento via PR #33; diretório movido para `features/_archived/` em 2026-07-09.
 
 ---
 
 ## Decisões abertas
 
-_(nenhuma)_
+Ver "Open questions" no plano (`docs/superpowers/plans/2026-07-09-core-robustness.md`): bump de versão 0.5.0, conteúdo fino do template de artigo, quarentena vs skip no heal.
 
-## Decisões resolvidas nesta rodada
+## Decisões resolvidas nesta rodada (2026-07-09)
 
-### Q4: O que fazer com kb/audit.py? — **Resolvido (opção B)**
-
-`kb/audit.py` e `tests/unit/test_audit.py` ficam untracked até `llm-wiki-v2-foundation` iniciar; serão commitados na branch da feature como parte de RF-07.
-
-### Q5: Limpar features órfãs? — **Resolvido**
-
-Features concluídas movidas para `features/_archived/`. `001-wikilink-traversal` e demais sem `.state` arquivados.
-
-### Q6: kb diff e kb stats fantasmas em CLAUDE.md — **Resolvido**
-
-`CLAUDE.md:132-133` citava "004-kb-diff" e "005-kb-stats" como entregues, mas não existem no `cli.py`. Corrigido para (backlog) 008/009. SPECs draft criadas em `features/008-kb-stats/` e `features/009-kb-diff/`.
+- Multi-vault é meta real sem SPEC (não drift de doc) → Task 13 do plano.
+- Cortar todo código morto (runner.py, savings, wrappers cmds/lint|search).
+- Backlog 008/009 entra como fase final do plano.
+- Template de artigo: default versionado na engine (`kb/templates/`) com override em `<KB_DATA_DIR>/templates/`.
