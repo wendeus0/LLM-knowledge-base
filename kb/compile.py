@@ -120,8 +120,12 @@ def _book_context(raw_path):
         print(f"[kb] aviso: metadata.json ilegível em {metadata_path}: {exc}", file=sys.stderr)
         return None
 
+    if not isinstance(metadata, dict):
+        print(f"[kb] aviso: metadata.json com formato inesperado em {metadata_path}", file=sys.stderr)
+        return None
+
     for chapter in metadata.get("chapters") or []:
-        if chapter.get("file") != raw_path.name:
+        if not isinstance(chapter, dict) or chapter.get("file") != raw_path.name:
             continue
         return {
             "book_title": metadata.get("book_title"),
