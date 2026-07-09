@@ -77,3 +77,35 @@ A resposta em formato artigo.
             assert result[0] == answer_response
             assert isinstance(result[1], Path)
             assert mock_commit.called
+
+
+class TestAnswerAndFileGuards:
+    def test_should_use_fallback_title_when_frontmatter_title_is_empty(
+        self, tmp_raw_wiki
+    ):
+        """
+        Dado artigo do LLM com title vazio no frontmatter,
+        Quando answer_and_file arquiva na wiki,
+        Então deve usar o fallback (pergunta) em vez de slug vazio
+        """
+        raw, wiki = tmp_raw_wiki
+        (wiki / "ai" / "test.md").write_text("# Test\nConteúdo.")
+
+        with patch("kb.qa.chat") as mock_chat, patch("kb.qa.commit"):
+            article_response = """---
+title:
+topic: general
+---
+
+# Artigo
+
+Corpo da resposta.
+"""
+            mock_chat.side_effect = ["Resposta breve.", article_response]
+
+            _, out = answer_and_file(
+                "test", allow_sensitive=True, no_commit=True, to_wiki=True
+            )
+
+        assert out.name != ".md"
+        assert "test" in out.name

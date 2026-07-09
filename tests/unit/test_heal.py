@@ -283,7 +283,7 @@ Conteúdo substantivo sobre teste com informação suficiente para não ser stub
 
             assert result == [{"file": "valid.md", "action": "healed"}]
             assert "[[Python]]" in article_path.read_text()
-            backups = list((wiki / ".heal_backup").glob("valid.*.md"))
+            backups = list((wiki / ".heal_backup").glob("*valid.*.md"))
             assert len(backups) == 1
             assert backups[0].read_text() == original
 
@@ -311,7 +311,7 @@ title: Stub
 
             assert result == [{"file": "stub.md", "action": "deleted_stub"}]
             assert not stub_path.exists()
-            backups = list((wiki / ".heal_backup").glob("stub.*.md"))
+            backups = list((wiki / ".heal_backup").glob("*stub.*.md"))
             assert len(backups) == 1
             assert backups[0].read_text() == original
 
@@ -358,3 +358,74 @@ Conteúdo substantivo de backup que nunca deve ser processado pelo heal.
             result = heal(n=10)
 
             assert result == [{"file": "article.md", "action": "reviewed_no_changes"}]
+
+
+class TestHealBackupAndKeyPreservation:
+    def test_should_create_distinct_backups_when_same_stem_in_different_topics(
+        self, tmp_raw_wiki
+    ):
+        """
+        Dado dois stubs com o mesmo stem em tópicos diferentes,
+        Quando heal deleta ambos no mesmo run,
+        Então deve criar dois backups distintos (sem sobrescrita)
+        """
+        raw, wiki = tmp_raw_wiki
+
+        stub_a = wiki / "a" / "x.md"
+        stub_b = wiki / "b" / "x.md"
+        stub_a.parent.mkdir(parents=True, exist_ok=True)
+        stub_b.parent.mkdir(parents=True, exist_ok=True)
+        stub_a.write_text("---\ntitle: A\n---\n\n# A\n")
+        stub_b.write_text("---\ntitle: B\n---\n\n# B\n")
+
+        with patch("random.sample") as mock_sample:
+            mock_sample.return_value = [stub_a, stub_b]
+
+            result = heal(n=2)
+
+        assert [r["action"] for r in result] == ["deleted_stub", "deleted_stub"]
+        backups = list((wiki / ".heal_backup").glob("*x.*.md"))
+        assert len(backups) == 2
+
+    def test_should_skip_output_when_frontmatter_key_is_dropped(self, tmp_raw_wiki):
+        """
+        Dado artigo com topic no frontmatter,
+        Quando LLM devolve output válido mas sem a chave topic,
+        Então deve manter o artigo intacto e logar skipped_invalid_output
+        """
+        raw, wiki = tmp_raw_wiki
+
+        article_path = wiki / "ai" / "keys.md"
+        original = """---
+title: Keys
+topic: ai
+tags: [a]
+---
+
+# Keys
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub.
+"""
+        article_path.write_text(original)
+
+        response = """---
+title: Keys
+tags: [a]
+---
+
+# Keys
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub e [[link]].
+"""
+
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("random.sample") as mock_sample,
+        ):
+            mock_chat.return_value = response
+            mock_sample.return_value = [article_path]
+
+            result = heal(n=1)
+
+        assert article_path.read_text() == original
+        assert result == [{"file": "keys.md", "action": "skipped_invalid_output"}]

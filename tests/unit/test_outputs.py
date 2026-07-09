@@ -82,3 +82,22 @@ class TestWriteOutput:
         assert "date:" in content
         assert "topic:" in content
         assert question in content
+
+
+class TestBuildContentTopicBackfill:
+    def test_should_backfill_topic_when_answer_frontmatter_lacks_it(
+        self, tmp_path, monkeypatch
+    ):
+        """REQ-5: topic deve estar presente mesmo quando o LLM o omite."""
+        monkeypatch.setattr("kb.config.OUTPUTS_DIR", tmp_path / "outputs")
+
+        answer = """---
+title: Resposta
+---
+
+Corpo da resposta.
+"""
+        with patch("kb.outputs.commit"):
+            _, out = write_output("O que é XSS?", answer, "cybersecurity")
+
+        assert "topic: cybersecurity" in out.read_text()
