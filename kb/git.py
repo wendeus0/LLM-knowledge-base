@@ -22,6 +22,20 @@ def _error_detail(exc):
     return detail
 
 
+def is_git_repo(root=ROOT) -> bool:
+    """Retorna True quando root está dentro de um repositório git."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        return result.returncode == 0 and result.stdout.strip() == "true"
+    except Exception:
+        return False
+
+
 def commit(message: str, paths: list[Path], enabled: bool = True) -> bool:
     """Stage os paths e commita. Silencioso se não há mudanças."""
     if not enabled:

@@ -29,6 +29,7 @@ app = typer.Typer(
         "  [--allow-sensitive] [--no-commit|--commit]\n\n"
         "stats [--json]\n\n"
         "search <query>\n\n"
+        "diff [--stat] [--since REF]\n\n"
         "lint  [--allow-sensitive]\n\n"
         "heal  [--n/-n INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
         "jobs list  |  jobs run <nome>  |  jobs gate  |  jobs cron  |  jobs doc-gate\n\n"
@@ -458,6 +459,35 @@ def search(query: str = typer.Argument(..., help="Termos de busca")):
 
     for line in lines:
         console.print(line)
+
+
+@app.command()
+def diff(
+    stat: bool = typer.Option(
+        False,
+        "--stat",
+        help="Mostra resumo estatístico do diff.",
+    ),
+    since: str = typer.Option(
+        None,
+        "--since",
+        help="Ref git para comparar contra (commit, tag ou branch).",
+    ),
+):
+    """Mostra alterações da wiki via git diff."""
+    from kb.diff import DiffError, render_diff, wiki_diff
+
+    try:
+        output = wiki_diff(stat=stat, since=since)
+    except DiffError as exc:
+        console.print(f"[red]Erro:[/] {exc}")
+        raise typer.Exit(code=1) from None
+
+    if not output.strip():
+        console.print("[green]Sem alterações[/]")
+        return
+
+    render_diff(output, console)
 
 
 @app.command()

@@ -1,0 +1,8 @@
+---
+feature: 009-kb-diff
+mode: act
+pipeline_state: GREEN
+branch: feat/009-kb-diff
+worktree_count: 0
+last_updated: 2026-07-09
+---
