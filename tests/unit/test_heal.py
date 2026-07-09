@@ -142,7 +142,14 @@ Conteúdo substantivo sobre teste.
             patch("kb.heal.commit") as mock_commit,
             patch("random.sample") as mock_sample,
         ):
-            mock_chat.return_value = "Healed version of the article"
+            mock_chat.return_value = """---
+title: Test
+---
+
+# Test
+
+Conteúdo substantivo sobre teste com link para [[Python]].
+"""
             article_path = wiki / "ai" / "test.md"
             mock_sample.return_value = [article_path]
 
@@ -167,3 +174,187 @@ Conteúdo substantivo sobre teste.
             # RED: falha se não retorna list[dict]
             result = heal(n=1)
             assert isinstance(result, list)
+
+    def test_should_skip_invalid_output_without_frontmatter(self, tmp_raw_wiki):
+        """
+        Dado artigo com frontmatter,
+        Quando LLM retorna markdown sem frontmatter,
+        Então deve manter artigo intacto e logar skipped_invalid_output
+        """
+        raw, wiki = tmp_raw_wiki
+
+        article_path = wiki / "ai" / "invalid.md"
+        original = """---
+title: Invalid
+---
+
+# Invalid
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub.
+"""
+        article_path.write_text(original)
+
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("random.sample") as mock_sample,
+        ):
+            mock_chat.return_value = "# Invalid\n\nConteúdo sem frontmatter."
+            mock_sample.return_value = [article_path]
+
+            result = heal(n=1)
+
+            assert article_path.read_text() == original
+            assert result == [{"file": "invalid.md", "action": "skipped_invalid_output"}]
+
+    def test_should_skip_collapsed_output(self, tmp_raw_wiki):
+        """
+        Dado artigo com conteúdo longo,
+        Quando LLM retorna saída muito menor,
+        Então deve manter artigo intacto e logar skipped_invalid_output
+        """
+        raw, wiki = tmp_raw_wiki
+
+        article_path = wiki / "ai" / "collapse.md"
+        original = """---
+title: Collapse
+---
+
+# Collapse
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub.
+Esta segunda frase aumenta o tamanho original para validar colapso de conteúdo.
+Esta terceira frase mantém o artigo grande o suficiente para a heurística.
+"""
+        article_path.write_text(original)
+
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("random.sample") as mock_sample,
+        ):
+            mock_chat.return_value = """---
+title: Collapse
+---
+
+# Collapse
+"""
+            mock_sample.return_value = [article_path]
+
+            result = heal(n=1)
+
+            assert article_path.read_text() == original
+            assert result == [{"file": "collapse.md", "action": "skipped_invalid_output"}]
+
+    def test_should_backup_before_valid_heal_write(self, tmp_raw_wiki):
+        """
+        Dado saída válida do LLM,
+        Quando heal escreve o artigo,
+        Então deve criar backup em .heal_backup
+        """
+        raw, wiki = tmp_raw_wiki
+
+        article_path = wiki / "ai" / "valid.md"
+        original = """---
+title: Valid
+---
+
+# Valid
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub.
+"""
+        article_path.write_text(original)
+
+        response = """---
+title: Valid
+---
+
+# Valid
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub e link para [[Python]].
+"""
+
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("random.sample") as mock_sample,
+        ):
+            mock_chat.return_value = response
+            mock_sample.return_value = [article_path]
+
+            result = heal(n=1)
+
+            assert result == [{"file": "valid.md", "action": "healed"}]
+            assert "[[Python]]" in article_path.read_text()
+            backups = list((wiki / ".heal_backup").glob("valid.*.md"))
+            assert len(backups) == 1
+            assert backups[0].read_text() == original
+
+    def test_should_backup_before_stub_delete(self, tmp_raw_wiki):
+        """
+        Dado stub na wiki,
+        Quando heal deleta o stub,
+        Então deve criar backup em .heal_backup
+        """
+        raw, wiki = tmp_raw_wiki
+
+        stub_path = wiki / "ai" / "stub.md"
+        original = """---
+title: Stub
+---
+
+# Stub
+"""
+        stub_path.write_text(original)
+
+        with patch("random.sample") as mock_sample:
+            mock_sample.return_value = [stub_path]
+
+            result = heal(n=1)
+
+            assert result == [{"file": "stub.md", "action": "deleted_stub"}]
+            assert not stub_path.exists()
+            backups = list((wiki / ".heal_backup").glob("stub.*.md"))
+            assert len(backups) == 1
+            assert backups[0].read_text() == original
+
+    def test_should_exclude_heal_backup_files_from_candidates(self, tmp_raw_wiki):
+        """
+        Dado arquivo dentro de .heal_backup,
+        Quando heal coleta candidatos,
+        Então backup não deve ser processado
+        """
+        raw, wiki = tmp_raw_wiki
+
+        article_path = wiki / "ai" / "article.md"
+        article_path.write_text("""---
+title: Article
+---
+
+# Article
+
+Conteúdo substantivo sobre teste com informação suficiente para não ser stub.
+""")
+        backup_dir = wiki / ".heal_backup"
+        backup_dir.mkdir()
+        backup_path = backup_dir / "article.20260709-120000.md"
+        backup_path.write_text("""---
+title: Backup
+---
+
+# Backup
+
+Conteúdo substantivo de backup que nunca deve ser processado pelo heal.
+""")
+
+        def sample(candidates, count):
+            assert backup_path not in candidates
+            return [article_path]
+
+        with (
+            patch("kb.heal.chat") as mock_chat,
+            patch("random.sample") as mock_sample,
+        ):
+            mock_chat.return_value = "NO_CHANGES"
+            mock_sample.side_effect = sample
+
+            result = heal(n=10)
+
+            assert result == [{"file": "article.md", "action": "reviewed_no_changes"}]
