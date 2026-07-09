@@ -17,6 +17,7 @@ from kb.config import (
     wiki_topic_dir,
 )
 from kb.frontmatter import has_frontmatter, parse
+from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.state import (
@@ -245,7 +246,8 @@ def _write_summary(
     summary_path = _summary_path(article_path)
     if summary_text is None:
         summary_text = extract_summary(compiled_markdown)
-    summary_path.write_text(
+    atomic_write_text(
+        summary_path,
         (
             f"---\n"
             f"title: Summary — {title}\n"
@@ -256,7 +258,6 @@ def _write_summary(
             f"# Summary — {title}\n\n"
             f"{summary_text}\n"
         ),
-        encoding="utf-8",
     )
     return summary_path
 
@@ -317,7 +318,7 @@ def compile_to_artifact(
 
 def persist_artifact(artifact: CompileArtifact, no_commit: bool = True) -> Path:
     out = _resolve_output_path(artifact.raw_path, artifact.topic, artifact.title)
-    out.write_text(artifact.compiled_markdown, encoding="utf-8")
+    atomic_write_text(out, artifact.compiled_markdown)
     summary_path = _write_summary(
         out,
         artifact.topic,

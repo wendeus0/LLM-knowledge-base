@@ -5,6 +5,7 @@ from datetime import date
 
 import kb.config as _config
 from kb.frontmatter import parse, serialize
+from kb.fsutil import atomic_write_text
 from kb.git import commit
 
 
@@ -42,7 +43,7 @@ def write_output(question: str, answer: str, topic: str, no_commit: bool = True)
 
     out = folder / f"{today}-{slug}.md"
     content = _build_content(answer, question, today, topic)
-    out.write_text(content, encoding="utf-8")
+    atomic_write_text(out, content)
 
     if not no_commit:
         commit(f"feat(outputs): file back — {question[:50]}", [out])

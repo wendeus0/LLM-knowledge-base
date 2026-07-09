@@ -9,6 +9,7 @@ from pathlib import Path
 from kb.client import chat
 from kb.config import WIKI_DIR
 from kb.frontmatter import parse
+from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 
@@ -111,7 +112,7 @@ def heal(
             stamped = _stamp_reviewed(text)
             if stamped != text:
                 _backup(path)
-                path.write_text(stamped, encoding="utf-8")
+                atomic_write_text(path, stamped)
                 changed.append(path)
             log.append({"file": path.name, "action": "reviewed_no_changes"})
         else:
@@ -120,7 +121,7 @@ def heal(
                 continue
             stamped = _stamp_reviewed(response)
             _backup(path)
-            path.write_text(stamped, encoding="utf-8")
+            atomic_write_text(path, stamped)
             changed.append(path)
             log.append({"file": path.name, "action": "healed"})
 

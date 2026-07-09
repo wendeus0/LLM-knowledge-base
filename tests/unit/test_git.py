@@ -169,3 +169,40 @@ class TestCommit:
 
                 # Verify relative path is used
                 assert "subdir/test.txt" in mock_run.call_args_list[0][0][0]
+
+    def test_should_return_false_and_warn_when_not_git_repo(self, tmp_path, capsys):
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("content")
+
+        with patch("kb.git.ROOT", tmp_path):
+            with patch("kb.git.subprocess.run") as mock_run:
+                mock_run.side_effect = subprocess.CalledProcessError(
+                    128,
+                    "git",
+                    stderr=b"fatal: not a git repository\n",
+                )
+
+                result = commit("feat: test", [test_file], enabled=True)
+
+                captured = capsys.readouterr()
+                assert result is False
+                assert (
+                    captured.err
+                    == "[kb] aviso: commit falhou: fatal: not a git repository\n"
+                )
+
+    def test_should_return_true_when_commit_succeeds(self, tmp_path):
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("content")
+
+        with patch("kb.git.ROOT", tmp_path):
+            with patch("kb.git.subprocess.run") as mock_run:
+                mock_run.side_effect = [
+                    Mock(returncode=0),
+                    Mock(returncode=1),
+                    Mock(returncode=0),
+                ]
+
+                result = commit("feat: test", [test_file], enabled=True)
+
+                assert result is True
