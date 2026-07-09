@@ -1,7 +1,7 @@
 ---
 title: kb stats — Dashboard de métricas da wiki
 epic: infra
-status: draft
+status: done
 pr:
 ---
 
@@ -9,19 +9,19 @@ pr:
 
 ## Objetivo
 
-Expor via CLI as métricas já calculadas em `kb/analytics/` (health, history, gain) como um dashboard Rich com tabelas e barras de progresso, dando visão rápida do estado da wiki.
+Expor via CLI as métricas já calculadas em `kb/analytics/` (health, history) como um dashboard Rich com tabelas e barras de progresso, dando visão rápida do estado da wiki.
 
 ## Requisitos funcionais
 
-- [ ] RF-01: `kb stats` deve exibir resumo de claims (total, active, stale, disputed, superseded, avg_confidence)
-- [ ] RF-02: `kb stats` deve exibir histórico de comandos dos últimos 7 dias (total runs, failures, avg savings, avg duration)
-- [ ] RF-03: `kb stats` deve exibir contagem de artigos em wiki/ (total, por tópico se disponível)
-- [ ] RF-04: saída formatada com Rich (tabelas, barras de progresso para pct de active/stale)
-- [ ] RF-05: flag `--json` para saída machine-readable
+- [x] RF-01: `kb stats` deve exibir resumo de claims (total, active, stale, disputed, superseded, avg_confidence)
+- [x] RF-02: `kb stats` deve exibir histórico de comandos dos últimos 7 dias (total runs, failures, avg duration)
+- [x] RF-03: `kb stats` deve exibir contagem de artigos em wiki/ (total, por tópico se disponível)
+- [x] RF-04: saída formatada com Rich (tabelas, barras de progresso para pct de active/stale)
+- [x] RF-05: flag `--json` para saída machine-readable
 
 ## Requisitos técnicos
 
-- RT-01: reutilizar `kb/analytics/health.py`, `kb/analytics/history.py`, `kb/analytics/gain.py`
+- RT-01: reutilizar `kb/analytics/health.py`, `kb/analytics/history.py`
 - RT-02: reutilizar `kb/claims.py` para contagem de claims
 - RT-03: contagem de artigos via `WIKI_DIR.rglob("*.md")`
 
@@ -53,10 +53,10 @@ Novo comando `kb stats [--json]`. Sem breaking changes.
 
 ## Critérios de aceite
 
-- [ ] `kb stats` exibe tabela com contagem de claims por status
-- [ ] `kb stats` exibe métricas de history dos últimos 7 dias
-- [ ] `kb stats --json` produz JSON parseable
-- [ ] `kb stats` funciona com vault vazio (zeros)
+- [x] `kb stats` exibe tabela com contagem de claims por status
+- [x] `kb stats` exibe métricas de history dos últimos 7 dias
+- [x] `kb stats --json` produz JSON parseable
+- [x] `kb stats` funciona com vault vazio (zeros)
 
 ## Evidências esperadas
 

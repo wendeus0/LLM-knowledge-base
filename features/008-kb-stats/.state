@@ -1,0 +1,8 @@
+---
+feature: 008-kb-stats
+mode: act
+pipeline_state: GREEN
+branch: feat/008-kb-stats
+worktree_count: 0
+last_updated: 2026-07-09
+---

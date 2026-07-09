@@ -1,5 +1,6 @@
 """CLI principal do kb."""
 
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -26,6 +27,7 @@ app = typer.Typer(
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
         "  [--allow-sensitive] [--no-commit|--commit]\n\n"
+        "stats [--json]\n\n"
         "search <query>\n\n"
         "lint  [--allow-sensitive]\n\n"
         "heal  [--n/-n INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
@@ -483,6 +485,96 @@ def lint(
         ):
             raise typer.Exit(code=1) from None
         console.print(Markdown(lint_wiki(allow_sensitive=True)))
+
+
+@app.command()
+def stats(
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Imprime métricas em JSON parseable, sem formatação Rich",
+    ),
+):
+    """Exibe dashboard de métricas locais da wiki."""
+    from kb.stats import collect_stats
+
+    data = collect_stats()
+    if json_output:
+        typer.echo(json.dumps(data, ensure_ascii=False))
+        return
+
+    claims = data["claims"]
+    claims_table = Table(
+        title="Claims por status",
+        show_header=True,
+        header_style="bold",
+        box=None,
+        padding=(0, 1),
+    )
+    claims_table.add_column("Status")
+    claims_table.add_column("Claims", justify="right")
+    claims_table.add_column("Pct", justify="right")
+    for status in ("active", "stale", "disputed", "superseded"):
+        claims_table.add_row(
+            status,
+            str(claims.get(status, 0)),
+            f"{claims.get(f'{status}_pct', 0.0)}%",
+        )
+    total_claims = claims.get("total_claims", 0)
+    total_pct = "100.0%" if total_claims else "0.0%"
+    claims_table.add_row("total", str(total_claims), total_pct)
+    console.print(claims_table)
+    console.print(f"Avg confidence: {claims.get('avg_confidence', 0.0)}")
+
+    with Progress(
+        TextColumn("{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+        transient=False,
+    ) as progress:
+        progress.add_task(
+            "active",
+            total=100,
+            completed=float(claims.get("active_pct", 0.0)),
+        )
+        progress.add_task(
+            "stale",
+            total=100,
+            completed=float(claims.get("stale_pct", 0.0)),
+        )
+
+    history = data["history_7d"]
+    history_table = Table(
+        title="History 7d",
+        show_header=True,
+        header_style="bold",
+        box=None,
+        padding=(0, 1),
+    )
+    history_table.add_column("Metric")
+    history_table.add_column("Value", justify="right")
+    history_table.add_row("Total runs", str(history.get("total_runs", 0)))
+    history_table.add_row("Failures", str(history.get("failure_runs", 0)))
+    history_table.add_row(
+        "Avg duration (ms)", str(history.get("avg_duration_ms", 0.0))
+    )
+    console.print(history_table)
+
+    articles = data["articles"]
+    articles_table = Table(
+        title="Artigos por tópico",
+        show_header=True,
+        header_style="bold",
+        box=None,
+        padding=(0, 1),
+    )
+    articles_table.add_column("Tópico")
+    articles_table.add_column("Artigos", justify="right")
+    for topic, count in articles.get("by_topic", {}).items():
+        articles_table.add_row(topic, str(count))
+    articles_table.add_row("total", str(articles.get("total", 0)))
+    console.print(articles_table)
 
 
 @app.command()
