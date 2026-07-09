@@ -7,10 +7,16 @@ from kb.book_import_core import (
     build_chapter_filename,
     clean_book_slug,
     convert_book,
-    extract_book_metadata as _extract_book_metadata,
     html_to_markdown,
     slugify,
+)
+from kb.book_import_core import (
+    extract_book_metadata as _extract_book_metadata,
+)
+from kb.book_import_core import (
     write_chapters as _write_chapters,
+)
+from kb.book_import_core import (
     write_metadata as _write_metadata,
 )
 

@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from kb.compile import compile_file
 from kb.qa import answer
 

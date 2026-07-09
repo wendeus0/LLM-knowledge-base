@@ -17,9 +17,10 @@ def test_archive_moves_orphans(tmp_path):
 
 
 def test_archive_older_than_filters_by_mtime(tmp_path):
-    from kb.archive import find_by_age
     import os
     import time
+
+    from kb.archive import find_by_age
 
     wiki = tmp_path / "wiki"
     wiki.mkdir()
@@ -76,9 +77,10 @@ def test_archive_preserves_directory_structure(tmp_path):
 
 
 def test_archive_stale_uses_threshold(tmp_path, monkeypatch):
-    from kb.archive import collect_candidates
     import os
     import time
+
+    from kb.archive import collect_candidates
 
     wiki = tmp_path / "wiki"
     wiki.mkdir()

@@ -6,7 +6,6 @@ from kb.client import chat
 from kb.config import WIKI_DIR
 from kb.guardrails import assert_safe_for_provider
 
-
 SYSTEM = """Você é um auditor de knowledge base. Analise os artigos fornecidos e identifique:
 1. Inconsistências ou informações contraditórias entre artigos
 2. Dados ausentes ou incompletos

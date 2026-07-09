@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from kb.git import commit, _run
+from kb.git import _run, commit
 
 
 class TestRun:

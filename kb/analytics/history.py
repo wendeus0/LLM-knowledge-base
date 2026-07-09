@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from kb.core.tracking import DB_PATH, _connect_db, _ensure_schema
 
@@ -11,11 +11,11 @@ def _parse_now(now: str | None) -> datetime:
     if now:
         parsed = datetime.fromisoformat(now)
     else:
-        parsed = datetime.now(timezone.utc)
+        parsed = datetime.now(UTC)
 
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def get_history_summary(
@@ -37,8 +37,8 @@ def get_history_summary(
 
     end = _parse_now(now)
     start = end - timedelta(days=int(days))
-    start_bound = start.astimezone(timezone.utc).isoformat()
-    end_bound = end.astimezone(timezone.utc).isoformat()
+    start_bound = start.astimezone(UTC).isoformat()
+    end_bound = end.astimezone(UTC).isoformat()
 
     where = "timestamp >= ? AND timestamp <= ?"
     params: list[object] = [start_bound, end_bound]

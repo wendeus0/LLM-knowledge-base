@@ -1,4 +1,4 @@
-from kb.claims import run_contradiction_check, list_claims
+from kb.claims import list_claims, run_contradiction_check
 
 
 def test_contradiction_check_should_mark_opposite_claims_as_disputed(tmp_raw_wiki):

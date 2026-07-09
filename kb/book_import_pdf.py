@@ -43,23 +43,23 @@ def _get_pdf_pages(
     try:
         doc = fitz.open(str(source))
     except Exception as exc:
-        raise error_cls(f"PDF inválido ou corrompido: {source.name} ({exc})")
+        raise error_cls(f"PDF inválido ou corrompido: {source.name} ({exc})") from exc
 
     try:
         toc = doc.get_toc()
 
         if use_ocr:
             try:
-                from pdf2image import convert_from_path
                 import pytesseract
+                from pdf2image import convert_from_path
             except ImportError:
                 raise error_cls(
                     "OCR requer dependências adicionais. Execute: pip install 'kb[ocr]'"
-                )
+                ) from None
             try:
                 images = convert_from_path(str(source))
             except Exception as exc:
-                raise error_cls(f"Erro ao converter PDF para imagens: {exc}")
+                raise error_cls(f"Erro ao converter PDF para imagens: {exc}") from exc
             pages = [pytesseract.image_to_string(img, lang="por+eng") for img in images]
         else:
             pages = [page.get_text() for page in doc]

@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fnmatch import fnmatch
 
-
 CODE_PATTERNS = (
     "kb/*.py",
     "kb/**/*.py",

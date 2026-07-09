@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-
 SENSITIVE_PATTERNS = {
     "api_key": re.compile(r"(?i)(api[_-]?key\s*[:=]\s*|sk-[a-z0-9]{10,})"),
     "token": re.compile(r"(?i)(token\s*[:=]\s*[a-z0-9_\-]{8,})"),

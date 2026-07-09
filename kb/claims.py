@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import json
 import math
 import re
 import uuid
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from kb.audit import record_event
@@ -15,11 +15,11 @@ from kb.state import ensure_state_dirs, normalize_source_path
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _to_iso(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat()
+    return dt.astimezone(UTC).replace(microsecond=0).isoformat()
 
 
 def _from_iso(value: str) -> datetime:

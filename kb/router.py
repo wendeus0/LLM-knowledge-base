@@ -7,7 +7,12 @@ from pathlib import Path
 
 from kb.config import MAX_CONTEXT_TOKENS, RAW_DIR, WIKI_DIR, WIKILINK_TRAVERSAL_DEPTH
 from kb.search import find_relevant
-from kb.state import discover_raw_sources, load_knowledge, load_learnings, search_structured_entries
+from kb.state import (
+    discover_raw_sources,
+    load_knowledge,
+    load_learnings,
+    search_structured_entries,
+)
 
 
 @dataclass(frozen=True)

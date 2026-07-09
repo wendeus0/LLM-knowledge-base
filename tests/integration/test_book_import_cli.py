@@ -1,5 +1,5 @@
-from zipfile import ZIP_DEFLATED, ZipFile
 from unittest.mock import patch
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from typer.testing import CliRunner
 

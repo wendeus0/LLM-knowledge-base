@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from kb.search import find_relevant, search
 
 

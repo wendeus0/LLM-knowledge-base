@@ -1,11 +1,13 @@
 """Compila documentos de raw/ para a wiki em markdown."""
 
+import re
+import unicodedata
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-import re
-import unicodedata
 from pathlib import Path
+
+from kb.claims import record_compiled_claims
 from kb.client import chat, is_provider_resource_limit_error
 from kb.config import (
     RAW_DIR,
@@ -16,7 +18,6 @@ from kb.config import (
 )
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
-from kb.claims import record_compiled_claims
 from kb.state import (
     extract_summary,
     find_compiled_entry,
