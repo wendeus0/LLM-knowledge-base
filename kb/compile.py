@@ -1,6 +1,8 @@
 """Compila documentos de raw/ para a wiki em markdown."""
 
+import json
 import re
+import sys
 import unicodedata
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -29,7 +31,7 @@ from kb.state import (
 from kb.templates_loader import resolve_template
 
 
-def _system_prompt() -> str:
+def _system_prompt(template_name="article"):
     return f"""Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
 1. Identifica o tópico principal ({topic_prompt_options()})
 2. Extrai e organiza os conceitos-chave COM FIDELIDADE à fonte — não invente conteúdo que não está no material; omita seções do template sem material correspondente
@@ -39,7 +41,7 @@ def _system_prompt() -> str:
 
 Formato de saída — apenas o markdown bruto, sem explicações e SEM code fences envolvendo o output:
 
-{resolve_template("article")}
+{resolve_template(template_name)}
 """
 
 
@@ -107,6 +109,31 @@ def _read_raw(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+def _book_context(raw_path):
+    metadata_path = raw_path.parent / "metadata.json"
+    if not metadata_path.exists():
+        return None
+
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[kb] aviso: metadata.json ilegível em {metadata_path}: {exc}", file=sys.stderr)
+        return None
+
+    for chapter in metadata.get("chapters") or []:
+        if chapter.get("file") != raw_path.name:
+            continue
+        return {
+            "book_title": metadata.get("book_title"),
+            "book_author": metadata.get("book_author"),
+            "chapter_index": chapter.get("index"),
+            "chapter_title": chapter.get("title"),
+            "chapter_count": metadata.get("chapter_count"),
+        }
+
+    return None
+
+
 def _resolve_raw_path(raw_path: Path) -> Path:
     return raw_path if raw_path.is_absolute() else RAW_DIR / raw_path
 
@@ -134,9 +161,22 @@ def _prepare_prompt_content(text: str, aggressive: bool = False) -> str:
     return cleaned.strip()
 
 
-def _build_prompt(raw_path: Path, content: str, aggressive: bool = False) -> str:
+def _build_prompt(
+    raw_path: Path, content: str, aggressive: bool = False, book_context=None
+) -> str:
     label = "Documento pré-processado" if aggressive else "Documento"
-    return f"{label}: {raw_path.name}\n\n{_prepare_prompt_content(content, aggressive=aggressive)}"
+    prompt = f"{label}: {raw_path.name}\n\n{_prepare_prompt_content(content, aggressive=aggressive)}"
+    if not book_context:
+        return prompt
+
+    author = book_context.get("book_author") or "autor desconhecido"
+    preamble = (
+        f"Contexto: capítulo {book_context.get('chapter_index')}/"
+        f"{book_context.get('chapter_count')} "
+        f"(\"{book_context.get('chapter_title')}\") do livro "
+        f"\"{book_context.get('book_title')}\" de {author}."
+    )
+    return f"{preamble}\n{prompt}"
 
 
 def _is_compile_target(path: Path) -> bool:
@@ -254,12 +294,20 @@ def compile_to_artifact(
     assert_safe_for_provider(
         content, source=f"compile:{raw_path.name}", allow_sensitive=allow_sensitive
     )
+    book_context = _book_context(raw_path)
+    template_name = "chapter" if book_context else "article"
+    system_prompt = _system_prompt(template_name)
 
     try:
         response = chat(
             messages=[
-                {"role": "system", "content": _system_prompt()},
-                {"role": "user", "content": _build_prompt(raw_path, content)},
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": _build_prompt(
+                        raw_path, content, book_context=book_context
+                    ),
+                },
             ]
         )
     except Exception as exc:
@@ -270,13 +318,18 @@ def compile_to_artifact(
             messages=[
                 {
                     "role": "system",
-                    "content": _system_prompt()
+                    "content": system_prompt
                     + "\n\nO texto de entrada foi pré-processado para remover ruído de paginação/OCR. "
                     "Se houver lacunas, preserve apenas o conteúdo semanticamente útil.",
                 },
                 {
                     "role": "user",
-                    "content": _build_prompt(raw_path, content, aggressive=True),
+                    "content": _build_prompt(
+                        raw_path,
+                        content,
+                        aggressive=True,
+                        book_context=book_context,
+                    ),
                 },
             ]
         )
