@@ -30,7 +30,6 @@ def get_history_summary(
             "command_filter": command,
             "total_runs": 0,
             "failure_runs": 0,
-            "avg_savings_pct": 0.0,
             "avg_duration_ms": 0.0,
             "by_command": {},
         }
@@ -55,14 +54,13 @@ def get_history_summary(
             SELECT
                 COUNT(*),
                 COALESCE(SUM(CASE WHEN exit_code != 0 THEN 1 ELSE 0 END), 0),
-                COALESCE(AVG(savings_pct), 0),
                 COALESCE(AVG(duration_ms), 0)
             FROM commands
             WHERE {where}
             """,
             params,
         )
-        total_runs, failure_runs, avg_savings, avg_duration = cur.fetchone()
+        total_runs, failure_runs, avg_duration = cur.fetchone()
 
         cur.execute(
             f"""
@@ -70,7 +68,6 @@ def get_history_summary(
                 command,
                 COALESCE(category, 'unknown'),
                 COUNT(*),
-                COALESCE(AVG(savings_pct), 0),
                 COALESCE(AVG(duration_ms), 0),
                 COALESCE(SUM(CASE WHEN exit_code != 0 THEN 1 ELSE 0 END), 0)
             FROM commands
@@ -81,13 +78,12 @@ def get_history_summary(
             params,
         )
         by_command: dict[str, dict[str, object]] = {}
-        for cmd, category, runs, savings, duration, fails in cur.fetchall():
+        for cmd, category, runs, duration, fails in cur.fetchall():
             existing = by_command.get(cmd)
             if existing is None:
                 by_command[cmd] = {
                     "category": category,
                     "runs": int(runs),
-                    "avg_savings_pct": round(float(savings), 2),
                     "avg_duration_ms": round(float(duration), 2),
                     "failures": int(fails),
                 }
@@ -95,10 +91,6 @@ def get_history_summary(
 
             prev_runs = int(existing["runs"])
             merged_runs = prev_runs + int(runs)
-            merged_savings = (
-                float(existing["avg_savings_pct"]) * prev_runs
-                + float(savings) * int(runs)
-            ) / merged_runs
             merged_duration = (
                 float(existing["avg_duration_ms"]) * prev_runs
                 + float(duration) * int(runs)
@@ -117,7 +109,6 @@ def get_history_summary(
                         ", ".join(sorted(categories)) if categories else "unknown"
                     ),
                     "runs": merged_runs,
-                    "avg_savings_pct": round(merged_savings, 2),
                     "avg_duration_ms": round(merged_duration, 2),
                     "failures": int(existing["failures"]) + int(fails),
                 }
@@ -128,7 +119,6 @@ def get_history_summary(
         "command_filter": command,
         "total_runs": int(total_runs),
         "failure_runs": int(failure_runs),
-        "avg_savings_pct": round(float(avg_savings), 2),
         "avg_duration_ms": round(float(avg_duration), 2),
         "by_command": by_command,
     }

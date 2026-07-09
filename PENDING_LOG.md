@@ -53,6 +53,19 @@ Pendências e decisões abertas.
 
 ## P2 (Nice-to-have)
 
+**[deferido] Coluna `savings_pct` órfã no schema de tracking.db**
+
+- Origem: refactor/dead-code-cut 2026-07-09 (plano de robustez, Task 9)
+- Métrica removida de render/consultas (`analytics/gain.py`, `analytics/history.py`); coluna permanece no schema SQLite e nos INSERTs de `core/tracking.py` para evitar migração
+- Fechar quando houver migração de schema por outro motivo
+
+**[deferido] Débitos estruturais do plano de robustez 2026-07-09**
+
+- Split de `book_import_core.py` (931 linhas: epub/toc/markdownize/writers)
+- Extração da lógica de `ingest`/`import-book`/`archive` do `cli.py` + helper único de confirmação sensível (5 cópias)
+- Unificar 4 variantes de slugify
+- `kb/config.py` resolve paths no import (pré-requisito da SPEC 010-multi-vault)
+
 **[deferido] fsync do diretório pós-os.replace em fsutil**
 
 - Origem: triagem de reviews de bot 2026-07-09 (finding 39.12, cubic)

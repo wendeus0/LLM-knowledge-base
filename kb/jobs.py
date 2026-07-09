@@ -41,9 +41,9 @@ def _run_compile_job() -> str:
 
 
 def _run_lint_job() -> str:
-    from kb.cmds.lint.run import execute_lint_command
+    from kb.lint import lint_wiki
 
-    report = execute_lint_command(allow_sensitive=False)
+    report = lint_wiki(allow_sensitive=False)
     return f"Job lint executado.\n\n{report}"
 
 
