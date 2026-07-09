@@ -16,6 +16,8 @@ def _build_content(answer: str, question: str, today: str, topic: str) -> str:
             meta["source_question"] = question
         if "date" not in meta:
             meta["date"] = today
+        if "topic" not in meta:
+            meta["topic"] = topic
         body = "\n".join(body.splitlines()).lstrip("\n")
         return serialize(meta, f"\n{body}\n")
     return (
