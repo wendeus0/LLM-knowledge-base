@@ -4,8 +4,15 @@ def has_frontmatter(text):
     return bool(meta) or body != text
 
 
+LIST_KEYS = {"tags"}
+
+
 def parse(text):
-    """Extrai frontmatter YAML plano e corpo de um documento markdown."""
+    """Extrai frontmatter YAML plano e corpo de um documento markdown.
+
+    Colchetes viram lista apenas nas chaves de LIST_KEYS; nas demais o valor
+    é preservado como string literal (evita quebrar consumidores de title/topic).
+    """
     lines = text.splitlines(keepends=True)
     if not lines or lines[0].strip() != "---":
         return {}, text
@@ -26,7 +33,7 @@ def parse(text):
         key, value = line.split(":", 1)
         key = key.strip()
         value = value.strip()
-        if value.startswith("[") and value.endswith("]"):
+        if key in LIST_KEYS and value.startswith("[") and value.endswith("]"):
             meta[key] = [item.strip().strip("'\"") for item in value[1:-1].split(",") if item.strip()]
         else:
             meta[key] = value

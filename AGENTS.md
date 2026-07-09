@@ -95,7 +95,7 @@ kb jobs run <job>       # Executar job canônico
 - Conflitos git são raros porque o LLM apenas append/atualiza seções, nunca reescreve (estratégia Pawel Huryn)
 - Stochastic heal processa N arquivos aleatórios por execução (scale para vaults grandes)
 - O LLM nunca escreve a wiki manualmente — tudo é automatizado
-- Compilação adiciona frontmatter YAML: title, topic, tags, source, reviewed_at
+- Compilação adiciona frontmatter YAML: title, topic, tags, source; `reviewed_at` é carimbado pelo heal, não pelo compile
 
 ## Arquitetura
 

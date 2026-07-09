@@ -18,7 +18,7 @@ from kb.config import (
     topic_prompt_options,
     wiki_topic_dir,
 )
-from kb.frontmatter import has_frontmatter, parse
+from kb.frontmatter import parse
 from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
@@ -61,10 +61,10 @@ def _strip_outer_fence(text: str) -> str:
 
 
 def _validate_output(compiled_markdown, source_name):
-    if not has_frontmatter(compiled_markdown):
+    meta, body = parse(compiled_markdown)
+    if not meta and body == compiled_markdown:
         raise CompileOutputError(f"{source_name}: output sem frontmatter YAML")
 
-    meta, body = parse(compiled_markdown)
     if not str(meta.get("title", "")).strip():
         raise CompileOutputError(f"{source_name}: frontmatter sem title")
     if not str(meta.get("topic", "")).strip():

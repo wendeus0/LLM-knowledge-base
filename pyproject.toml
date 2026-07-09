@@ -48,7 +48,7 @@ path = "kb/__init__.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=kb --cov-report=term-missing --cov-report=html"
+addopts = "--cov=kb --cov-report=term-missing"
 
 [tool.coverage.run]
 source = ["kb"]

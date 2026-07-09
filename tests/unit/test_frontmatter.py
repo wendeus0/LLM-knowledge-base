@@ -108,3 +108,20 @@ Body.
 
     assert parse(reconstructed) == (meta, body)
     assert reconstructed == text
+
+
+def test_should_keep_bracket_value_as_string_when_key_is_not_tags():
+    text = """---
+title: [Attention]
+topic: [ai]
+tags: [a, b]
+---
+
+# T
+"""
+
+    meta, _ = parse(text)
+
+    assert meta["title"] == "[Attention]"
+    assert meta["topic"] == "[ai]"
+    assert meta["tags"] == ["a", "b"]
