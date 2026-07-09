@@ -94,4 +94,7 @@ def chat(messages: list[dict], model: str | None = None, **kwargs) -> str:
         messages=messages,
         **kwargs,
     )
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    if content is None or not content.strip():
+        raise RuntimeError("Provider retornou resposta vazia")
+    return content

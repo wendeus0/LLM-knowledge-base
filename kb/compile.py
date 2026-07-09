@@ -16,7 +16,7 @@ from kb.config import (
     topic_prompt_options,
     wiki_topic_dir,
 )
-from kb.frontmatter import parse
+from kb.frontmatter import has_frontmatter, parse
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.state import (
@@ -58,13 +58,32 @@ translated_by: ai
 """
 
 
+class CompileOutputError(Exception):
+    pass
+
+
 def _strip_outer_fence(text: str) -> str:
     lines = text.strip().splitlines()
-    if lines and lines[0].startswith("```"):
-        lines = lines[1:]
-    if lines and lines[-1].strip() == "```":
-        lines = lines[:-1]
+    if (
+        len(lines) >= 2
+        and re.match(r"^```\s*[\w-]*\s*$", lines[0].strip())
+        and lines[-1].strip() == "```"
+    ):
+        lines = lines[1:-1]
     return "\n".join(lines).strip() + "\n"
+
+
+def _validate_output(compiled_markdown, source_name):
+    if not has_frontmatter(compiled_markdown):
+        raise CompileOutputError(f"{source_name}: output sem frontmatter YAML")
+
+    meta, body = parse(compiled_markdown)
+    if not str(meta.get("title", "")).strip():
+        raise CompileOutputError(f"{source_name}: frontmatter sem title")
+    if not str(meta.get("topic", "")).strip():
+        raise CompileOutputError(f"{source_name}: frontmatter sem topic")
+    if not body.strip():
+        raise CompileOutputError(f"{source_name}: corpo vazio após frontmatter")
 
 
 TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
@@ -278,6 +297,7 @@ def compile_to_artifact(
         )
 
     compiled_markdown = _strip_outer_fence(response)
+    _validate_output(compiled_markdown, raw_path.name)
     topic, title = _extract_topic_and_title(compiled_markdown, raw_path.stem)
     dir_topic = _topic_from_source(raw_path)
     if dir_topic:
