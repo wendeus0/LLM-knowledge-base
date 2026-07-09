@@ -1,11 +1,10 @@
 """Testes para kb/discovery.py: run loop, lock, seen-tracking."""
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from kb.config import STATE_DIR
 
 
 @pytest.fixture(autouse=True)

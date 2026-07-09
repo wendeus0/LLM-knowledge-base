@@ -90,7 +90,9 @@ def test_history_summary_should_filter_by_command(tmp_path, monkeypatch):
     with closing(sqlite3.connect(db)) as conn:
         _seed(conn)
 
-    summary = get_history_summary(command="compile", days=30)
+    summary = get_history_summary(
+        command="compile", days=30, now="2026-04-11T12:30:00+00:00"
+    )
 
     assert summary["total_runs"] == 2
     assert summary["failure_runs"] == 1

@@ -1,7 +1,5 @@
-import json
 from pathlib import Path
 
-import pytest
 
 from kb.audit import list_events, record_event
 
