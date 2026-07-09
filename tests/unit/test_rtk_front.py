@@ -46,4 +46,5 @@ def test_cli_search_should_render_results():
 
     assert result.exit_code == 0
     mock_search.assert_called_once_with("query")
-    mock_print.assert_any_call("[bold]article[/] [dim](wiki/article.md)[/] score=10")
+    expected_rel = Path("wiki") / "article.md"
+    mock_print.assert_any_call(f"[bold]article[/] [dim]({expected_rel})[/] score=10")
