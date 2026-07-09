@@ -26,36 +26,20 @@ from kb.state import (
     mark_compiled,
     upsert_knowledge,
 )
+from kb.templates_loader import resolve_template
 
 
 def _system_prompt() -> str:
     return f"""Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
 1. Identifica o tópico principal ({topic_prompt_options()})
-2. Extrai e organiza os conceitos-chave
+2. Extrai e organiza os conceitos-chave COM FIDELIDADE à fonte — não invente conteúdo que não está no material; omita seções do template sem material correspondente
 3. Gera um artigo wiki em PORTUGUÊS em markdown com frontmatter YAML, seções claras e wikilinks [[conceito]]
 4. O artigo deve ser auto-contido mas referenciar outros conceitos relacionados com [[wikilinks]]
 5. Termos técnicos consolidados (ex: LLM, transformer, gradient descent) podem permanecer em inglês
 
 Formato de saída — apenas o markdown bruto, sem explicações e SEM code fences envolvendo o output:
 
----
-title: <título em português>
-topic: <topic>
-tags: [tag1, tag2]
-source: <nome do arquivo original>
-translated_by: ai
----
-
-# <título>
-
-<conteúdo em português>
-
-## Conceitos Relacionados
-- [[conceito1]]
-- [[conceito2]]
-
----
-> **Nota:** Este artigo foi gerado e traduzido automaticamente por IA a partir de material em inglês. Pode conter imprecisões. Consulte a fonte original para informações definitivas.
+{resolve_template("article")}
 """
 
 
