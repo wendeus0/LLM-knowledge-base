@@ -1,5 +1,6 @@
-from typer.testing import CliRunner
 from unittest.mock import patch
+
+from typer.testing import CliRunner
 
 from kb.cli import app
 

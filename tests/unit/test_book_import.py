@@ -590,7 +590,7 @@ def test_should_fallback_to_empty_toc_when_toc_is_none(tmp_path, monkeypatch):
 
 
 def test_should_handle_empty_pdf_pages(tmp_path, monkeypatch):
-    from kb.book_import import import_epub, BookImportError
+    from kb.book_import import BookImportError, import_epub
 
     source = tmp_path / "empty.pdf"
     output_dir = tmp_path / "out"
@@ -602,7 +602,7 @@ def test_should_handle_empty_pdf_pages(tmp_path, monkeypatch):
 
 
 def test_should_handle_epub_with_missing_toc_reference(tmp_path):
-    from kb.book_import import import_epub, BookImportError
+    from kb.book_import import BookImportError, import_epub
 
     source = tmp_path / "bad.epub"
     output_dir = tmp_path / "out"
@@ -623,7 +623,7 @@ def test_should_handle_epub_with_missing_toc_reference(tmp_path):
 
 
 def test_should_raise_for_unsupported_file_format(tmp_path):
-    from kb.book_import import import_epub, BookImportError
+    from kb.book_import import BookImportError, import_epub
 
     source = tmp_path / "document.txt"
     source.write_text("Plain text content")

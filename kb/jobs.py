@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
-from typing import Callable
 
 from kb.core.tracking import track_command
 from kb.discover import classify_job_command

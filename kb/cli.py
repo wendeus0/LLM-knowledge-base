@@ -1,17 +1,17 @@
 """CLI principal do kb."""
 
-import typer
-from pathlib import Path
-from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+import typer
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.progress import (
+    BarColumn,
     Progress,
     SpinnerColumn,
-    TextColumn,
-    BarColumn,
     TaskProgressColumn,
+    TextColumn,
 )
 from rich.table import Table
 
@@ -75,7 +75,7 @@ def ingest(
                 out = ingest_url(source, no_commit=no_commit)
             except WebIngestError as exc:
                 console.print(f"[red]Erro:[/] {exc}")
-                raise typer.Exit(code=1)
+                raise typer.Exit(code=1) from None
             record_ingest(out)
             console.print(f"[green]Adicionado:[/] {out}")
             ingested.append(out)
@@ -93,7 +93,8 @@ def ingest(
             ingested.append(dest)
 
     if compile_after and ingested:
-        from kb.compile import compile_file, update_index as do_update_index
+        from kb.compile import compile_file
+        from kb.compile import update_index as do_update_index
 
         for f in ingested:
             console.print(f"Compilando [bold]{f.name}[/]...")
@@ -105,7 +106,7 @@ def ingest(
 
 @app.command("import-book")
 def import_book(
-    paths: List[Path] = typer.Argument(
+    paths: list[Path] = typer.Argument(
         ..., help="Arquivo(s) EPUB ou PDF textual para importar em capítulos Markdown"
     ),
     output: Path = typer.Option(
@@ -147,8 +148,8 @@ def import_book(
     from kb.book_import import BookImportError, default_output_dir, import_epub
     from kb.git import commit
 
-    all_written: List[Path] = []
-    all_imported: List[Path] = []
+    all_written: list[Path] = []
+    all_imported: list[Path] = []
     results_map = {}  # path → (status, detail) para manter ordem original na tabela
 
     def _process(path: Path):
@@ -257,7 +258,7 @@ def import_book(
                             )
                         )
                     else:
-                        raise typer.Exit(code=1)
+                        raise typer.Exit(code=1) from None
 
             if compiled_outputs:
                 from kb.compile import update_index as do_update_index
@@ -426,7 +427,7 @@ def qa(
                 "Continuar mesmo assim e enviar ao provider externo?", default=False
             )
         ):
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
         _run_qa(True)
 
 
@@ -465,7 +466,7 @@ def lint(
                 "Continuar mesmo assim e enviar ao provider externo?", default=False
             )
         ):
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
         console.print(Markdown(execute_lint_command(allow_sensitive=True)))
 
 
@@ -500,7 +501,7 @@ def heal(
                 "Continuar mesmo assim e enviar ao provider externo?", default=False
             )
         ):
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
         log = do_heal(n, allow_sensitive=True, no_commit=no_commit)
     if not log:
         console.print("[yellow]Wiki vazia.[/]")
@@ -580,7 +581,7 @@ def archive(
 
 @discovery_app.command("run")
 def discovery_run(
-    query: List[str] = typer.Option(
+    query: list[str] = typer.Option(
         None,
         "--query",
         help="Query de discovery (pode repetir; padrão usa queries canônicas).",
@@ -699,7 +700,7 @@ def jobs_run(
         )
     except HealthGateError as exc:
         console.print(str(exc))
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
 
 @jobs_app.command("gate")
@@ -762,6 +763,7 @@ def jobs_doc_gate(
 ):
     """Falha se houver mudança em kb/*.py sem SPEC ou Handoff no diff."""
     from subprocess import run
+
     from kb.doc_gate import evaluate_doc_gate
 
     proc = run(
@@ -802,6 +804,7 @@ def handoff_create(
 ):
     """Cria handoff estruturado em docs/handoffs/YYYY-MM-DD-HHMM.md."""
     from subprocess import run
+
     from kb.handoff import create_handoff
 
     branch = ""

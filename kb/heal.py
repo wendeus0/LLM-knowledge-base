@@ -4,6 +4,7 @@ import random
 import re
 from datetime import datetime
 from pathlib import Path
+
 from kb.client import chat
 from kb.config import WIKI_DIR
 from kb.git import commit

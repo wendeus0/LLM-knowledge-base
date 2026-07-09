@@ -2,6 +2,8 @@
 
 import re
 from pathlib import Path
+
+from kb.claims import find_relevant_claims
 from kb.client import chat
 from kb.config import WIKI_DIR as CONFIG_WIKI_DIR
 from kb.config import canonical_topic, topic_prompt_options, wiki_topic_dir
@@ -9,7 +11,6 @@ from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.outputs import write_output as _write_output
 from kb.router import build_context
-from kb.claims import find_relevant_claims
 from kb.state import add_learning
 
 SYSTEM = """Você é um assistente de knowledge base. Responda perguntas com base nos artigos fornecidos.

@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # RED: falha até ingest-url ser implementada
-from kb.web_ingest import ingest_url, WebIngestError  # noqa: E402
+from kb.web_ingest import WebIngestError, ingest_url  # noqa: E402
 
 HTML_SAMPLE = """
 <html>

@@ -2,7 +2,7 @@ import math
 import re
 import shutil
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from kb.analytics.health import get_health_summary
@@ -20,7 +20,7 @@ def _versioned_backup(dest: Path) -> None:
         m = _VERSIONED_RE.search(sibling.name)
         if m:
             max_ver = max(max_ver, int(m.group(1)))
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     backup_name = f"{dest.stem}.v{max_ver + 1}.{ts}.md"
     dest.rename(dest.parent / backup_name)
 

@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import posixpath
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote
 from zipfile import BadZipFile, ZipFile
+
 from kb.book_import_pdf import (
     _PDF_PAGES_PER_CHUNK,
     _extract_chapters_from_pdf,
@@ -862,7 +863,7 @@ def write_metadata(
         "source_file": source.name,
         "source_format": source.suffix.lower().lstrip("."),
         "processed_at": book_metadata.get("processed_at")
-        or datetime.now(timezone.utc).isoformat(),
+        or datetime.now(UTC).isoformat(),
         "book_title": book_metadata.get("title") or source.stem,
         "book_author": book_metadata.get("author"),
         "book_authors": book_metadata.get("authors")

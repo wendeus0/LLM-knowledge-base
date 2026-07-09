@@ -58,6 +58,7 @@ def test_should_emit_status_changed_when_decay_marks_stale(tmp_raw_wiki):
 
 def test_should_emit_status_changed_when_contradiction_marks_disputed(tmp_raw_wiki):
     import json
+
     from kb.config import CLAIMS_PATH
 
     raw, wiki = tmp_raw_wiki
@@ -109,6 +110,7 @@ def test_new_claims_should_have_schema_version(tmp_raw_wiki):
 
 def test_read_claims_without_schema_version_fallback(tmp_raw_wiki):
     import json
+
     from kb.config import CLAIMS_PATH
 
     _ = tmp_raw_wiki

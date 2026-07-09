@@ -6,7 +6,6 @@ from unittest.mock import patch
 import pytest
 
 
-
 @pytest.fixture(autouse=True)
 def _isolate_state(tmp_path, monkeypatch):
     state_dir = tmp_path / "kb_state"
@@ -77,7 +76,11 @@ def test_discover_articles_google_news_raises_without_requests(tmp_path, monkeyp
 @patch("kb.discovery.discover_articles_google_news")
 @patch("kb.discovery.ingest_url")
 def test_run_scheduled_skips_seen_urls(mock_ingest, mock_news, mock_arxiv, tmp_path, monkeypatch):
-    from kb.discovery import DiscoveryItem, _merge_and_save_seen_urls, run_scheduled_discovery
+    from kb.discovery import (
+        DiscoveryItem,
+        _merge_and_save_seen_urls,
+        run_scheduled_discovery,
+    )
 
     item = DiscoveryItem(title="Test", url="https://seen.com/paper", source="arxiv", published_at="2026-01-01")
     _merge_and_save_seen_urls({item.url})
@@ -96,6 +99,7 @@ def test_run_scheduled_skips_seen_urls(mock_ingest, mock_news, mock_arxiv, tmp_p
 @patch("kb.discovery.ingest_url")
 def test_run_scheduled_ingests_new_urls(mock_ingest, mock_news, mock_arxiv, tmp_path, monkeypatch):
     from pathlib import Path
+
     from kb.discovery import DiscoveryItem, run_scheduled_discovery
 
     item = DiscoveryItem(title="New", url="https://new.com/paper", source="arxiv", published_at="2026-01-01")
@@ -129,6 +133,7 @@ def test_run_scheduled_records_failures(mock_news, mock_arxiv, tmp_path, monkeyp
 @patch("kb.discovery.ingest_url")
 def test_run_scheduled_returns_summary(mock_ingest, mock_news, mock_arxiv, tmp_path, monkeypatch):
     from pathlib import Path
+
     from kb.discovery import DiscoveryItem, run_scheduled_discovery
 
     item = DiscoveryItem(title="Test", url="https://test.com/x", source="arxiv", published_at="2026-01-01")

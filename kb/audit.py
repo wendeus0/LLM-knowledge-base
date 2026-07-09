@@ -5,18 +5,18 @@ from __future__ import annotations
 import json
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import kb.config as _config
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _to_iso(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat()
+    return dt.astimezone(UTC).replace(microsecond=0).isoformat()
 
 
 def _ensure_dir(path: Path) -> None:

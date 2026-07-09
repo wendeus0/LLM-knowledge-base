@@ -1,5 +1,6 @@
 from unittest.mock import patch
-from kb.heal import heal, _is_stub, _stamp_reviewed
+
+from kb.heal import _is_stub, _stamp_reviewed, heal
 
 
 class TestIsStub:

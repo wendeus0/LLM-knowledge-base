@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 import subprocess
 import time
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
 
 from kb.core.tracking import track_command
-
 
 FilterFn = Callable[[str], str]
 

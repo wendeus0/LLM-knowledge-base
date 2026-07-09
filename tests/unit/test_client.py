@@ -1,10 +1,11 @@
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
 from kb.client import (
-    validate_provider_model_compatibility,
     get_client,
     is_provider_resource_limit_error,
+    validate_provider_model_compatibility,
 )
 
 

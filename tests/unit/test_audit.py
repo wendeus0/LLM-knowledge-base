@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 from kb.audit import list_events, record_event
 
 

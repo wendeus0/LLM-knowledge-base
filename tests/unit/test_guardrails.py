@@ -1,6 +1,11 @@
 import pytest
 
-from kb.guardrails import SensitiveContentError, assert_safe_for_provider, detect_sensitive_content, summarize_findings
+from kb.guardrails import (
+    SensitiveContentError,
+    assert_safe_for_provider,
+    detect_sensitive_content,
+    summarize_findings,
+)
 
 
 def test_should_detect_sensitive_patterns():

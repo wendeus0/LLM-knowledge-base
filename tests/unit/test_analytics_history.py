@@ -1,5 +1,5 @@
-from contextlib import closing
 import sqlite3
+from contextlib import closing
 
 from kb.analytics.history import get_history_summary
 

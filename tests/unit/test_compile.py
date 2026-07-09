@@ -1,18 +1,19 @@
 import threading
 import time
 from unittest.mock import patch
+
+from kb.claims import list_claims
 from kb.compile import (
     CompileArtifact,
+    _prepare_prompt_content,
     _write_summary,
+    compile_file,
     compile_many,
     compile_to_artifact,
-    compile_file,
     discover_compile_targets,
     persist_artifact,
     update_index,
-    _prepare_prompt_content,
 )
-from kb.claims import list_claims
 
 
 class TestCompileFile:

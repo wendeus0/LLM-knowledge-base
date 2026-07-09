@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from kb.lint import lint_wiki
 
 

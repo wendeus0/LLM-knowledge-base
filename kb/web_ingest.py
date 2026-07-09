@@ -3,7 +3,7 @@
 import ipaddress
 import re
 import socket
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -11,8 +11,8 @@ import kb.config as _config
 from kb.git import commit
 
 try:
-    import requests
     import html2text as _html2text
+    import requests
 except ImportError:  # pragma: no cover
     requests = None  # type: ignore[assignment]
     _html2text = None  # type: ignore[assignment]
@@ -170,7 +170,7 @@ def ingest_url(url: str, no_commit: bool = True) -> Path:
     h.body_width = 0
     markdown_body = h.handle(html)
 
-    ingested_at = datetime.now(timezone.utc).isoformat()
+    ingested_at = datetime.now(UTC).isoformat()
     content = (
         f"---\n"
         f"title: {_yaml_quote(title or slug)}\n"

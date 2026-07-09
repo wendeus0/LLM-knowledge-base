@@ -7,7 +7,7 @@ import os
 import re
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -84,7 +84,7 @@ def _merge_and_save_seen_urls(seen: set[str]) -> None:
             on_disk = _load_seen_urls()
             merged = on_disk | seen
             payload = {
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
                 "urls": sorted(merged),
             }
             content = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
