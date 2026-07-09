@@ -2,11 +2,14 @@
 
 import random
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
 
 from kb.client import chat
 from kb.config import WIKI_DIR
+from kb.frontmatter import parse
+from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 
@@ -47,11 +50,39 @@ def _stamp_reviewed(text: str) -> str:
     return text.replace("---\n", f"---\nreviewed_at: {now}\n", 1)
 
 
+def _backup(path):
+    backup_dir = WIKI_DIR / ".heal_backup"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    backup_path = backup_dir / f"{path.parent.name}.{path.stem}.{ts}.md"
+    shutil.copy2(path, backup_path)
+
+
+def _is_valid_heal_output(original, response):
+    original_meta, _ = parse(original)
+    response_meta, _ = parse(response)
+
+    if original_meta and not response_meta:
+        return False
+    if original_meta.get("title") and response_meta.get("title") != original_meta["title"]:
+        return False
+    if any(key != "reviewed_at" and key not in response_meta for key in original_meta):
+        return False
+    if len(response) < 0.5 * len(original):
+        return False
+    return True
+
+
 def heal(
     n: int = 10, allow_sensitive: bool = False, no_commit: bool = True
 ) -> list[dict]:
     """Processa N arquivos aleatórios da wiki. Retorna log de ações."""
-    candidates = [p for p in WIKI_DIR.rglob("*.md") if p.name != "_index.md"]
+    backup_dir = WIKI_DIR / ".heal_backup"
+    candidates = [
+        p
+        for p in WIKI_DIR.rglob("*.md")
+        if p.name != "_index.md" and backup_dir not in p.parents
+    ]
     if not candidates:
         return []
 
@@ -63,6 +94,7 @@ def heal(
         text = path.read_text(encoding="utf-8", errors="replace")
 
         if _is_stub(text):
+            _backup(path)
             path.unlink()
             log.append({"file": path.name, "action": "deleted_stub"})
             continue
@@ -81,12 +113,17 @@ def heal(
         if response.strip() == "NO_CHANGES":
             stamped = _stamp_reviewed(text)
             if stamped != text:
-                path.write_text(stamped, encoding="utf-8")
+                _backup(path)
+                atomic_write_text(path, stamped)
                 changed.append(path)
             log.append({"file": path.name, "action": "reviewed_no_changes"})
         else:
+            if not _is_valid_heal_output(text, response):
+                log.append({"file": path.name, "action": "skipped_invalid_output"})
+                continue
             stamped = _stamp_reviewed(response)
-            path.write_text(stamped, encoding="utf-8")
+            _backup(path)
+            atomic_write_text(path, stamped)
             changed.append(path)
             log.append({"file": path.name, "action": "healed"})
 

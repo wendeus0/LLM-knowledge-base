@@ -16,6 +16,8 @@ from kb.config import (
     topic_prompt_options,
     wiki_topic_dir,
 )
+from kb.frontmatter import parse
+from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.state import (
@@ -57,13 +59,32 @@ translated_by: ai
 """
 
 
+class CompileOutputError(Exception):
+    pass
+
+
 def _strip_outer_fence(text: str) -> str:
     lines = text.strip().splitlines()
-    if lines and lines[0].startswith("```"):
-        lines = lines[1:]
-    if lines and lines[-1].strip() == "```":
-        lines = lines[:-1]
+    if (
+        len(lines) >= 2
+        and re.match(r"^```\s*[\w-]*\s*$", lines[0].strip())
+        and lines[-1].strip() == "```"
+    ):
+        lines = lines[1:-1]
     return "\n".join(lines).strip() + "\n"
+
+
+def _validate_output(compiled_markdown, source_name):
+    meta, body = parse(compiled_markdown)
+    if not meta and body == compiled_markdown:
+        raise CompileOutputError(f"{source_name}: output sem frontmatter YAML")
+
+    if not str(meta.get("title", "")).strip():
+        raise CompileOutputError(f"{source_name}: frontmatter sem title")
+    if not str(meta.get("topic", "")).strip():
+        raise CompileOutputError(f"{source_name}: frontmatter sem topic")
+    if not body.strip():
+        raise CompileOutputError(f"{source_name}: corpo vazio após frontmatter")
 
 
 TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
@@ -194,12 +215,11 @@ def _extract_topic_and_title(
 ) -> tuple[str, str]:
     topic = "general"
     title = fallback_title
-    for line in compiled_markdown.splitlines():
-        if line.startswith("topic:"):
-            candidate = line.split(":", 1)[1].strip()
-            topic = canonical_topic(candidate)
-        if line.startswith("title:"):
-            title = line.split(":", 1)[1].strip()
+    meta, _ = parse(compiled_markdown)
+    if "topic" in meta:
+        topic = canonical_topic(meta["topic"])
+    if "title" in meta:
+        title = meta["title"]
     return topic, title
 
 
@@ -226,7 +246,8 @@ def _write_summary(
     summary_path = _summary_path(article_path)
     if summary_text is None:
         summary_text = extract_summary(compiled_markdown)
-    summary_path.write_text(
+    atomic_write_text(
+        summary_path,
         (
             f"---\n"
             f"title: Summary — {title}\n"
@@ -237,7 +258,6 @@ def _write_summary(
             f"# Summary — {title}\n\n"
             f"{summary_text}\n"
         ),
-        encoding="utf-8",
     )
     return summary_path
 
@@ -278,6 +298,7 @@ def compile_to_artifact(
         )
 
     compiled_markdown = _strip_outer_fence(response)
+    _validate_output(compiled_markdown, raw_path.name)
     topic, title = _extract_topic_and_title(compiled_markdown, raw_path.stem)
     dir_topic = _topic_from_source(raw_path)
     if dir_topic:
@@ -297,7 +318,7 @@ def compile_to_artifact(
 
 def persist_artifact(artifact: CompileArtifact, no_commit: bool = True) -> Path:
     out = _resolve_output_path(artifact.raw_path, artifact.topic, artifact.title)
-    out.write_text(artifact.compiled_markdown, encoding="utf-8")
+    atomic_write_text(out, artifact.compiled_markdown)
     summary_path = _write_summary(
         out,
         artifact.topic,

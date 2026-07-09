@@ -1,6 +1,7 @@
 """Git helper — commit explícito para writes no corpus."""
 
 import subprocess
+import sys
 from pathlib import Path
 
 from kb.config import ROOT
@@ -10,10 +11,21 @@ def _run(*args: str) -> None:
     subprocess.run(["git", "-C", str(ROOT), *args], check=True, capture_output=True)
 
 
-def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
+def _error_detail(exc):
+    stderr = getattr(exc, "stderr", None)
+    if isinstance(stderr, bytes):
+        detail = stderr.decode("utf-8", errors="replace").strip()
+    elif stderr:
+        detail = str(stderr).strip()
+    else:
+        detail = str(exc).strip()
+    return detail
+
+
+def commit(message: str, paths: list[Path], enabled: bool = True) -> bool:
     """Stage os paths e commita. Silencioso se não há mudanças."""
     if not enabled:
-        return
+        return True
     try:
         rel = []
         for p in paths:
@@ -22,7 +34,7 @@ def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
             except ValueError:
                 continue
         if not rel:
-            return
+            return True
         _run("add", *rel)
         result = subprocess.run(
             ["git", "-C", str(ROOT), "diff", "--cached", "--quiet"],
@@ -30,5 +42,7 @@ def commit(message: str, paths: list[Path], enabled: bool = True) -> None:
         )
         if result.returncode != 0:  # há mudanças staged
             _run("commit", "-m", message)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pass  # sem mudanças ou git não disponível — ignora
+        return True
+    except Exception as exc:
+        print(f"[kb] aviso: commit falhou: {_error_detail(exc)}", file=sys.stderr)
+        return False

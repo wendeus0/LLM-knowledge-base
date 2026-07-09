@@ -87,7 +87,15 @@ Machine Learning é um subcampo da inteligência artificial que permite aos sist
             patch("kb.heal.commit"),
             patch("random.sample") as mock_sample,
         ):
-            mock_chat.return_value = "Processado."
+            mock_chat.return_value = """---
+title: Machine Learning
+topic: ai
+---
+
+# Machine Learning
+
+Machine Learning é um subcampo da [[inteligência artificial]] que permite aos sistemas aprender e melhorar a partir da experiência sem serem programados explicitamente.
+"""
             mock_sample.return_value = [article]
 
             result = heal(n=1)
@@ -95,7 +103,7 @@ Machine Learning é um subcampo da inteligência artificial que permite aos sist
             # RED: falha se reviewed_at não é atualizado
             # Verificar que o arquivo foi processado e timestamp foi adicionado
             assert len(result) > 0
-            assert result[0]["action"] in ["healed", "reviewed_no_changes"]
+            assert result[0]["action"] == "healed"
 
     def test_should_not_delete_valuable_stubs(self, tmp_raw_wiki):
         """
@@ -151,8 +159,33 @@ Content with substantial text content for article {i}.
             patch("kb.heal.commit") as mock_commit,
             patch("random.sample") as mock_sample,
         ):
-            articles = list((wiki / "python").glob("*.md"))[:3]
-            mock_chat.side_effect = ["Healed.", "Healed.", "Healed."]
+            articles = [wiki / "python" / f"article{i}.md" for i in range(3)]
+            mock_chat.side_effect = [
+                """---
+title: Article 0
+---
+
+# Article 0
+
+Content with substantial text content for [[article 0]].
+""",
+                """---
+title: Article 1
+---
+
+# Article 1
+
+Content with substantial text content for [[article 1]].
+""",
+                """---
+title: Article 2
+---
+
+# Article 2
+
+Content with substantial text content for [[article 2]].
+""",
+            ]
             mock_sample.return_value = articles
 
             result = heal(n=3, no_commit=False)

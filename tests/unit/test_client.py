@@ -180,3 +180,53 @@ class TestChat:
             temperature=0.7,
             max_tokens=100,
         )
+
+    def test_should_raise_when_provider_returns_none_content(self, monkeypatch):
+        monkeypatch.setattr("kb.client.API_KEY", "test-key")
+        monkeypatch.setattr("kb.client.BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.setattr("kb.client.MODEL", "gpt-4")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content=None))]
+        mock_client = Mock()
+        mock_client.chat.completions.create.return_value = mock_response
+
+        with patch("kb.client.get_client", return_value=mock_client):
+            from kb.client import chat
+
+            with pytest.raises(RuntimeError, match="Provider retornou resposta vazia"):
+                chat([{"role": "user", "content": "Hello"}])
+
+    def test_should_raise_when_provider_returns_empty_content(self, monkeypatch):
+        monkeypatch.setattr("kb.client.API_KEY", "test-key")
+        monkeypatch.setattr("kb.client.BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.setattr("kb.client.MODEL", "gpt-4")
+
+        mock_response = Mock()
+        mock_response.choices = [Mock(message=Mock(content=""))]
+        mock_client = Mock()
+        mock_client.chat.completions.create.return_value = mock_response
+
+        with patch("kb.client.get_client", return_value=mock_client):
+            from kb.client import chat
+
+            with pytest.raises(RuntimeError, match="Provider retornou resposta vazia"):
+                chat([{"role": "user", "content": "Hello"}])
+
+
+class TestChatEmptyChoices:
+    def test_should_raise_when_provider_returns_no_choices(self, monkeypatch):
+        monkeypatch.setattr("kb.client.API_KEY", "test-key")
+        monkeypatch.setattr("kb.client.BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.setattr("kb.client.MODEL", "gpt-4")
+
+        mock_response = Mock()
+        mock_response.choices = []
+        mock_client = Mock()
+        mock_client.chat.completions.create.return_value = mock_response
+
+        with patch("kb.client.get_client", return_value=mock_client):
+            from kb.client import chat
+
+            with pytest.raises(RuntimeError, match="Provider retornou resposta vazia"):
+                chat([{"role": "user", "content": "Hello"}])

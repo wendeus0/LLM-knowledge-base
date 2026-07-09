@@ -4,29 +4,22 @@ import re
 from datetime import date
 
 import kb.config as _config
+from kb.frontmatter import parse, serialize
+from kb.fsutil import atomic_write_text
 from kb.git import commit
 
 
 def _build_content(answer: str, question: str, today: str, topic: str) -> str:
-    lines = answer.splitlines()
-    if lines and lines[0].strip() == "---":
-        for i, line in enumerate(lines[1:], 1):
-            if line.strip() == "---":
-                front_lines = lines[1:i]
-                body_lines = lines[i + 1 :]
-                front_keys = {
-                    front_line.split(":", 1)[0].strip()
-                    for front_line in front_lines
-                    if ":" in front_line
-                }
-                extra = []
-                if "source_question" not in front_keys:
-                    extra.append(f"source_question: {question}")
-                if "date" not in front_keys:
-                    extra.append(f"date: {today}")
-                merged = "\n".join(front_lines + extra)
-                body = "\n".join(body_lines).lstrip("\n")
-                return f"---\n{merged}\n---\n\n{body}\n"
+    meta, body = parse(answer)
+    if meta or body != answer:
+        if "source_question" not in meta:
+            meta["source_question"] = question
+        if "date" not in meta:
+            meta["date"] = today
+        if "topic" not in meta:
+            meta["topic"] = topic
+        body = "\n".join(body.splitlines()).lstrip("\n")
+        return serialize(meta, f"\n{body}\n")
     return (
         f"---\n"
         f"title: {question[:80]}\n"
@@ -52,7 +45,7 @@ def write_output(question: str, answer: str, topic: str, no_commit: bool = True)
 
     out = folder / f"{today}-{slug}.md"
     content = _build_content(answer, question, today, topic)
-    out.write_text(content, encoding="utf-8")
+    atomic_write_text(out, content)
 
     if not no_commit:
         commit(f"feat(outputs): file back — {question[:50]}", [out])

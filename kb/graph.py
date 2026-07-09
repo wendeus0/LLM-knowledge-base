@@ -3,6 +3,8 @@
 import re
 from pathlib import Path
 
+from kb.frontmatter import parse
+
 
 def extract_wikilinks(content: str) -> list[str]:
     """Extrai [[wikilinks]] únicos do conteúdo markdown."""
@@ -26,26 +28,8 @@ def resolve_wikilink(link: str, wiki_dir: Path) -> Path | None:
 def load_frontmatter(path: Path) -> dict:
     """Lê apenas o bloco YAML frontmatter de um arquivo markdown."""
     text = path.read_text(encoding="utf-8", errors="replace")
-    if not text.startswith("---"):
-        return {}
-    end = text.find("---", 3)
-    if end == -1:
-        return {}
-    yaml_block = text[3:end].strip()
-    result = {}
-    for line in yaml_block.splitlines():
-        if ":" not in line:
-            continue
-        key, _, raw_value = line.partition(":")
-        key = key.strip()
-        value = raw_value.strip()
-        # Parse lista simples [a, b, c]
-        if value.startswith("[") and value.endswith("]"):
-            items = [item.strip().strip("'\"") for item in value[1:-1].split(",") if item.strip()]
-            result[key] = items
-        else:
-            result[key] = value
-    return result
+    meta, _ = parse(text)
+    return meta
 
 
 _STOP_WORDS = {"o", "a", "e", "é", "de", "do", "da", "em", "no", "na", "se", "com", "um", "uma", "os", "as", "ou"}
