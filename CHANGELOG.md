@@ -7,6 +7,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/spec
 
 ## [Não publicado]
 
+### Adicionado
+
+- `kb ingest <url>`: ingestão de documentos a partir de URL com proteção SSRF (PR #32)
+- Fundação da wiki v2: claims lifecycle, discovery, jobs canônicos, analytics e trilha de auditoria (PR #35)
+- `kb archive`: move artigos stale/órfãos de `wiki/` para `archive/` com backup versionado (PR #31, #33)
+- Suporte ao modelo `kimi-k2.7-code` e roteamento de topic por pasta de origem
+
+### Corrigido
+
+- `kb/audit.py` resolve `AUDIT_PATH` em runtime via `kb.config` (baseline 2026-04-22)
+- Teste de `analytics/history` com janela temporal fixa que expirava com o calendário (2026-07-09)
+
 ## [0.4.0] - 2026-04-04
 
 ### Adicionado

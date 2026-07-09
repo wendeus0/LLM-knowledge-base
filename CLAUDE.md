@@ -122,17 +122,16 @@ KB_MODEL=qwen2.5-coder:7b
 
 ## Contexto técnico atual
 
-**Feature ativa:** 010-multi-vault-foundation
+**Feature ativa:** nenhuma — backlog: 008-kb-stats, 009-kb-diff, 010-multi-vault-foundation (SPEC pendente, ver `features/`)
 **Stack:** Python 3.11+, Typer, Rich
 **Build:** `pip install -e .`
 **Testes:** `python -m pytest`
 **Alterações recentes:**
 
-- 010-multi-vault-foundation: fundação para múltiplos vaults sob `KB_DATA_DIR`
 - (mergeado) llm-wiki-v2-foundation: fundação da wiki v2 (PR #35)
 - (mergeado) ingest-url: ingestão a partir de URL (PR #32)
-- 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/
-- (backlog) 008-kb-stats, 009-kb-diff
+- (mergeado) 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/ (PR #31/#33)
+- (backlog) 008-kb-stats, 009-kb-diff, 010-multi-vault-foundation (SPEC pendente)
 
 ## Layout de docs
 

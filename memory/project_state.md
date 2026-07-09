@@ -6,16 +6,13 @@ type: project
 
 ## Estado global
 
-Atualizada: 2026-04-22
+Atualizada: 2026-07-09
 
-- **Branch:** `fix/baseline-green-2026-04-22` (3 commits acima de `main @ bc92c60`)
-- **Drift:** 0 (baseada em origin/main)
-- **Tests:** `311 passed, 0 failed` ✅ (baseline verde)
-- **Cobertura:** 90%+ (web_ingest restaura cobertura com `[web]` instalado)
-- **Lint:** ruff `kb/` clean
-- **Python:** 3.11+ (venv Python 3.14)
-
-> Baseline restaurada nesta sessão. Causas: (1) `pip install -e .[web]` restaurou 18 testes de web_ingest; (2) fix de `kb/audit.py` (runtime AUDIT_PATH) restaurou 3 testes de audit.
+- **Branch:** `chore/truth-sync` (Fase 0 do plano de robustez; main @ a12ef49)
+- **Tests:** `327 passed, 0 failed` ✅ (fix do teste bomba-relógio de analytics/history em 2026-07-09)
+- **Lint:** ruff `kb tests` clean
+- **Python:** 3.11+ (venv local Python 3.14, `.venv/`)
+- **CI:** workflows atuais só rodam gates operacionais (`jobs gate`, `doc-gate`); pytest+ruff entram na Fase 1 do plano
 
 ## Estrutura do pacote
 
@@ -31,10 +28,10 @@ kb/
 │   ├── core/{runner.py, tracking.py}
 │   ├── analytics/{gain.py, health.py, history.py}
 │   └── discover/{registry.py, rules.py}
-├── tests/            ← 308 testes, 92% cobertura
+├── tests/            ← 327 testes (unit + integration)
 ├── docs/adr/         ← ADRs 0001–0016
-├── docs/SENSITIVE_CONTENT_POLICY.md
-├── features/         ← SPECs de implementação
+├── docs/superpowers/plans/ ← plano de robustez 2026-07-09
+├── features/         ← 008/009 (SPEC draft); concluídas em _archived/
 ├── pyproject.toml
 └── memory/           ← memória distribuída (este diretório)
 
@@ -45,35 +42,12 @@ kb/
 └── kb_state/         ← manifesto + stores knowledge/learnings
 ```
 
-## Snapshot local (afeta próxima sessão)
-
-- Untracked: `features/llm-wiki-v2-foundation/` (.state=PLAN_READY)
-- `kb/audit.py` e `tests/unit/test_audit.py` agora tracked (commit f78d903)
-
-## Branches de feature já pushadas
-
-002-search-bm25, 003-kb-watch, 004-kb-diff, 005-kb-stats, 006-kb-archive (WORKFLOW_OK)
-
 ## ADRs
 
-0001–0016. Destaques recentes:
-
-- ADR-0015: runtime topic taxonomy
-- ADR-0016: explicit commit activation (--commit explícito, --no-commit deprecated)
+0001–0016. Destaques: ADR-0015 (runtime topic taxonomy), ADR-0016 (--commit explícito).
 
 ## Marcos (Milestones)
 
-1. **Baseline do produto** ✅
-2. **Integração de livros** ✅
-3. **Fundação inspirada em Pal** ✅
-4. **Controles explícitos de execução sensível** ✅
-5. **Expansão funcional** ✅ (outputs, URL ingest, wikilink, rich book metadata)
-6. **Validação operacional real** ✅ (smoke test, política sensibilidade, cobertura)
-7. **Qualidade de output LLM** ✅ (fix code fence, ADR-0010)
-8. **Compile paralelo seguro** ✅ (geração paralela, persistência serial)
-9. **Cobertura orientada a risco** ✅ (308 testes, 92% cobertura)
-10. **Baseline green + SSRF protection** ✅ (PR #31 merged, feat/007-baseline-green)
-
-## Próximo marco sugerido
-
-11. **LLM Wiki v2 Foundation** — rework da engine de compile com base em SPEC aprovada
+1–10 concluídos (baseline, livros, Pal, execução sensível, expansão funcional, validação real, qualidade de output, compile paralelo, cobertura, baseline green + SSRF).
+11. **LLM Wiki v2 Foundation** ✅ (PR #35)
+12. **Robustez do core + template de artigo** ← em execução (plano 2026-07-09)
