@@ -7,8 +7,11 @@ import kb.config as _config
 
 def resolve_template(name):
     """Resolve um template markdown, priorizando override local do vault."""
-    vault_template = _config.WIKI_DIR.parent / "templates" / f"{name}.md"
-    if vault_template.exists():
+    if "/" in name or "\\" in name or ".." in name:
+        raise ValueError(f"Nome de template inválido: {name}")
+
+    vault_template = _config.DATA_DIR / "templates" / f"{name}.md"
+    if vault_template.is_file():
         return vault_template.read_text(encoding="utf-8")
 
     engine_template = importlib.resources.files("kb") / "templates" / f"{name}.md"

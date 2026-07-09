@@ -140,3 +140,26 @@ Conteúdo compilado.
             title="Valid Article",
             summary_text="Conteúdo compilado.",
         )
+
+
+def test_should_compile_without_crash_when_topic_is_bracket_list(tmp_raw_wiki):
+    raw, wiki = tmp_raw_wiki
+    raw_file = raw / "bracket-topic.md"
+    raw_file.write_text("# Source\nConteúdo")
+
+    mock_response = """---
+title: Bracket Topic
+topic: [ai]
+---
+
+# Bracket Topic
+
+Conteúdo compilado.
+"""
+    with patch("kb.compile.chat") as mock_chat:
+        mock_chat.return_value = mock_response
+
+        artifact = compile_to_artifact(raw_file)
+
+    assert isinstance(artifact, CompileArtifact)
+    assert artifact.topic == "ai"

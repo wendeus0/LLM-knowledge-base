@@ -1,7 +1,7 @@
 # kb — Plano de Robustez do Core + Template de Artigo + Backlog
 
 > **Para workers agênticos:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` (recomendado) ou `superpowers:executing-plans` para implementar task a task. Passos usam checkboxes (`- [ ]`).
-> Ao iniciar a execução, copie este arquivo para `docs/superpowers/plans/2026-07-09-core-robustness.md` no repo e trabalhe a partir dele.
+> Este arquivo é a cópia de trabalho canônica do plano — mantenha-o atualizado conforme as tasks avançam.
 
 **Goal:** Blindar o caminho crítico ingest→compile→qa→heal, introduzir o template de artigo como artefato core que guia a estrutura do output do LLM, cortar código morto, fechar gaps de CI/teste e entregar o backlog (stats, diff, SPEC multi-vault).
 
@@ -36,7 +36,7 @@
 - **`client.chat` pode retornar `None`** (client.py:97) → `AttributeError` em todos os callers.
 - **`git.commit` engole toda exceção** (git.py:32) — usuário acha que versionou e não versionou.
 - **Escritas não-atômicas** (`write_text` direto) em compile/heal/outputs.
-- **CI não roda pytest nem ruff** — 321 testes sem gate; ruff sem configuração.
+- **CI não roda pytest nem ruff** — 327 testes sem gate; ruff sem configuração.
 - Config global resolvida no import (`config.py`) — mitigada pelos monkeypatches do conftest; não mexer agora (registrado como débito, ver fim do plano).
 
 ### Lente 3 — Faltando para o objetivo
@@ -97,7 +97,7 @@
 
 ### Task 2: Workflow de testes + lint com gate de cobertura
 
-**O quê/por quê:** 321 testes e ruff não rodam em PR — a maior fragilidade única do repo. Tudo que vem depois ganha rede de proteção. Fazer ANTES dos refactors.
+**O quê/por quê:** 327 testes e ruff não rodam em PR — a maior fragilidade única do repo. Tudo que vem depois ganha rede de proteção. Fazer ANTES dos refactors.
 
 **Files:**
 - Create: `.github/workflows/tests.yml`
