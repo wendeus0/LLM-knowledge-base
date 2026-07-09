@@ -171,3 +171,16 @@ def test_stats_with_empty_vault_returns_zeros(tmp_raw_wiki, tmp_path, monkeypatc
     assert payload["history_7d"]["avg_duration_ms"] == 0.0
     assert payload["articles"]["total"] == 0
     assert payload["articles"]["by_topic"] == {}
+
+
+def test_stats_rich_total_pct_is_zero_when_vault_is_empty(
+    tmp_raw_wiki, tmp_path, monkeypatch
+):
+    _, _ = tmp_raw_wiki
+    monkeypatch.setattr("kb.analytics.history.DB_PATH", tmp_path / "missing.db")
+
+    result = runner.invoke(app, ["stats"])
+
+    assert result.exit_code == 0
+    assert "100.0%" not in result.output
+    assert "0.0%" in result.output

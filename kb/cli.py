@@ -520,7 +520,9 @@ def stats(
             str(claims.get(status, 0)),
             f"{claims.get(f'{status}_pct', 0.0)}%",
         )
-    claims_table.add_row("total", str(claims.get("total_claims", 0)), "100.0%")
+    total_claims = claims.get("total_claims", 0)
+    total_pct = "100.0%" if total_claims else "0.0%"
+    claims_table.add_row("total", str(total_claims), total_pct)
     console.print(claims_table)
     console.print(f"Avg confidence: {claims.get('avg_confidence', 0.0)}")
 
