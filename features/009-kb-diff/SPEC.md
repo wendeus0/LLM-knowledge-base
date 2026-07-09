@@ -1,7 +1,7 @@
 ---
 title: kb diff — Diff visual da wiki via git
 epic: infra
-status: draft
+status: done
 pr:
 ---
 
@@ -13,16 +13,16 @@ Permitir comparar o estado da wiki antes/depois de operações como `compile` ou
 
 ## Requisitos funcionais
 
-- [ ] RF-01: `kb diff` deve mostrar diff da wiki em relação ao último commit
-- [ ] RF-02: `kb diff --stat` deve mostrar resumo estatístico (arquivos alterados, inserções, remoções)
-- [ ] RF-03: `kb diff --since <ref>` deve comparar contra ref arbitrária (commit, tag, branch)
-- [ ] RF-04: saída formatada com Rich (syntax highlighting para diff de markdown)
-- [ ] RF-05: deve funcionar apenas quando `KB_DATA_DIR` é um repositório git
+- [x] RF-01: `kb diff` deve mostrar diff da wiki em relação ao último commit
+- [x] RF-02: `kb diff --stat` deve mostrar resumo estatístico (arquivos alterados, inserções, remoções)
+- [x] RF-03: `kb diff --since <ref>` deve comparar contra ref arbitrária (commit, tag, branch)
+- [x] RF-04: saída formatada com Rich (syntax highlighting para diff de markdown)
+- [x] RF-05: deve funcionar apenas quando `KB_DATA_DIR` é um repositório git
 
 ## Requisitos técnicos
 
 - RT-01: usar `subprocess.run(["git", "diff", ...])` dentro de `KB_DATA_DIR`
-- RT-02: reutilizar `kb/git.py` para verificação de estado git
+- RT-02: reutilizar `kb/git.py` para verificação de estado git via `is_git_repo(root)`
 - RT-03: zero dependências novas
 
 ## Mudanças de API/CLI
@@ -53,10 +53,10 @@ Novo comando `kb diff [--stat] [--since <ref>]`. Sem breaking changes.
 
 ## Critérios de aceite
 
-- [ ] `kb diff` mostra diff do último commit em wiki/
-- [ ] `kb diff --stat` mostra resumo de alterações
-- [ ] `kb diff --since HEAD~3` compara contra ref arbitrária
-- [ ] Mensagem clara quando `KB_DATA_DIR` não é repo git
+- [x] `kb diff` mostra diff do último commit em wiki/
+- [x] `kb diff --stat` mostra resumo de alterações
+- [x] `kb diff --since HEAD~3` compara contra ref arbitrária
+- [x] Mensagem clara quando `KB_DATA_DIR` não é repo git
 
 ## Evidências esperadas
 
@@ -66,6 +66,7 @@ Novo comando `kb diff [--stat] [--since <ref>]`. Sem breaking changes.
 - Arquivos alterados:
   - `kb/cli.py` (novo comando)
   - `kb/diff.py` (novo módulo)
+  - `kb/git.py` (helper `is_git_repo`)
   - `tests/unit/test_diff.py` (novos testes)
 
 ## Notas
