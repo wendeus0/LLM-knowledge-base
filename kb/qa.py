@@ -7,6 +7,7 @@ from kb.claims import find_relevant_claims
 from kb.client import chat
 from kb.config import WIKI_DIR as CONFIG_WIKI_DIR
 from kb.config import canonical_topic, topic_prompt_options, wiki_topic_dir
+from kb.frontmatter import parse
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.outputs import write_output as _write_output
@@ -135,15 +136,13 @@ def answer_and_file(
         ]
     )
 
-    # Extrai topic e title do frontmatter
     topic = "general"
     title = question[:50]
-    for line in article.splitlines():
-        if line.startswith("topic:"):
-            t = line.split(":", 1)[1].strip()
-            topic = canonical_topic(t)
-        if line.startswith("title:"):
-            title = line.split(":", 1)[1].strip()
+    meta, _ = parse(article)
+    if "topic" in meta:
+        topic = canonical_topic(meta["topic"])
+    if "title" in meta:
+        title = meta["title"]
 
     if to_wiki:
         slug = re.sub(r"[^a-z0-9-]", "-", title.lower())[:60].strip("-")

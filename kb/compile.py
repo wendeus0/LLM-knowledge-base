@@ -16,6 +16,7 @@ from kb.config import (
     topic_prompt_options,
     wiki_topic_dir,
 )
+from kb.frontmatter import parse
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.state import (
@@ -194,12 +195,11 @@ def _extract_topic_and_title(
 ) -> tuple[str, str]:
     topic = "general"
     title = fallback_title
-    for line in compiled_markdown.splitlines():
-        if line.startswith("topic:"):
-            candidate = line.split(":", 1)[1].strip()
-            topic = canonical_topic(candidate)
-        if line.startswith("title:"):
-            title = line.split(":", 1)[1].strip()
+    meta, _ = parse(compiled_markdown)
+    if "topic" in meta:
+        topic = canonical_topic(meta["topic"])
+    if "title" in meta:
+        title = meta["title"]
     return topic, title
 
 
