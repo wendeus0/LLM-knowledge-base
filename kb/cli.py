@@ -475,19 +475,27 @@ def diff(
     ),
 ):
     """Mostra alterações da wiki via git diff."""
-    from kb.diff import DiffError, render_diff, wiki_diff
+    from rich.markup import escape
+
+    from kb.diff import DiffError, render_diff, untracked_wiki_files, wiki_diff
 
     try:
         output = wiki_diff(stat=stat, since=since)
+        untracked = untracked_wiki_files()
     except DiffError as exc:
-        console.print(f"[red]Erro:[/] {exc}")
+        console.print(f"[red]Erro:[/] {escape(str(exc))}")
         raise typer.Exit(code=1) from None
 
-    if not output.strip():
+    if not output.strip() and not untracked:
         console.print("[green]Sem alterações[/]")
         return
 
-    render_diff(output, console)
+    if output.strip():
+        render_diff(output, console)
+    if untracked:
+        console.print("[bold]Arquivos novos (não rastreados):[/]")
+        for name in untracked:
+            console.print(f"  [green]+ {escape(name)}[/]")
 
 
 @app.command()

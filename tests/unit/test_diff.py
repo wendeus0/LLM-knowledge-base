@@ -129,3 +129,45 @@ def test_diff_without_changes_should_print_friendly_message(tmp_path, monkeypatc
 
     assert result.exit_code == 0
     assert "Sem alterações" in result.output
+
+
+def test_diff_error_message_should_escape_rich_markup(tmp_path, monkeypatch):
+    root = tmp_path
+    wiki = root / "wiki"
+    wiki.mkdir()
+    _patch_config(monkeypatch, root, wiki)
+
+    from unittest.mock import patch
+
+    from kb.diff import DiffError
+
+    with patch("kb.diff.wiki_diff", side_effect=DiffError("[bold]injetado[/bold]")):
+        result = runner.invoke(app, ["diff"])
+
+    assert result.exit_code == 1
+    assert "[bold]injetado[/bold]" in result.output
+
+
+def test_diff_since_should_reject_ref_starting_with_dash(tmp_path, monkeypatch):
+    wiki, _article = _init_repo(tmp_path)
+    _patch_config(monkeypatch, tmp_path, wiki)
+
+    import pytest
+
+    from kb.diff import DiffError, wiki_diff
+
+    with pytest.raises(DiffError, match="inválida"):
+        wiki_diff(since="--stat")
+
+
+def test_diff_should_list_untracked_wiki_files(tmp_path, monkeypatch):
+    wiki, _article = _init_repo(tmp_path)
+    _patch_config(monkeypatch, tmp_path, wiki)
+
+    (wiki / "novo-artigo.md").write_text("# Novo\n")
+
+    result = runner.invoke(app, ["diff"])
+
+    assert result.exit_code == 0
+    assert "Sem alterações" not in result.output
+    assert "novo-artigo.md" in result.output

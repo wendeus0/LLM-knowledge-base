@@ -25,6 +25,8 @@ def _paths():
 
 def wiki_diff(stat=False, since=None):
     """Retorna o diff git da wiki em relação ao commit/ref informado."""
+    if since and since.startswith("-"):
+        raise DiffError(f"ref inválida: {since}")
     root, wiki_rel = _paths()
     if not is_git_repo(root):
         raise DiffError(f"KB_DATA_DIR não é um repositório git: {root}")
@@ -40,6 +42,32 @@ def wiki_diff(stat=False, since=None):
         detail = (result.stderr or result.stdout or "git diff falhou").strip()
         raise DiffError(detail)
     return result.stdout
+
+
+def untracked_wiki_files():
+    """Lista arquivos novos da wiki ainda não rastreados pelo git."""
+    root, wiki_rel = _paths()
+    if not is_git_repo(root):
+        raise DiffError(f"KB_DATA_DIR não é um repositório git: {root}")
+
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(root),
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "--",
+            str(wiki_rel),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return []
+    return [line for line in result.stdout.splitlines() if line.strip()]
 
 
 def render_diff(output, console):
