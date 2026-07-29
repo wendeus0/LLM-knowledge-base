@@ -1,8 +1,9 @@
 """Índice de embeddings por vault (feature 012-semantic-retrieval, ADR-0013 Fase 2).
 
-Um vetor por artigo da wiki, gerado por modelo local (default: Nomic via Ollama,
-endpoint OpenAI-compat). Índice em kb_state/embeddings.json, incremental por hash
-de conteúdo. Sem índice válido, search/qa degradam para o retrieval lexical.
+Um vetor por artigo da wiki, gerado por modelo local servido em endpoint
+OpenAI-compat (`KB_EMBED_BASE_URL`; default LM Studio em localhost:1234).
+Índice em kb_state/embeddings.json, incremental por hash de conteúdo.
+Sem índice válido, search/qa degradam para o retrieval lexical.
 """
 
 import hashlib
@@ -25,7 +26,7 @@ def _embed_base_url() -> str:
 
 
 def embed_texts(texts: list[str], model: str | None = None, base_url: str | None = None) -> list[list[float]]:
-    """Fronteira de rede: gera embeddings via endpoint OpenAI-compat (Ollama)."""
+    """Fronteira de rede: gera embeddings via endpoint OpenAI-compat local."""
     try:
         from openai import OpenAI
     except ImportError as exc:
@@ -94,9 +95,11 @@ def build_index(wiki_dir: Path, state_dir: Path, force: bool = False, max_chars:
         try:
             vectors = embed_texts([text for _, text in to_embed])
         except Exception as exc:
+            from kb.embed_server import autostart_cmd
+
             raise RuntimeError(
                 f"Falha ao gerar embeddings (modelo {model}, endpoint {_embed_base_url()}): {exc}. "
-                "Verifique se o Ollama está no ar (`ollama serve`) e o modelo instalado."
+                f"Suba o servidor com `{autostart_cmd()}`, ou ajuste KB_EMBED_BASE_URL/KB_EMBED_MODEL."
             ) from exc
         for (relpath, _), vector in zip(to_embed, vectors, strict=True):
             kept[relpath]["vector"] = vector

@@ -1076,7 +1076,14 @@ def index_build(
 def index_status_cmd():
     """Cobertura do índice de embeddings: indexados/total, modelo e pendências."""
     from kb.config import STATE_DIR, WIKI_DIR
-    from kb.embeddings import index_status
+    from kb.embed_server import (
+        autostart_cmd,
+        autostart_enabled,
+        ensure_server,
+        model_available,
+        probe_timeout,
+    )
+    from kb.embeddings import _embed_base_url, index_status
 
     status = index_status(WIKI_DIR, STATE_DIR)
     typer.echo(f"{status['indexed']}/{status['total']} artigos indexados — modelo {status['model']}")
@@ -1084,3 +1091,20 @@ def index_status_cmd():
         typer.echo(status["note"])
     for relpath in status["stale"]:
         typer.echo(f"pendente: {relpath}")
+
+    server = ensure_server(
+        _embed_base_url(),
+        autostart_enabled=autostart_enabled(),
+        autostart_cmd=autostart_cmd(),
+        probe_timeout=probe_timeout(),
+    )
+    if not server.reachable:
+        typer.echo(f"servidor: inacessível em {server.endpoint} ({server.error})")
+        typer.echo(f"suba com `{autostart_cmd()}` ou defina KB_EMBED_AUTOSTART=1")
+    elif model_available(server, status["model"]):
+        typer.echo(f"servidor: ok em {server.endpoint} — modelo {status['model']} disponível")
+    else:
+        typer.echo(
+            f"servidor: ok em {server.endpoint} — modelo {status['model']} AUSENTE; "
+            f"disponíveis: {', '.join(server.models) or 'nenhum'}"
+        )

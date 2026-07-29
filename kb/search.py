@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+import sys
 from pathlib import Path
 
 from kb.config import WIKI_DIR
@@ -22,9 +23,10 @@ def _extract_snippet(text: str, terms: set[str]) -> str:
 
 
 def _iter_docs() -> list[tuple[Path, str, list[str]]]:
+    """Corpus da busca lexical — mesma convenção `_*` do índice semântico."""
     docs: list[tuple[Path, str, list[str]]] = []
     for md in WIKI_DIR.rglob("*.md"):
-        if md.name == "_index.md":
+        if any(part.startswith("_") for part in md.relative_to(WIKI_DIR).parts):
             continue
         text = md.read_text(encoding="utf-8", errors="replace")
         docs.append((md, text, _tokenize(text)))
@@ -102,6 +104,21 @@ def _rrf_fuse(rankings: list[list[tuple[Path, float]]], k: int = 60) -> dict[Pat
     return fused
 
 
+_semantic_warned = False
+
+
+def _warn_semantic_degraded(reason: str) -> None:
+    """Anuncia a degradação uma vez por execução, sem poluir stdout."""
+    global _semantic_warned
+    if _semantic_warned:
+        return
+    _semantic_warned = True
+    print(
+        f"aviso: canal semântico indisponível ({reason}) — resultados vêm só do lexical",
+        file=sys.stderr,
+    )
+
+
 def _semantic_rank(query: str) -> list[tuple[Path, float]]:
     """Canal semântico da fusão; sem índice válido, retorna [] (fallback lexical)."""
     from kb.config import STATE_DIR
@@ -109,8 +126,12 @@ def _semantic_rank(query: str) -> list[tuple[Path, float]]:
 
     index = load_index(STATE_DIR)
     if index is None:
+        _warn_semantic_degraded("índice ausente ou de outro modelo; rode `kb index build`")
         return []
-    return semantic_ranking(query, index)
+    ranking = semantic_ranking(query, index)
+    if not ranking:
+        _warn_semantic_degraded("servidor de embeddings não respondeu; veja `kb index status`")
+    return ranking
 
 
 def find_relevant(query: str, top_k: int = 5) -> list[Path]:
