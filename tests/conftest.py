@@ -10,6 +10,19 @@ def pytest_addoption(parser):
         group.addoption("--cov-report", action="append", default=[])
 
 
+@pytest.fixture(autouse=True)
+def _no_side_effect_llm_calls(monkeypatch):
+    """Nenhum teste chama provider real.
+
+    A feature 015 pendurou refresh de índice no fim de compile/heal/qa. Sem este
+    guard, esses testes fazem probe do servidor e chegam a embedar de verdade —
+    a suíte passou de 4s para 80s antes de alguém notar.
+
+    Testes que exercitam o refresh removem a variável explicitamente.
+    """
+    monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+
+
 @pytest.fixture
 def tmp_raw_wiki(tmp_path, monkeypatch):
     """Setup raw/, wiki/ e outputs/ temporários para testes com monkeypatch global"""

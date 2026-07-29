@@ -9,6 +9,8 @@ corte (acerto fora do corte contribui zero, como em recall@k).
 """
 
 import json
+import random
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -22,6 +24,7 @@ class CaseResult:
     rank: int | None = None
     hit_at_k: bool = False
     invalid: bool = False
+    source: str = "curated"
 
 
 def evaluate_case(
@@ -67,6 +70,47 @@ def aggregate(results: list[CaseResult], k: int = 5) -> dict:
     }
 
 
+def aggregate_by_source(results: list[CaseResult], k: int = 5) -> dict:
+    """Métricas separadas por população — casos curados e gerados medem coisas diferentes."""
+    populations: dict[str, list[CaseResult]] = {}
+    for result in results:
+        populations.setdefault(result.source, []).append(result)
+    return {source: aggregate(items, k=k) for source, items in populations.items()}
+
+
+def _normalize(text: str) -> str:
+    return re.sub(r"[^a-z0-9 ]", " ", text.lower())
+
+
+def is_trivial_question(title: str, question: str) -> bool:
+    """Pergunta que repete o título mede casamento de string, não recuperação.
+
+    Foi o defeito do seed original: recall de 0,860 que virou 0,420 quando as
+    perguntas passaram a ser conceituais.
+    """
+    normalized_title = " ".join(_normalize(title).split())
+    normalized_question = " ".join(_normalize(question).split())
+    if not normalized_title:
+        return False
+    if normalized_title in normalized_question:
+        return True
+
+    title_words = {w for w in normalized_title.split() if len(w) > 3}
+    if not title_words:
+        return False
+    question_words = set(normalized_question.split())
+    return len(title_words & question_words) / len(title_words) >= 0.8
+
+
+def sample_articles(
+    pool: list[str], n: int, seed: int = 42, exclude: set[str] | None = None
+) -> list[str]:
+    """Amostra reprodutível, pulando o que já está coberto."""
+    candidates = [item for item in pool if item not in (exclude or set())]
+    rng = random.Random(seed)
+    return rng.sample(candidates, min(n, len(candidates)))
+
+
 def golden_path(state_dir: Path) -> Path:
     return Path(state_dir) / GOLDEN_RELPATH
 
@@ -98,6 +142,62 @@ def seed_golden(wiki_dir: Path, limit: int | None = None) -> list[dict]:
     return cases
 
 
+_QUESTION_PROMPT = (
+    "Você consulta uma base de conhecimento técnica em português. Leia o trecho de "
+    "artigo e escreva UMA pergunta que levaria alguém a procurar por ele.\n"
+    "Regras: use linguagem coloquial de quem NÃO conhece o jargão da área; NÃO use "
+    "as palavras do título; descreva o problema ou a situação, não o conceito pelo "
+    "nome. Máximo 15 palavras. Responda só a pergunta, sem aspas."
+)
+
+
+def generate_cases(
+    wiki_dir: Path,
+    n: int,
+    seed: int = 42,
+    existing: set[str] | None = None,
+    on_case=None,
+) -> list[dict]:
+    """Um caso por artigo amostrado, com a pergunta escrita pelo LLM.
+
+    Casos triviais (pergunta que repete o título) são descartados — foi o que
+    inflou a medição do seed original.
+    """
+    from kb.client import chat
+    from kb.embeddings import _iter_articles
+    from kb.frontmatter import parse
+
+    articles = {Path(rel).stem: (rel, text) for rel, text in _iter_articles(wiki_dir)}
+    chosen = sample_articles(sorted(articles), n, seed=seed, exclude=existing or set())
+
+    cases: list[dict] = []
+    for slug in chosen:
+        _, text = articles[slug]
+        meta, body = parse(text)
+        title = str(meta.get("title") or slug.replace("-", " ")).strip()
+
+        try:
+            question = chat(
+                messages=[
+                    {"role": "system", "content": _QUESTION_PROMPT},
+                    {"role": "user", "content": f"Título: {title}\n\n{body[:1500]}"},
+                ]
+            )
+        except Exception:
+            continue
+
+        question = (question or "").strip().strip('"').splitlines()[0] if question else ""
+        if not question or is_trivial_question(title, question):
+            continue
+
+        case = {"question": question, "expected": [slug], "source": "generated"}
+        cases.append(case)
+        if on_case:
+            on_case(case)
+
+    return cases
+
+
 def write_golden(path: Path, cases: list[dict]) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -108,7 +208,12 @@ def write_golden(path: Path, cases: list[dict]) -> Path:
     return path
 
 
-def run_bench(mode: str = "hybrid", k: int = 5, expand: str | None = None) -> dict | None:
+def run_bench(
+    mode: str = "hybrid",
+    k: int = 5,
+    expand: str | None = None,
+    rerank_depth: int | None = None,
+) -> dict | None:
     """Executa o golden set e devolve sumário + casos. None se não há golden set."""
     from kb.config import STATE_DIR, WIKI_DIR
     from kb.embeddings import _iter_articles
@@ -121,6 +226,11 @@ def run_bench(mode: str = "hybrid", k: int = 5, expand: str | None = None) -> di
     known = {Path(relpath).stem for relpath, _ in _iter_articles(WIKI_DIR)}
     depth = max(k, 10)
 
+    if rerank_depth:
+        from kb.rerank import reset_stats
+
+        reset_stats()
+
     semantic_active = False
     if mode == "hybrid":
         from kb.embeddings import load_index
@@ -131,17 +241,23 @@ def run_bench(mode: str = "hybrid", k: int = 5, expand: str | None = None) -> di
     for case in cases:
         ranked = [
             Path(item["path"]).stem
-            for item in search(case["question"], top_k=depth, mode=mode, expand=expand)
-        ]
-        results.append(
-            evaluate_case(
-                ranked,
-                case.get("expected", []),
-                k=k,
-                known_slugs=known,
-                question=case.get("question", ""),
+            for item in search(
+                case["question"],
+                top_k=depth,
+                mode=mode,
+                expand=expand,
+                rerank_depth=rerank_depth,
             )
+        ]
+        result = evaluate_case(
+            ranked,
+            case.get("expected", []),
+            k=k,
+            known_slugs=known,
+            question=case.get("question", ""),
         )
+        result.source = case.get("source", "curated")
+        results.append(result)
 
     return {
         "mode": mode,
@@ -149,5 +265,13 @@ def run_bench(mode: str = "hybrid", k: int = 5, expand: str | None = None) -> di
         "corpus": len(known),
         "semantic_active": semantic_active,
         "summary": aggregate(results, k=k),
+        "by_source": aggregate_by_source(results, k=k),
+        "rerank_stats": _rerank_stats() if rerank_depth else None,
         "results": results,
     }
+
+
+def _rerank_stats() -> dict:
+    from kb.rerank import stats
+
+    return stats()

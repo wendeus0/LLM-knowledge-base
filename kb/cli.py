@@ -1151,11 +1151,21 @@ def bench(
     seed: bool = typer.Option(
         False, "--seed", help="Gera golden set a partir dos títulos do corpus"
     ),
+    seed_questions: int = typer.Option(
+        None,
+        "--seed-questions",
+        min=1,
+        help="Gera N casos com perguntas escritas pelo LLM (acrescenta ao golden existente)",
+    ),
+    sample_seed: int = typer.Option(42, "--sample-seed", help="Semente da amostragem"),
     limit: int | None = typer.Option(
         None, "--limit", min=1, help="Máximo de casos ao semear"
     ),
     expand: str = typer.Option(
         None, "--expand", help="Expandir a query antes de buscar: terms|hyde"
+    ),
+    rerank_depth: int = typer.Option(
+        None, "--rerank", min=2, help="Reordenar os N primeiros candidatos com o LLM"
     ),
     as_json: bool = typer.Option(False, "--json", help="Saída parseável"),
 ):
@@ -1174,8 +1184,31 @@ def bench(
         typer.echo("revise e edite as perguntas — títulos são apenas o piso da medição")
         return
 
+    if seed_questions:
+        from kb.bench import generate_cases, load_golden
+
+        existing_cases = load_golden(destination) or []
+        covered = {slug for case in existing_cases for slug in case.get("expected", [])}
+        typer.echo(
+            f"gerando {seed_questions} caso(s); {len(existing_cases)} já no golden. "
+            "Uma chamada ao LLM por artigo — pode demorar."
+        )
+
+        accumulated = list(existing_cases)
+
+        def _persist(case):
+            accumulated.append(case)
+            write_golden(destination, accumulated)
+
+        novos = generate_cases(
+            WIKI_DIR, seed_questions, seed=sample_seed, existing=covered, on_case=_persist
+        )
+        typer.echo(f"{len(novos)} caso(s) gerados — golden agora com {len(accumulated)}")
+        typer.echo(f"revise por amostra: {destination}")
+        return
+
     try:
-        report = run_bench(mode=mode, k=k, expand=expand)
+        report = run_bench(mode=mode, k=k, expand=expand, rerank_depth=rerank_depth)
     except ValueError as exc:
         typer.echo(str(exc))
         raise typer.Exit(code=1) from None
@@ -1195,6 +1228,7 @@ def bench(
                     "expand": report["expand"],
                     "corpus": report["corpus"],
                     "semantic_active": report["semantic_active"],
+                    "rerank_stats": report.get("rerank_stats"),
                     "summary": summary,
                     "misses": [
                         {"question": r.question, "expected": r.expected, "rank": r.rank}
@@ -1220,6 +1254,22 @@ def bench(
         f"recall@{summary['k']} = {summary['recall_at_k']:.3f}  "
         f"MRR = {summary['mrr']:.3f}  ({summary['hits']}/{summary['total']})"
     )
+
+    rerank_stats = report.get("rerank_stats")
+    if rerank_stats and (rerank_stats["calls"] or rerank_stats["cache_hits"]):
+        if rerank_stats["calls"]:
+            typer.echo(
+                f"rerank: {rerank_stats['calls']} chamada(s), "
+                f"cobertura {rerank_stats['coverage']:.0%} dos candidatos pedidos, "
+                f"{rerank_stats['severe_omission']} com omissão severa, "
+                f"{rerank_stats['out_of_range_total']} índice(s) inválido(s), "
+                f"{rerank_stats['failed']} falha(s)"
+            )
+        else:
+            typer.echo(
+                f"rerank: {rerank_stats['cache_hits']} resultado(s) do cache, "
+                "nenhuma chamada nova — rode com cache limpo para medir a cobertura"
+            )
 
     misses = [r for r in report["results"] if not r.hit_at_k and not r.invalid]
     for result in misses[:10]:

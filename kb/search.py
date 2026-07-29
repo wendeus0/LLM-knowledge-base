@@ -143,8 +143,26 @@ def find_relevant(query: str, top_k: int = 5) -> list[Path]:
 SEARCH_MODES = ("hybrid", "lexical", "keyword")
 
 
+def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
+    """Reordena os `depth` primeiros pelo julgamento do LLM, preservando o resto."""
+    from kb.rerank import rerank as do_rerank
+
+    head, tail = results[:depth], results[depth:]
+    candidates = [
+        {"slug": item["path"].stem, "title": item["path"].stem, "snippet": item.get("snippet", "")}
+        for item in head
+    ]
+    by_slug = {item["path"].stem: item for item in head}
+    reordered = [by_slug[c["slug"]] for c in do_rerank(query, candidates) if c["slug"] in by_slug]
+    return reordered + tail
+
+
 def search(
-    query: str, top_k: int = 10, mode: str = "hybrid", expand: str | None = None
+    query: str,
+    top_k: int = 10,
+    mode: str = "hybrid",
+    expand: str | None = None,
+    rerank_depth: int | None = None,
 ) -> list[dict]:
     """Retorna resultados com snippet para exibição no CLI.
 
@@ -202,8 +220,11 @@ def search(
         reverse=True,
     )
 
+    # Com rerank, é preciso buscar mais fundo do que se vai devolver.
+    fetch = max(top_k, rerank_depth or 0)
+
     results: list[dict] = []
-    for path in ranked_paths[:top_k]:
+    for path in ranked_paths[:fetch]:
         results.append(
             {
                 "path": path,
@@ -218,4 +239,7 @@ def search(
             }
         )
 
-    return results
+    if rerank_depth and len(results) > 1:
+        results = _apply_rerank(query, results, rerank_depth)
+
+    return results[:top_k]
