@@ -46,7 +46,7 @@ def test_should_mark_compiled_entry(tmp_raw_wiki):
     source.write_text("# Doc")
     article = wiki / "ai" / "doc.md"
     article.write_text("# Compiled")
-    summary = wiki / "summaries" / "ai" / "doc.md"
+    summary = wiki / "_summaries" / "ai" / "doc.md"
     summary.parent.mkdir(parents=True, exist_ok=True)
     summary.write_text("# Summary")
 
@@ -65,7 +65,7 @@ def test_should_replace_ingested_entry_when_compiling_same_source_with_different
     source.write_text("# Doc")
     article = wiki / "ai" / "intro.md"
     article.write_text("# Compiled")
-    summary = wiki / "summaries" / "ai" / "intro.md"
+    summary = wiki / "_summaries" / "ai" / "intro.md"
     summary.parent.mkdir(parents=True, exist_ok=True)
     summary.write_text("# Summary")
 
@@ -95,7 +95,7 @@ def test_should_find_compiled_entry_independently_of_source_path_style(tmp_raw_w
     source.write_text("# Doc")
     article = wiki / "ai" / "intro.md"
     article.write_text("# Compiled")
-    summary = wiki / "summaries" / "ai" / "intro.md"
+    summary = wiki / "_summaries" / "ai" / "intro.md"
     summary.parent.mkdir(parents=True, exist_ok=True)
     summary.write_text("# Summary")
 

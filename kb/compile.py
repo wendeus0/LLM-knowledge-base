@@ -231,7 +231,7 @@ def _resolve_output_path(raw_path: Path, topic: str, title: str) -> Path:
 
 
 def _summary_path(article_path: Path) -> Path:
-    summaries_dir = WIKI_DIR / "summaries"
+    summaries_dir = WIKI_DIR / "_summaries"
     relative_parent = article_path.parent.relative_to(WIKI_DIR)
     target_dir = summaries_dir / relative_parent
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -467,7 +467,7 @@ def update_index(no_commit: bool = True) -> None:
 
     articles: list[str] = []
     for md in sorted(WIKI_DIR.rglob("*.md")):
-        if md.name == "_index.md" or "summaries" in md.parts:
+        if md.name == "_index.md" or "_summaries" in md.parts:
             continue
         rel = md.relative_to(WIKI_DIR)
         articles.append(f"- [[{md.stem}]] (`{rel}`)")

@@ -185,7 +185,7 @@ Resumo compilado para security.
             mock_chat.return_value = mock_response
             compile_file(raw_file)
 
-        assert (wiki / "summaries" / "cybersecurity" / "same-slug.md").exists()
+        assert (wiki / "_summaries" / "cybersecurity" / "same-slug.md").exists()
 
     def test_should_reuse_existing_article_path_for_recompiled_source(
         self, tmp_raw_wiki
@@ -310,7 +310,7 @@ Conteúdo compilado.
             summary_text="Conteúdo compilado.",
         )
         assert not (wiki / "ai" / "artifact-title.md").exists()
-        assert not (wiki / "summaries" / "ai" / "artifact-title.md").exists()
+        assert not (wiki / "_summaries" /"ai" / "artifact-title.md").exists()
 
     def test_should_persist_artifact_and_update_state(self, tmp_raw_wiki):
         raw, wiki = tmp_raw_wiki
@@ -336,11 +336,11 @@ Resumo persistido.
 
         assert result.exists()
         assert result == wiki / "cybersecurity" / "persisted-article.md"
-        assert (wiki / "summaries" / "cybersecurity" / "persisted-article.md").exists()
+        assert (wiki / "_summaries" /"cybersecurity" / "persisted-article.md").exists()
         assert (
             "Persisted Article"
             in (
-                wiki / "summaries" / "cybersecurity" / "persisted-article.md"
+                wiki / "_summaries" /"cybersecurity" / "persisted-article.md"
             ).read_text()
         )
         manifest = (raw.parent / "kb_state" / "manifest.json").read_text()
