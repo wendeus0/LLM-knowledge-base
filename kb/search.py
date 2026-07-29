@@ -140,13 +140,22 @@ def find_relevant(query: str, top_k: int = 5) -> list[Path]:
     return [item["path"] for item in results]
 
 
+SEARCH_MODES = ("hybrid", "lexical", "keyword")
+
+
 def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
     """Retorna resultados com snippet para exibição no CLI.
 
     mode:
-    - hybrid (default): RRF(keyword + density + bm25)
+    - hybrid (default): RRF(keyword + density + bm25 + semântico quando há índice)
+    - lexical: RRF(keyword + density + bm25), sem consultar o canal semântico
     - keyword: comportamento legado por contagem de termos
     """
+    if mode not in SEARCH_MODES:
+        raise ValueError(
+            f"modo de busca desconhecido: {mode!r} (use um de {', '.join(SEARCH_MODES)})"
+        )
+
     keyword_rank, density_rank, bm25_rank, snippets = _build_rankings(query)
 
     if mode == "keyword":
@@ -160,9 +169,10 @@ def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
         ]
 
     rankings = [keyword_rank, density_rank, bm25_rank]
-    semantic_rank = _semantic_rank(query)
-    if semantic_rank:
-        rankings.append(semantic_rank)
+    if mode == "hybrid":
+        semantic_rank = _semantic_rank(query)
+        if semantic_rank:
+            rankings.append(semantic_rank)
 
     fused = _rrf_fuse(rankings)
     channel_keyword = dict(keyword_rank)

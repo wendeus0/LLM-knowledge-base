@@ -1124,3 +1124,86 @@ def index_status_cmd():
             f"servidor: ok em {server.endpoint} — modelo {status['model']} AUSENTE; "
             f"disponíveis: {', '.join(server.models) or 'nenhum'}"
         )
+
+
+@app.command()
+def bench(
+    mode: str = typer.Option(
+        "hybrid", "--mode", help="Configuração de busca a medir: hybrid|lexical"
+    ),
+    k: int = typer.Option(5, "--k", min=1, help="Corte do recall@k"),
+    seed: bool = typer.Option(
+        False, "--seed", help="Gera golden set a partir dos títulos do corpus"
+    ),
+    limit: int | None = typer.Option(
+        None, "--limit", min=1, help="Máximo de casos ao semear"
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Saída parseável"),
+):
+    """Mede recall@k e MRR da recuperação contra o golden set do vault."""
+    import json as _json
+
+    from kb.bench import golden_path, run_bench, seed_golden, write_golden
+    from kb.config import STATE_DIR, WIKI_DIR
+
+    destination = golden_path(STATE_DIR)
+
+    if seed:
+        cases = seed_golden(WIKI_DIR, limit=limit)
+        write_golden(destination, cases)
+        typer.echo(f"{len(cases)} caso(s) gravados em {destination}")
+        typer.echo("revise e edite as perguntas — títulos são apenas o piso da medição")
+        return
+
+    try:
+        report = run_bench(mode=mode, k=k)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from None
+
+    if report is None:
+        typer.echo(f"nenhum golden set em {destination}")
+        typer.echo("gere um inicial com `kb bench --seed` e edite os casos")
+        raise typer.Exit(code=1)
+
+    summary = report["summary"]
+
+    if as_json:
+        typer.echo(
+            _json.dumps(
+                {
+                    "mode": report["mode"],
+                    "corpus": report["corpus"],
+                    "semantic_active": report["semantic_active"],
+                    "summary": summary,
+                    "misses": [
+                        {"question": r.question, "expected": r.expected, "rank": r.rank}
+                        for r in report["results"]
+                        if not r.hit_at_k and not r.invalid
+                    ],
+                },
+                ensure_ascii=False,
+            )
+        )
+        return
+
+    canal = (
+        "canal semântico ativo"
+        if report["semantic_active"]
+        else ("canal semântico INATIVO — resultado é lexical" if report["mode"] == "hybrid" else "sem canal semântico")
+    )
+    typer.echo(
+        f"modo {report['mode']} — {report['corpus']} artigos no corpus, "
+        f"{summary['total']} caso(s) válido(s), {summary['invalid']} inválido(s) — {canal}"
+    )
+    typer.echo(
+        f"recall@{summary['k']} = {summary['recall_at_k']:.3f}  "
+        f"MRR = {summary['mrr']:.3f}  ({summary['hits']}/{summary['total']})"
+    )
+
+    misses = [r for r in report["results"] if not r.hit_at_k and not r.invalid]
+    for result in misses[:10]:
+        position = "fora do ranking" if result.rank is None else f"posição {result.rank}"
+        typer.echo(f"  falhou: {result.question[:60]} → {position}")
+    if len(misses) > 10:
+        typer.echo(f"  ... e mais {len(misses) - 10} caso(s)")
