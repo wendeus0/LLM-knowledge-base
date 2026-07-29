@@ -43,6 +43,7 @@ def compile_many(
     allow_sensitive: bool = False,
     no_commit: bool = True,
     update_index_enabled: bool = True,
+    index_refresh_enabled: bool = True,
 ):
     return compile_module.compile_many(
         paths,
@@ -50,6 +51,7 @@ def compile_many(
         allow_sensitive=allow_sensitive,
         no_commit=no_commit,
         update_index_enabled=update_index_enabled,
+        index_refresh_enabled=index_refresh_enabled,
     )
 
 
@@ -97,6 +99,7 @@ def execute_compile_command(
     no_commit: bool,
     interactive_sensitive: bool,
     confirm_sensitive: Callable[[], bool] | None = None,
+    index_refresh_enabled: bool = True,
 ) -> CompileExecutionResult:
     targets, book_dir_count, lines, early_exit = _resolve_targets(target)
     if early_exit != 0:
@@ -154,6 +157,7 @@ def execute_compile_command(
             allow_sensitive=allow_sensitive,
             no_commit=no_commit,
             update_index_enabled=False,
+            index_refresh_enabled=index_refresh_enabled,
         )
         compiled_outputs = result.outputs
         failures = result.failures

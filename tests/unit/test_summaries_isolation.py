@@ -33,6 +33,24 @@ class TestSummariesIsolation:
         assert "ai/artigo.md" in indexed
         assert str(summary.relative_to(wiki)) not in indexed
 
+    def test_should_exclude_hidden_dirs_from_both_corpora(self, tmp_raw_wiki):
+        _, wiki = tmp_raw_wiki
+        (wiki / "ai" / "artigo.md").write_text(
+            "---\ntitle: Artigo\n---\n\nresiliencia\n", encoding="utf-8"
+        )
+        for hidden in (".heal_backup", ".obsidian"):
+            (wiki / hidden).mkdir(exist_ok=True)
+            (wiki / hidden / "copia.md").write_text(
+                "---\ntitle: Copia\n---\n\nresiliencia\n", encoding="utf-8"
+            )
+
+        indexed = [relpath for relpath, _ in _iter_articles(wiki)]
+        found = [str(item["path"]) for item in search("resiliencia")]
+
+        assert "ai/artigo.md" in indexed
+        assert not any(relpath.startswith(".") for relpath in indexed)
+        assert not any(".heal_backup" in path or ".obsidian" in path for path in found)
+
     def test_should_exclude_infra_dirs_from_lexical_search(self, tmp_raw_wiki):
         _, wiki = tmp_raw_wiki
         article = wiki / "ai" / "artigo.md"

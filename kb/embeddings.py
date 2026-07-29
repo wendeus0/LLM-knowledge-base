@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import os
+import sys
 from pathlib import Path
 
 INDEX_FILENAME = "embeddings.json"
@@ -40,11 +41,11 @@ def embed_texts(texts: list[str], model: str | None = None, base_url: str | None
 
 
 def _iter_articles(wiki_dir: Path) -> list[tuple[str, str]]:
-    """(relpath, texto) dos artigos da wiki, ignorando infra `_*`."""
+    """(relpath, texto) dos artigos da wiki, ignorando infra `_*` e ocultos `.*`."""
     articles: list[tuple[str, str]] = []
     for md in sorted(Path(wiki_dir).rglob("*.md")):
         relative = md.relative_to(wiki_dir)
-        if any(part.startswith("_") for part in relative.parts):
+        if any(part.startswith(("_", ".")) for part in relative.parts):
             continue
         articles.append((str(relative), md.read_text(encoding="utf-8", errors="replace")))
     return articles
@@ -123,6 +124,46 @@ def build_index(wiki_dir: Path, state_dir: Path, force: bool = False, max_chars:
         "model": model,
         "dim": dim,
     }
+
+
+_AUTO_REFRESH_OFF = ("0", "false", "off", "no")
+
+
+def refresh_embeddings_index(enabled: bool = True) -> dict | None:
+    """Reindexa após escrita na wiki. Efeito colateral: nunca derruba o chamador.
+
+    Devolve o relatório de `build_index` quando roda, ou None quando foi pulado
+    (desabilitado, servidor fora, ou falha do build — sempre com aviso).
+    """
+    if not enabled:
+        return None
+    if os.getenv("KB_INDEX_AUTO_REFRESH", "1").strip().lower() in _AUTO_REFRESH_OFF:
+        return None
+
+    from kb.config import STATE_DIR, WIKI_DIR
+    from kb.embed_server import probe, probe_timeout
+
+    server = probe(_embed_base_url(), probe_timeout())
+    if not server.reachable:
+        print(
+            f"aviso: índice de embeddings não atualizado — servidor inacessível em {server.endpoint}",
+            file=sys.stderr,
+        )
+        return None
+
+    try:
+        report = build_index(WIKI_DIR, STATE_DIR)
+    except Exception as exc:
+        print(f"aviso: índice de embeddings não atualizado — {exc}", file=sys.stderr)
+        return None
+
+    if report.get("indexed") or report.get("removed"):
+        print(
+            f"índice de embeddings: {report['indexed']} indexado(s), "
+            f"{report['removed']} removido(s)",
+            file=sys.stderr,
+        )
+    return report
 
 
 def load_index(state_dir: Path) -> dict | None:

@@ -351,6 +351,11 @@ def compile(
         "--no-commit/--commit",
         help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
+    no_index_refresh: bool = typer.Option(
+        False,
+        "--no-index-refresh",
+        help="Não atualiza o índice de embeddings ao fim (útil em importações grandes)",
+    ),
 ):
     """Compila raw/ → wiki/ usando LLM."""
     from kb.cmds.compile.run import execute_compile_command
@@ -370,6 +375,7 @@ def compile(
         no_commit=no_commit,
         interactive_sensitive=True,
         confirm_sensitive=_confirm_sensitive,
+        index_refresh_enabled=not no_index_refresh,
     )
 
     for line in result.message_lines:
@@ -672,6 +678,11 @@ def heal(
         "--no-commit/--commit",
         help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
+    no_index_refresh: bool = typer.Option(
+        False,
+        "--no-index-refresh",
+        help="Não atualiza o índice de embeddings ao fim",
+    ),
 ):
     """Heal estocástico: pega N artigos aleatórios, corrige links, remove stubs, stampa reviewed."""
     from kb.guardrails import SensitiveContentError, summarize_findings
@@ -679,7 +690,12 @@ def heal(
 
     console.print(f"[dim]Healing {n} arquivos aleatórios...[/]\n")
     try:
-        log = do_heal(n, allow_sensitive=allow_sensitive, no_commit=no_commit)
+        log = do_heal(
+            n,
+            allow_sensitive=allow_sensitive,
+            no_commit=no_commit,
+            index_refresh_enabled=not no_index_refresh,
+        )
     except SensitiveContentError as exc:
         console.print(f"[yellow]{summarize_findings(exc)}[/]")
         if not (

@@ -408,6 +408,7 @@ def compile_many(
     allow_sensitive: bool = False,
     no_commit: bool = True,
     update_index_enabled: bool = True,
+    index_refresh_enabled: bool = True,
     on_progress: Callable[[], None] | None = None,
 ) -> CompileBatchResult:
     ordered_targets = [_resolve_raw_path(target) for target in targets]
@@ -456,6 +457,11 @@ def compile_many(
 
     if outputs and update_index_enabled:
         update_index(no_commit=no_commit)
+
+    if outputs:
+        from kb.embeddings import refresh_embeddings_index
+
+        refresh_embeddings_index(enabled=index_refresh_enabled)
 
     failures = [failures_by_index[index] for index in sorted(failures_by_index)]
     return CompileBatchResult(outputs=outputs, failures=failures)

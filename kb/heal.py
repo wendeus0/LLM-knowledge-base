@@ -74,7 +74,10 @@ def _is_valid_heal_output(original, response):
 
 
 def heal(
-    n: int = 10, allow_sensitive: bool = False, no_commit: bool = True
+    n: int = 10,
+    allow_sensitive: bool = False,
+    no_commit: bool = True,
+    index_refresh_enabled: bool = True,
 ) -> list[dict]:
     """Processa N arquivos aleatórios da wiki. Retorna log de ações."""
     backup_dir = WIKI_DIR / ".heal_backup"
@@ -129,5 +132,10 @@ def heal(
 
     if changed and not no_commit:
         commit(f"chore(heal): stochastic heal ({len(changed)} files)", changed)
+
+    if log:
+        from kb.embeddings import refresh_embeddings_index
+
+        refresh_embeddings_index(enabled=index_refresh_enabled)
 
     return log

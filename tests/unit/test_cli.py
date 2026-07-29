@@ -391,7 +391,9 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=True)
+        mock_heal.assert_called_once_with(
+            10, allow_sensitive=False, no_commit=True, index_refresh_enabled=True
+        )
         mock_print.assert_any_call("  [green]✓[/] a.md [dim](healed)[/]")
         mock_print.assert_any_call("  [dim]·[/] b.md [dim](reviewed_no_changes)[/]")
 
@@ -417,7 +419,9 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal", "--n", "5"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(5, allow_sensitive=False, no_commit=True)
+        mock_heal.assert_called_once_with(
+            5, allow_sensitive=False, no_commit=True, index_refresh_enabled=True
+        )
 
     def test_should_support_explicit_commit_flag(self):
         with (
@@ -429,7 +433,9 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal", "--commit"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=False)
+        mock_heal.assert_called_once_with(
+            10, allow_sensitive=False, no_commit=False, index_refresh_enabled=True
+        )
 
     def test_should_handle_sensitive_content_error_with_confirmation(self):
         from kb.guardrails import SensitiveContentError, SensitiveFinding

@@ -57,6 +57,7 @@ def test_execute_qa_command_should_call_answer_and_file_when_file_back_enabled()
         depth=2,
         profile="fast",
         top_k=None,
+        index_refresh_enabled=True,
     )
 
 

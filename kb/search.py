@@ -23,10 +23,10 @@ def _extract_snippet(text: str, terms: set[str]) -> str:
 
 
 def _iter_docs() -> list[tuple[Path, str, list[str]]]:
-    """Corpus da busca lexical — mesma convenção `_*` do índice semântico."""
+    """Corpus da busca lexical — mesma convenção do índice semântico: `_*` e `.*` fora."""
     docs: list[tuple[Path, str, list[str]]] = []
     for md in WIKI_DIR.rglob("*.md"):
-        if any(part.startswith("_") for part in md.relative_to(WIKI_DIR).parts):
+        if any(part.startswith(("_", ".")) for part in md.relative_to(WIKI_DIR).parts):
             continue
         text = md.read_text(encoding="utf-8", errors="replace")
         docs.append((md, text, _tokenize(text)))

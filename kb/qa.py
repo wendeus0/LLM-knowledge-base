@@ -120,6 +120,7 @@ def answer_and_file(
     traverse: bool = True,
     depth: int | None = None,
     profile: str = "fast",
+    index_refresh_enabled: bool = True,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
@@ -165,6 +166,9 @@ def answer_and_file(
         folder.mkdir(parents=True, exist_ok=True)
         out = folder / f"{slug}.md"
         out.write_text(article, encoding="utf-8")
+        from kb.embeddings import refresh_embeddings_index
+
+        refresh_embeddings_index(enabled=index_refresh_enabled)
     else:
         _, out = _write_output(question, article, topic, no_commit=True)
 
