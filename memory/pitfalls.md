@@ -99,3 +99,11 @@ type: project
 ✓ Heal aleatório mantém wiki fresca sem custo de full scan
 ✓ TF-IDF + relevância semântica coexistem bem (sem embeddings)
 ✓ Git automático = zero conflitos se LLM segue estratégia (append/update)
+
+## Sessão 2026-07-15/16 (stack local)
+
+- **Modelos reasoning (qwen3.5/Bonsai) devolvem `content` vazio** se o thinking não for desligado — sinal: `usage` conta tokens mas resposta vazia; mitigação: `--chat-template-kwargs '{"enable_thinking":false}'` no llama-server (o `--reasoning-budget 0` sozinho NÃO basta).
+- **`kb` sem `KB_DATA_DIR` cai no repo silenciosamente** ("Nenhum contexto relevante" em vault cheio) — resolvido com `.env`, mas o sinal engana: parece corpus vazio, é path errado.
+- **MLX 1-bit não roda em runtime nenhum de fábrica** (LM Studio, mlx-lm oficial) — só nos forks PrismML; compilar o fork MLX exige Xcode completo (compilador `metal` não vem no CLT, mesmo em modo JIT).
+- **Trocar modelo de embedding exige rebuild do índice** — o gate de integridade (012) detecta e degrada p/ lexical, mas a busca fica pior em silêncio; conferir `kb index status` após mexer em modelos.
+- **ubatch maior nem sempre ajuda**: 1024 deu +29% de pp; 2048 PIOROU (pressão de memória em 16GB) — sempre medir, nunca extrapolar.

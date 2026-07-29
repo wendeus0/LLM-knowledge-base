@@ -21,8 +21,10 @@ app = typer.Typer(
     epilog=(
         "Opções por comando:\n\n"
         "ingest <src...>  [--no-commit|--commit] [--compile]\n\n"
-        "import-book <arquivo...>  [--output PATH] [--compile] [--force] [--ocr]"
+        "import-book <arquivo...>  [--output PATH] [--compile] [--force] [--ocr] [--keep-noise]"
         "  [--workers/-j INT] [--chunk-pages INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
+        "noise scan  |  noise apply [--no-commit|--commit]\n\n"
+        "index build [--force]  |  index status\n\n"
         "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
@@ -41,9 +43,13 @@ app = typer.Typer(
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
 discovery_app = typer.Typer(help="Descoberta automatizada e ingestão periódica")
 handoff_app = typer.Typer(help="Handoff operacional de sessão")
+noise_app = typer.Typer(help="Higiene de capítulos-ruído do corpus (scan/apply)")
+index_app = typer.Typer(help="Índice de embeddings do vault (build/status)")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(discovery_app, name="discovery")
 app.add_typer(handoff_app, name="handoff")
+app.add_typer(noise_app, name="noise")
+app.add_typer(index_app, name="index")
 console = Console()
 
 
@@ -140,6 +146,11 @@ def import_book(
     force: bool = typer.Option(
         False, "--force", help="Reimportar livros já existentes em raw/books/"
     ),
+    keep_noise: bool = typer.Option(
+        False,
+        "--keep-noise",
+        help="Importa também capítulos-ruído (agradecimentos, prefácio, elogios etc.)",
+    ),
     workers: int = typer.Option(
         4, "--workers", "-j", help="Número de livros processados em paralelo"
     ),
@@ -161,7 +172,7 @@ def import_book(
             return path, "skip", target_dir
         try:
             written_files, metadata_path = import_epub(
-                path, target_dir, use_ocr=ocr, chunk_pages=chunk_pages
+                path, target_dir, use_ocr=ocr, chunk_pages=chunk_pages, keep_noise=keep_noise
             )
             return path, "ok", (written_files, metadata_path)
         except (BookImportError, PermissionError) as exc:
@@ -211,6 +222,24 @@ def import_book(
 
     console.print()
     console.print(table)
+
+    for path in paths:
+        status, detail = results_map[path]
+        if status != "ok" or not detail:
+            continue
+        try:
+            book_metadata = json.loads(detail[1].read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for entry in book_metadata.get("excluded_chapters", []):
+            typer.echo(f"excluído (ruído): {entry['title']} [{entry['category']}]")
+        for title in book_metadata.get("ambiguous_chapters", []):
+            typer.echo(f"mantido (não classificado): {title}")
+        if book_metadata.get("noise_classification_skipped"):
+            typer.echo(
+                "aviso: não foi possível classificar capítulos-ruído "
+                f"(sem títulos utilizáveis) — nada foi excluído de {path.name}"
+            )
 
     if len(paths) == 1:
         status, detail = results_map[paths[0]]
@@ -399,6 +428,17 @@ def qa(
         "--depth",
         help="Profundidade de traversal de wikilinks (padrão: 1; use --no-traverse para desativar)",
     ),
+    deep: bool = typer.Option(
+        False,
+        "--deep",
+        help="Perfil deep: mais artigos e contexto maior por artigo (mais lento, mais completo)",
+    ),
+    top_k: int = typer.Option(
+        None,
+        "--top-k",
+        min=1,
+        help="Sobrepõe o número de artigos recuperados do perfil ativo",
+    ),
 ):
     """Responde uma pergunta consultando as fontes do kb."""
     from kb.cmds.qa.run import execute_qa_command
@@ -415,6 +455,8 @@ def qa(
             no_commit=no_commit,
             no_traverse=no_traverse,
             depth=depth,
+            profile="deep" if deep else "fast",
+            top_k=top_k,
         )
         console.print(Markdown(response))
         if saved:
@@ -973,3 +1015,72 @@ def handoff_create(
         decisions=decisions,
     )
     console.print(f"[green]Handoff criado:[/] {path}")
+
+
+@noise_app.command("scan")
+def noise_scan():
+    """Lista candidatos a ruído já ingeridos (dry-run; não altera nada)."""
+    from kb.config import RAW_DIR, WIKI_DIR
+    from kb.noise import scan_corpus
+
+    candidates = scan_corpus(RAW_DIR, WIKI_DIR)
+    for candidate in candidates:
+        typer.echo(candidate.name)
+    typer.echo(f"{len(candidates)} candidato(s) a ruído")
+
+
+@noise_app.command("apply")
+def noise_apply(
+    no_commit: bool = typer.Option(
+        True,
+        "--no-commit/--commit",
+        help="Padrão: move localmente sem commit; use --commit para versionar",
+    ),
+):
+    """Move candidatos a ruído para archive/ (nunca deleta)."""
+    from kb.config import ARCHIVE_DIR, RAW_DIR, WIKI_DIR
+    from kb.noise import archive_candidates, scan_corpus
+
+    candidates = scan_corpus(RAW_DIR, WIKI_DIR)
+    moved = archive_candidates(candidates, ARCHIVE_DIR)
+    for destination in moved:
+        typer.echo(f"arquivado: {destination.name}")
+    typer.echo(f"{len(moved)} arquivo(s) movido(s) para archive/")
+    if moved and not no_commit:
+        from kb.git import commit
+
+        commit("chore(corpus): archive noise chapters", [*moved])
+
+
+@index_app.command("build")
+def index_build(
+    force: bool = typer.Option(False, "--force", help="Re-embeda todos os artigos, ignorando o cache"),
+):
+    """Gera/atualiza o índice de embeddings do vault (incremental por hash)."""
+    from kb.config import STATE_DIR, WIKI_DIR
+    from kb.embeddings import build_index
+
+    try:
+        report = build_index(WIKI_DIR, STATE_DIR, force=force)
+    except RuntimeError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from None
+    typer.echo(
+        f"{report['indexed']} artigo(s) indexado(s), {report['unchanged']} inalterado(s), "
+        f"{report['removed']} removido(s), {report['truncated']} truncado(s) — "
+        f"modelo {report['model']} (dim {report['dim']})"
+    )
+
+
+@index_app.command("status")
+def index_status_cmd():
+    """Cobertura do índice de embeddings: indexados/total, modelo e pendências."""
+    from kb.config import STATE_DIR, WIKI_DIR
+    from kb.embeddings import index_status
+
+    status = index_status(WIKI_DIR, STATE_DIR)
+    typer.echo(f"{status['indexed']}/{status['total']} artigos indexados — modelo {status['model']}")
+    if status["note"]:
+        typer.echo(status["note"])
+    for relpath in status["stale"]:
+        typer.echo(f"pendente: {relpath}")

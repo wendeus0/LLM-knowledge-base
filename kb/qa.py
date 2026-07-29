@@ -44,13 +44,24 @@ source: qa
 
 def answer(
     question: str,
-    top_k: int = 5,
+    top_k: int | None = None,
     allow_sensitive: bool = False,
     traverse: bool = True,
     depth: int | None = None,
+    profile: str = "fast",
 ) -> str:
+    from kb.config import get_retrieval_profile
+
+    resolved = get_retrieval_profile(profile)
+    effective_top_k = top_k if top_k is not None else resolved["top_k"]
+    effective_traverse = traverse and resolved["traverse"]
     decision, context_parts = build_context(
-        question, top_k=top_k, traverse=traverse, depth=depth
+        question,
+        top_k=effective_top_k,
+        traverse=effective_traverse,
+        depth=depth,
+        doc_chars=resolved["doc_chars"],
+        traversal_budget=resolved["traversal_budget"],
     )
 
     if not context_parts:
@@ -102,12 +113,13 @@ def answer(
 
 def answer_and_file(
     question: str,
-    top_k: int = 5,
+    top_k: int | None = None,
     allow_sensitive: bool = False,
     no_commit: bool = True,
     to_wiki: bool = False,
     traverse: bool = True,
     depth: int | None = None,
+    profile: str = "fast",
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
@@ -119,6 +131,7 @@ def answer_and_file(
         allow_sensitive=allow_sensitive,
         traverse=traverse,
         depth=depth,
+        profile=profile,
     )
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",

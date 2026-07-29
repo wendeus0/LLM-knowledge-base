@@ -783,7 +783,13 @@ def _extract_chapters_from_epub(
                     .strip()
                     or f"Capítulo {chapter_index}"
                 )
-                title = _extract_title(html, fallback_title)
+                extracted_title = _extract_title(html, "")
+                title = extracted_title or fallback_title
+                title_source = (
+                    "heading"
+                    if extracted_title
+                    else ("toc" if toc_map.get(normalized_href) else "fallback")
+                )
                 content = html_to_markdown(html, image_map=image_map, base_href=href)
                 if not content:
                     continue
@@ -791,6 +797,7 @@ def _extract_chapters_from_epub(
                     {
                         "index": chapter_index,
                         "title": title,
+                        "title_source": title_source,
                         "content": content,
                         "source_href": normalized_href,
                     }
@@ -855,6 +862,11 @@ def write_metadata(
     chapters: list[dict],
     written_files: list[Path],
     book_metadata: dict | None = None,
+    *,
+    keep_noise: bool = False,
+    excluded_chapters: list[dict] | None = None,
+    ambiguous_chapters: list[str] | None = None,
+    noise_classification_skipped: bool = False,
 ) -> Path:
     ensure_output_dir(output_dir)
     book_metadata = book_metadata or {}
@@ -895,6 +907,10 @@ def write_metadata(
             }
             for chapter, written_file in zip(chapters, written_files, strict=False)
         ],
+        "keep_noise": keep_noise,
+        "excluded_chapters": excluded_chapters or [],
+        "ambiguous_chapters": ambiguous_chapters or [],
+        "noise_classification_skipped": noise_classification_skipped,
     }
     metadata_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -911,6 +927,7 @@ def convert_book(
     include_images: bool = False,
     use_ocr: bool = False,
     chunk_pages: int = _PDF_PAGES_PER_CHUNK,
+    keep_noise: bool = False,
 ) -> tuple[list[Path], Path]:
     if not source.exists():
         raise error_cls(f"Arquivo de entrada não existe: {source}")
@@ -924,9 +941,30 @@ def convert_book(
         )
     else:
         raise error_cls(unsupported_message)
+
+    excluded_chapters: list[dict] = []
+    ambiguous_chapters: list[str] = []
+    noise_classification_skipped = False
+    if not keep_noise and chapters:
+        classifiable = [c for c in chapters if c.get("title_source") != "fallback"]
+        if classifiable:
+            from kb.noise import split_noise
+
+            chapters, excluded_chapters, ambiguous_chapters = split_noise(chapters)
+        else:
+            noise_classification_skipped = True
+
     written_files = write_chapters(chapters, output_dir, error_cls=error_cls)
     write_assets(output_dir, book_metadata.get("assets") or [])
     metadata_path = write_metadata(
-        source, output_dir, chapters, written_files, book_metadata
+        source,
+        output_dir,
+        chapters,
+        written_files,
+        book_metadata,
+        keep_noise=keep_noise,
+        excluded_chapters=excluded_chapters,
+        ambiguous_chapters=ambiguous_chapters,
+        noise_classification_skipped=noise_classification_skipped,
     )
     return written_files, metadata_path

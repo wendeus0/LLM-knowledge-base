@@ -491,6 +491,8 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=False,
             depth=1,
+            profile="fast",
+            top_k=None,
         )
 
     def test_should_handle_sensitive_content_error_with_confirmation(self):
@@ -556,6 +558,8 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=False,
             depth=1,
+            profile="fast",
+            top_k=None,
         )
         mock_print.assert_any_call(
             f"\n[dim]Arquivado em:[/] [green]{tmp_path / 'output.md'}[/]"
@@ -579,6 +583,8 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=True,
             depth=1,
+            profile="fast",
+            top_k=None,
         )
 
     def test_should_support_custom_depth(self):
@@ -599,6 +605,8 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=False,
             depth=3,
+            profile="fast",
+            top_k=None,
         )
 
     def test_should_support_to_wiki_flag(self):

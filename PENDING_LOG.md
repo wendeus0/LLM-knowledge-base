@@ -108,3 +108,18 @@ Pendências e decisões abertas.
 - Atual: busca lexical simples funciona para a escala atual (~14 artigos em wiki/ai/)
 - Quando escalar: adicionar embeddings + índice vetorial
 - Não bloqueia a baseline atual
+
+## Sessão 2026-07-15/16 — stack local + features 011-013
+
+**Anotação do dono no encerramento:** seguiremos os testes do KB; eventualmente testar o **Bonsai 8B 1-bit** para execução dessas tarefas (gate: golden set da feature 014).
+
+| Prioridade | Item | Contexto | Data |
+| --- | --- | --- | --- |
+| P1 | Commit das features 011 (noise filter), 012 (semantic retrieval), 013 (context budget) + defaults locais | Tudo DONE local com REPORTs; working tree sem commit por decisão de fluxo | 2026-07-16 |
+| P2 | Feature 014 — `kb bench` + golden set (~12-15 perguntas do vault, grader de fidelidade) | Gate da decisão Bonsai 8B p/ QA cotidiano e do bench dos modelos da VM G0dwin | 2026-07-16 |
+| P2 | Servidores locais não sobem no boot (`lms server start` + `start-bonsai-server.sh` manuais) | Candidato a launchd; sem eles o kb degrada p/ lexical e o chat falha | 2026-07-16 |
+| P2 | Chunking + re-rank + sumários-como-sinal-de-retrieval | SPEC própria (evolução da 012); ganho estrutural de latência+precisão | 2026-07-16 |
+| P2 | Investigação tensor API Metal → PR ao fork PrismML-Eng/llama.cpp | Time-box 1 sessão de diagnóstico; ganho potencial 3-10x no prompt processing | 2026-07-16 |
+| P3 | Decisão sobre `summaries/` duplicando artigos no índice de embeddings | Resultados podem vir em dobro (ex.: circuit-breaker.md 2x) | 2026-07-16 |
+| P3 | MLX 1-bit (4.8G) guardado aguardando suporte upstream | Watch cloud semanal ativo (segundas ~9h07 BRT) | 2026-07-16 |
+| P3 | [deferido] Bench de modelos da VM G0dwin | VM offline (connection refused); usar golden set da 014 quando ligar | 2026-07-16 |

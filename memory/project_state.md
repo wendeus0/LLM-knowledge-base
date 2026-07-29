@@ -51,3 +51,11 @@ kb/
 1–10 concluídos (baseline, livros, Pal, execução sensível, expansão funcional, validação real, qualidade de output, compile paralelo, cobertura, baseline green + SSRF).
 11. **LLM Wiki v2 Foundation** ✅ (PR #35)
 12. **Robustez do core + template de artigo** ← em execução (plano 2026-07-09)
+
+## Snapshot 2026-07-16 (pós-sessão stack local)
+
+- Features 011/012/013 DONE locais (noise filter, semantic retrieval, context budget) — SEM commit; 452 testes, 93% cobertura
+- Stack: Bonsai 27B 1-bit (llama-server fork PrismML :8081) + Nomic v2-moe (LM Studio :1234); Ollama removido; `.env` → vault
+- QA fast: ~1m15s–2m/pergunta (era ~5min); perfis fast/deep/paper/article prontos
+- Vault: 2.059 artigos indexados; 74 artigos-ruído arquivados
+- Watch cloud semanal vigia MLX 1-bit upstream (migração futura GGUF→MLX nativo)

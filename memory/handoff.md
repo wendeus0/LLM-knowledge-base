@@ -4,31 +4,32 @@ description: Última sessão (atualizado ao encerrar)
 type: project
 ---
 
-## Sessão — 2026-07-09 (review completo + plano de robustez + início da execução)
+## Sessão — 2026-07-15/16 (stack 100% local + features 011-013)
 
 **Read before acting:**
 
-- `docs/superpowers/plans/2026-07-09-core-robustness.md` (o plano governa o trabalho atual)
-- `AGENTS.md`, `memory/MEMORY.md`, `PENDING_LOG.md`, `ERROR_LOG.md`
+- `PENDING_LOG.md` (seção 2026-07-15/16) e `ERROR_LOG.md` (entradas 2026-07-15)
+- Plano aprovado: `~/.claude/plans/vamos-tentar-ajustar-primeiro-cheeky-fern.md`
+- Roadmap grillado: `features/011-corpus-noise-filter/DOMAIN.md` (12 decisões)
 
 **Current state:**
 
-- Branch `chore/truth-sync` (Fase 0), empilhada sobre `main @ a12ef49`
-- Baseline: `327 passed, 0 failed`; ruff clean; venv local em `.venv/`
-- Plano aprovado pelo dono com 13 tasks em 7 fases
+- Stack local fim-a-fim: **Bonsai 27B 1-bit** GGUF no fork llama.cpp PrismML (pin `62061f91`) via `~/dev/personal/local-ai-lab/start-bonsai-server.sh` em `:8081` (ctx 16384, ubatch 1024, thinking off) + **Nomic v2-moe** no LM Studio `:1234`; Ollama removido; `.env` → `KB_DATA_DIR=~/vault`
+- ⚠️ Servidores NÃO sobem no boot: `lms server start` + `start-bonsai-server.sh` após reinício
+- Suíte: **452 passed**, 93% cobertura; features **011/012/013 DONE locais, SEM commit** (REPORTs em `features/*/REPORT.md`)
+- QA fast: ~1m15s–2m/pergunta (era ~5min); vault com 2.059 artigos indexados, 74 ruídos arquivados
+- MLX 1-bit (4.8G) guardado aguardando upstream (issue mlx#3161; watch cloud semanal `trig_01FcZK3rUtxfdUsYvCvZ4HiK`)
 
-**O que foi feito nesta sessão:**
+**Anotação do dono no encerramento:**
 
-1. Review completo em 4 lentes (overbuilt / frágil / faltando / estrutura vs objetivo) — achados no plano
-2. Decisões do dono: multi-vault é meta real (SPEC pendente); cortar todo código morto; backlog 008/009 no plano; template engine+override
-3. Fix de baseline: teste bomba-relógio em `tests/unit/test_analytics_history.py` (datas fixas + days=30 sem `now`) + imports mortos
-4. Fase 0 (verdade-fonte): CLAUDE.md, memória, features/, README, CHANGELOG sincronizados com a realidade
+> Seguiremos os testes do KB; **eventualmente testar o Bonsai 8B 1-bit** para execução dessas tarefas — gate: golden set (feature 014).
 
 **Open points:**
 
-- Open questions 1–5 no topo do plano (versão 0.5.0, cov-fail-under 85, heal skip+log, conteúdo fino do template, ambiguidade das SPECs 008/009)
-- Push/PR das branches exige confirmação do dono
+- P1: commits das 011-013 (aguardam pedido do dono)
+- Tensor API Metal desabilitado no ambiente (pp sem aceleração) — frente de investigação → PR ao fork
+- `summaries/` duplica artigos no índice; VM G0dwin offline
 
 **Recommended next session:**
 
-> Continuar a execução do plano da fase onde parou (ver TaskList/branches). Review zero-trust obrigatório sobre qualquer diff vindo do executor (Codex).
+> Subir os dois servidores locais, depois iniciar a **feature 014 — `kb bench` + golden set** (~12-15 perguntas do vault, grader de fidelidade): é o gate da decisão do Bonsai 8B e do bench da VM. Alternativa se o dono pedir: commits das 011-013 primeiro.

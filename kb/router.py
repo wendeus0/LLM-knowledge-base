@@ -41,9 +41,13 @@ def _build_wiki_context(
     top_k: int,
     traverse: bool = True,
     depth: int | None = None,
+    doc_chars: int | None = None,
+    traversal_budget: int | None = None,
 ) -> list[str]:
+    from kb.config import qa_doc_chars
     from kb.graph import traverse as graph_traverse
 
+    max_chars = doc_chars if doc_chars is not None else qa_doc_chars()
     seed_files = find_relevant(question, top_k=top_k)
     extra_files = []
     if traverse and seed_files:
@@ -52,14 +56,20 @@ def _build_wiki_context(
             question=question,
             wiki_dir=WIKI_DIR,
             depth=depth if depth is not None else WIKILINK_TRAVERSAL_DEPTH,
-            token_budget=MAX_CONTEXT_TOKENS,
+            token_budget=traversal_budget if traversal_budget is not None else MAX_CONTEXT_TOKENS,
         )
 
     all_files = seed_files + [f for f in extra_files if f not in seed_files]
-    return [f"# {path.stem}\n{path.read_text(encoding='utf-8', errors='replace')}" for path in all_files]
+    return [
+        f"# {path.stem}\n{cap_text(path.read_text(encoding='utf-8', errors='replace'), max_chars)}"
+        for path in all_files
+    ]
 
 
-def _build_raw_context(question: str, top_k: int) -> list[str]:
+def _build_raw_context(question: str, top_k: int, doc_chars: int | None = None) -> list[str]:
+    from kb.config import qa_doc_chars
+
+    max_chars = doc_chars if doc_chars is not None else qa_doc_chars()
     terms = set(question.lower().split())
     scored: list[tuple[int, Path, str]] = []
 
@@ -70,7 +80,7 @@ def _build_raw_context(question: str, top_k: int) -> list[str]:
             scored.append((score, path, text))
 
     scored.sort(key=lambda item: item[0], reverse=True)
-    return [f"# {path.name}\n{text}" for _, path, text in scored[:top_k]]
+    return [f"# {path.name}\n{cap_text(text, max_chars)}" for _, path, text in scored[:top_k]]
 
 
 def _build_structured_context(route: str, question: str, top_k: int) -> list[str]:
@@ -92,13 +102,22 @@ def build_context(
     top_k: int = 5,
     traverse: bool = True,
     depth: int | None = None,
+    doc_chars: int | None = None,
+    traversal_budget: int | None = None,
 ) -> tuple[RouteDecision, list[str]]:
     decision = decide_route(question)
 
     if decision.route == "wiki":
-        context = _build_wiki_context(question, top_k, traverse=traverse, depth=depth)
+        context = _build_wiki_context(
+            question,
+            top_k,
+            traverse=traverse,
+            depth=depth,
+            doc_chars=doc_chars,
+            traversal_budget=traversal_budget,
+        )
     elif decision.route == "raw":
-        context = _build_raw_context(question, top_k)
+        context = _build_raw_context(question, top_k, doc_chars=doc_chars)
     else:
         context = _build_structured_context(decision.route, question, top_k)
 
@@ -106,4 +125,23 @@ def build_context(
         return decision, context
 
     fallback = RouteDecision("wiki", f"{decision.reason} Nenhum contexto encontrado; fallback para wiki.")
-    return fallback, _build_wiki_context(question, top_k, traverse=traverse, depth=depth)
+    return fallback, _build_wiki_context(
+        question,
+        top_k,
+        traverse=traverse,
+        depth=depth,
+        doc_chars=doc_chars,
+        traversal_budget=traversal_budget,
+    )
+
+
+TRUNCATION_MARKER = "[... truncado]"
+
+
+def cap_text(text: str, max_chars: int) -> str:
+    """Limita texto a max_chars cortando na fronteira de parágrafo anterior; nunca no meio de frase."""
+    if len(text) <= max_chars:
+        return text
+    boundary = text.rfind("\n\n", 0, max_chars)
+    head = text[:boundary] if boundary > 0 else text[:max_chars]
+    return head.rstrip() + "\n\n" + TRUNCATION_MARKER

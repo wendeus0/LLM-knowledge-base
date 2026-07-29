@@ -40,3 +40,8 @@ Ver "Open questions" no plano (`docs/superpowers/plans/2026-07-09-core-robustnes
 - Cortar todo código morto (runner.py, savings, wrappers cmds/lint|search).
 - Backlog 008/009 entra como fase final do plano.
 - Template de artigo: default versionado na engine (`kb/templates/`) com override em `<KB_DATA_DIR>/templates/`.
+
+## 2026-07-16
+
+1. **014 — kb bench + golden set** (próxima; gate do Bonsai 8B — anotação do dono)
+2. Chunking + re-rank (SPEC própria) · 3. Tensor API → PR fork · 4. Módulos paper/artigo → API/app (roadmap DOMAIN 011)

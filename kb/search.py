@@ -102,6 +102,17 @@ def _rrf_fuse(rankings: list[list[tuple[Path, float]]], k: int = 60) -> dict[Pat
     return fused
 
 
+def _semantic_rank(query: str) -> list[tuple[Path, float]]:
+    """Canal semântico da fusão; sem índice válido, retorna [] (fallback lexical)."""
+    from kb.config import STATE_DIR
+    from kb.embeddings import load_index, semantic_ranking
+
+    index = load_index(STATE_DIR)
+    if index is None:
+        return []
+    return semantic_ranking(query, index)
+
+
 def find_relevant(query: str, top_k: int = 5) -> list[Path]:
     """Retorna artigos mais relevantes para a query usando ranking híbrido."""
     results = search(query, top_k=top_k, mode="hybrid")
@@ -127,7 +138,12 @@ def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
             for path, score in keyword_rank[:top_k]
         ]
 
-    fused = _rrf_fuse([keyword_rank, density_rank, bm25_rank])
+    rankings = [keyword_rank, density_rank, bm25_rank]
+    semantic_rank = _semantic_rank(query)
+    if semantic_rank:
+        rankings.append(semantic_rank)
+
+    fused = _rrf_fuse(rankings)
     channel_keyword = dict(keyword_rank)
     channel_density = dict(density_rank)
     channel_bm25 = dict(bm25_rank)

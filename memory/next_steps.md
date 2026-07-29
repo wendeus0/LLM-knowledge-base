@@ -38,3 +38,10 @@ type: project
 ## Bloqueadores
 
 Nenhum. Baseline verde: 327/327 testes, ruff clean.
+
+## 2026-07-16 (plano aprovado: vamos-tentar-ajustar-primeiro-cheeky-fern.md)
+
+1. Commits features 011-013 (P1, quando o dono pedir)
+2. Feature 014: golden set ~12-15 perguntas + grader de fidelidade → decidir Bonsai 8B
+3. Launchd p/ auto-start dos servidores locais
+4. Chunking+re-rank; investigação tensor API (time-box); VM G0dwin quando ligar

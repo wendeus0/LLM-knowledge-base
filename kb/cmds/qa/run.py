@@ -14,6 +14,8 @@ def execute_qa_command(
     no_commit: bool,
     no_traverse: bool,
     depth: int,
+    profile: str = "fast",
+    top_k: int | None = None,
 ) -> tuple[str, Path | None]:
     traverse = not no_traverse
 
@@ -27,6 +29,8 @@ def execute_qa_command(
             to_wiki=to_wiki,
             traverse=traverse,
             depth=depth,
+            profile=profile,
+            top_k=top_k,
         )
 
     from kb.qa import answer
@@ -36,5 +40,7 @@ def execute_qa_command(
         allow_sensitive=allow_sensitive,
         traverse=traverse,
         depth=depth,
+        profile=profile,
+        top_k=top_k,
     )
     return response, None

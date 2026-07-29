@@ -19,9 +19,9 @@ MANIFEST_PATH = STATE_DIR / "manifest.json"
 CLAIMS_PATH = STATE_DIR / "claims.jsonl"
 AUDIT_PATH = STATE_DIR / "audit.jsonl"
 
-API_KEY = os.getenv("KB_API_KEY")
-BASE_URL = os.getenv("KB_BASE_URL", "https://opencode.ai/zen/go/v1")
-MODEL = os.getenv("KB_MODEL", "kimi-k2.5")
+API_KEY = os.getenv("KB_API_KEY", "local")
+BASE_URL = os.getenv("KB_BASE_URL", "http://localhost:8081/v1")
+MODEL = os.getenv("KB_MODEL", "bonsai-27b-1bit")
 
 DEFAULT_TOPICS = ["cybersecurity", "ai", "python", "typescript"]
 
@@ -72,3 +72,27 @@ def wiki_topic_dir(topic: str) -> Path:
 
 WIKILINK_TRAVERSAL_DEPTH = 1
 MAX_CONTEXT_TOKENS = 8000
+
+
+QA_DOC_CHARS_DEFAULT = 4000
+
+RETRIEVAL_PROFILES = {
+    "fast": {"top_k": 3, "doc_chars": 4000, "traverse": True, "traversal_budget": 1500},
+    "deep": {"top_k": 5, "doc_chars": 8000, "traverse": True, "traversal_budget": 4000},
+    "paper": {"top_k": 3, "doc_chars": 4000, "traverse": False, "traversal_budget": 0},
+    "article": {"top_k": 5, "doc_chars": 8000, "traverse": True, "traversal_budget": 4000},
+}
+
+
+def qa_doc_chars(default: int = QA_DOC_CHARS_DEFAULT) -> int:
+    return int(os.getenv("KB_QA_DOC_CHARS", default))
+
+
+def get_retrieval_profile(name: str) -> dict:
+    """Perfil de retrieval nomeado; KB_QA_DOC_CHARS sobrepõe doc_chars de qualquer perfil."""
+    if name not in RETRIEVAL_PROFILES:
+        valid = ", ".join(sorted(RETRIEVAL_PROFILES))
+        raise ValueError(f"Perfil de retrieval desconhecido: {name}. Válidos: {valid}")
+    profile = dict(RETRIEVAL_PROFILES[name])
+    profile["doc_chars"] = qa_doc_chars(profile["doc_chars"])
+    return profile

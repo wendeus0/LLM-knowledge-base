@@ -35,7 +35,7 @@ def extract_book_metadata(source: Path) -> dict:
     return _extract_book_metadata(source, error_cls=BookImportError)
 
 
-def import_epub(source: Path, output_dir: Path | None = None, *, use_ocr: bool = False, chunk_pages: int = 15) -> tuple[list[Path], Path]:
+def import_epub(source: Path, output_dir: Path | None = None, *, use_ocr: bool = False, chunk_pages: int = 15, keep_noise: bool = False) -> tuple[list[Path], Path]:
     target_dir = output_dir or default_output_dir(source)
     return convert_book(
         source,
@@ -44,6 +44,7 @@ def import_epub(source: Path, output_dir: Path | None = None, *, use_ocr: bool =
         unsupported_message="A importação inicial suporta EPUB e PDF textual",
         use_ocr=use_ocr,
         chunk_pages=chunk_pages,
+        keep_noise=keep_noise,
     )
 
 
