@@ -119,7 +119,7 @@ class TestSearchCommand:
             result = runner.invoke(app, ["search", "query"])
 
         assert result.exit_code == 0
-        mock_search.assert_called_once_with("query")
+        mock_search.assert_called_once_with("query", mode="hybrid", expand=None)
         mock_print.assert_any_call(
             f"[bold]article[/] [dim]({path})[/] score=10"
         )

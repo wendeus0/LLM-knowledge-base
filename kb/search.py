@@ -143,13 +143,19 @@ def find_relevant(query: str, top_k: int = 5) -> list[Path]:
 SEARCH_MODES = ("hybrid", "lexical", "keyword")
 
 
-def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
+def search(
+    query: str, top_k: int = 10, mode: str = "hybrid", expand: str | None = None
+) -> list[dict]:
     """Retorna resultados com snippet para exibição no CLI.
 
     mode:
     - hybrid (default): RRF(keyword + density + bm25 + semântico quando há índice)
     - lexical: RRF(keyword + density + bm25), sem consultar o canal semântico
     - keyword: comportamento legado por contagem de termos
+
+    expand: estratégia de expansão da query aplicada **apenas** ao canal
+    semântico. Os lexicais funcionam por casamento de termo e seriam diluídos
+    por vocabulário gerado.
     """
     if mode not in SEARCH_MODES:
         raise ValueError(
@@ -170,7 +176,12 @@ def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
 
     rankings = [keyword_rank, density_rank, bm25_rank]
     if mode == "hybrid":
-        semantic_rank = _semantic_rank(query)
+        semantic_query = query
+        if expand:
+            from kb.query_expansion import expand_query
+
+            semantic_query = expand_query(query, expand)
+        semantic_rank = _semantic_rank(semantic_query)
         if semantic_rank:
             rankings.append(semantic_rank)
 

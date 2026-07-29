@@ -108,7 +108,7 @@ def write_golden(path: Path, cases: list[dict]) -> Path:
     return path
 
 
-def run_bench(mode: str = "hybrid", k: int = 5) -> dict | None:
+def run_bench(mode: str = "hybrid", k: int = 5, expand: str | None = None) -> dict | None:
     """Executa o golden set e devolve sumário + casos. None se não há golden set."""
     from kb.config import STATE_DIR, WIKI_DIR
     from kb.embeddings import _iter_articles
@@ -131,7 +131,7 @@ def run_bench(mode: str = "hybrid", k: int = 5) -> dict | None:
     for case in cases:
         ranked = [
             Path(item["path"]).stem
-            for item in search(case["question"], top_k=depth, mode=mode)
+            for item in search(case["question"], top_k=depth, mode=mode, expand=expand)
         ]
         results.append(
             evaluate_case(
@@ -145,6 +145,7 @@ def run_bench(mode: str = "hybrid", k: int = 5) -> dict | None:
 
     return {
         "mode": mode,
+        "expand": expand,
         "corpus": len(known),
         "semantic_active": semantic_active,
         "summary": aggregate(results, k=k),

@@ -483,13 +483,25 @@ def qa(
 
 
 @app.command()
-def search(query: str = typer.Argument(..., help="Termos de busca")):
+def search(
+    query: str = typer.Argument(..., help="Termos de busca"),
+    mode: str = typer.Option("hybrid", "--mode", help="hybrid|lexical|keyword"),
+    expand: str = typer.Option(
+        None,
+        "--expand",
+        help="Reescreve a pergunta antes da busca semântica: terms|hyde (custa uma chamada ao LLM)",
+    ),
+):
     """Busca artigos na wiki por palavra-chave."""
     from pathlib import Path
 
     from kb.search import search as do_search
 
-    results = do_search(query)
+    try:
+        results = do_search(query, mode=mode, expand=expand)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from None
     if not results:
         console.print("[yellow]Nenhum resultado encontrado.[/]")
         raise typer.Exit()
@@ -1142,6 +1154,9 @@ def bench(
     limit: int | None = typer.Option(
         None, "--limit", min=1, help="Máximo de casos ao semear"
     ),
+    expand: str = typer.Option(
+        None, "--expand", help="Expandir a query antes de buscar: terms|hyde"
+    ),
     as_json: bool = typer.Option(False, "--json", help="Saída parseável"),
 ):
     """Mede recall@k e MRR da recuperação contra o golden set do vault."""
@@ -1160,7 +1175,7 @@ def bench(
         return
 
     try:
-        report = run_bench(mode=mode, k=k)
+        report = run_bench(mode=mode, k=k, expand=expand)
     except ValueError as exc:
         typer.echo(str(exc))
         raise typer.Exit(code=1) from None
@@ -1177,6 +1192,7 @@ def bench(
             _json.dumps(
                 {
                     "mode": report["mode"],
+                    "expand": report["expand"],
                     "corpus": report["corpus"],
                     "semantic_active": report["semantic_active"],
                     "summary": summary,
