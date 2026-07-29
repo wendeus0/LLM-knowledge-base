@@ -136,13 +136,22 @@ def test_should_rank_by_cosine_similarity_with_hand_worked_vectors(tmp_path, fak
     assert scores["paella.md"] == pytest.approx(0.0)
 
 
-def test_should_count_truncated_articles_when_body_exceeds_limit(tmp_path, fake_embedder):
-    # RED: falha até 012-semantic-retrieval ser implementada (caso de erro: truncamento)
+def test_should_split_long_article_instead_of_truncating(tmp_path, fake_embedder):
+    """Contrato da 017: conteúdo acima do limite é dividido, nunca cortado.
+
+    Substitui o antigo teste de contagem de truncados — na 012 o excedente era
+    descartado, e era exatamente o que tornava 35% do corpus invisível.
+    """
     wiki, state = _make_wiki(tmp_path)
     (wiki / "gigante.md").write_text(
         "---\ntitle: Gigante\n---\n\n" + ("resiliencia " * 5000), encoding="utf-8"
     )
+
     report = build_index(wiki, state, max_chars=1000)
-    assert report["truncated"] == 1
+
     embedded_texts = [t for call in fake_embedder for t in call]
     assert all(len(t) <= 1000 for t in embedded_texts)
+    assert report["truncated"] == 0
+    assert report["chunks"] > 1
+    # nenhuma ocorrência perdida: o corpo inteiro foi coberto pelos chunks
+    assert sum(t.count("resiliencia") for t in embedded_texts) >= 5000

@@ -14,6 +14,9 @@ import sys
 from pathlib import Path
 
 INDEX_FILENAME = "embeddings.json"
+INDEX_FORMAT = 2
+_QUERY_PREFIX = "search_query: "
+_DOCUMENT_PREFIX = "search_document: "
 DEFAULT_MODEL = "text-embedding-nomic-embed-text-v2-moe"
 DEFAULT_BASE_URL = "http://localhost:1234/v1"
 
@@ -66,35 +69,46 @@ def _read_index_file(state_dir: Path) -> dict | None:
 
 
 def build_index(wiki_dir: Path, state_dir: Path, force: bool = False, max_chars: int = 8000) -> dict:
+    from kb.chunking import build_chunks
+    from kb.frontmatter import parse
     from kb.fsutil import atomic_write_text
 
     model = _embed_model()
     articles = _iter_articles(wiki_dir)
     previous = _read_index_file(state_dir)
     reusable: dict[str, dict] = {}
-    if previous and previous.get("model") == model and not force:
+    if (
+        previous
+        and previous.get("model") == model
+        and previous.get("format") == INDEX_FORMAT
+        and not force
+    ):
         reusable = previous.get("articles", {})
 
-    to_embed: list[tuple[str, str]] = []
+    to_embed: list[tuple[str, int, str]] = []
     kept: dict[str, dict] = {}
-    truncated = 0
     for relpath, text in articles:
         digest = _content_hash(text)
         entry = reusable.get(relpath)
         if entry and entry.get("hash") == digest:
             kept[relpath] = entry
             continue
-        payload_text = f"search_document: {text}"[:max_chars]
-        if len(f"search_document: {text}") > max_chars:
-            truncated += 1
-        to_embed.append((relpath, payload_text))
-        kept[relpath] = {"hash": digest}
+
+        meta, _ = parse(text)
+        title = str(meta.get("title") or Path(relpath).stem).strip()
+        chunks = build_chunks(title, text, max_chars=max_chars - len(_DOCUMENT_PREFIX))
+        kept[relpath] = {
+            "hash": digest,
+            "chunks": [{"heading": chunk["heading"]} for chunk in chunks],
+        }
+        for ordinal, chunk in enumerate(chunks):
+            to_embed.append((relpath, ordinal, _DOCUMENT_PREFIX + chunk["text"]))
 
     removed = len([relpath for relpath in reusable if relpath not in dict(articles)])
 
     if to_embed:
         try:
-            vectors = embed_texts([text for _, text in to_embed])
+            vectors = embed_texts([text for _, _, text in to_embed])
         except Exception as exc:
             from kb.embed_server import autostart_cmd
 
@@ -102,25 +116,32 @@ def build_index(wiki_dir: Path, state_dir: Path, force: bool = False, max_chars:
                 f"Falha ao gerar embeddings (modelo {model}, endpoint {_embed_base_url()}): {exc}. "
                 f"Suba o servidor com `{autostart_cmd()}`, ou ajuste KB_EMBED_BASE_URL/KB_EMBED_MODEL."
             ) from exc
-        for (relpath, _), vector in zip(to_embed, vectors, strict=True):
-            kept[relpath]["vector"] = vector
+        for (relpath, ordinal, _), vector in zip(to_embed, vectors, strict=True):
+            kept[relpath]["chunks"][ordinal]["vector"] = vector
 
     dim = 0
+    total_chunks = 0
     for entry in kept.values():
-        vector = entry.get("vector")
-        if vector:
-            dim = len(vector)
-            break
+        chunks = entry.get("chunks", [])
+        total_chunks += len(chunks)
+        if not dim:
+            for chunk in chunks:
+                if chunk.get("vector"):
+                    dim = len(chunk["vector"])
+                    break
 
-    payload = {"model": model, "dim": dim, "articles": kept}
+    payload = {"format": INDEX_FORMAT, "model": model, "dim": dim, "articles": kept}
     Path(state_dir).mkdir(parents=True, exist_ok=True)
     atomic_write_text(Path(state_dir) / INDEX_FILENAME, json.dumps(payload, ensure_ascii=False))
 
+    reembedded_articles = len({relpath for relpath, _, _ in to_embed})
     return {
-        "indexed": len(to_embed),
+        "indexed": reembedded_articles,
+        "chunks": total_chunks,
+        "embedded_chunks": len(to_embed),
         "removed": removed,
-        "unchanged": len(kept) - len(to_embed),
-        "truncated": truncated,
+        "unchanged": len(kept) - reembedded_articles,
+        "truncated": 0,
         "model": model,
         "dim": dim,
     }
@@ -171,10 +192,12 @@ def load_index(state_dir: Path) -> dict | None:
     payload = _read_index_file(state_dir)
     if not payload or payload.get("model") != _embed_model():
         return None
+    if payload.get("format") != INDEX_FORMAT:
+        return None
     articles = {
         relpath: entry
         for relpath, entry in payload.get("articles", {}).items()
-        if entry.get("vector")
+        if any(chunk.get("vector") for chunk in entry.get("chunks", []))
     }
     if not articles:
         return None
@@ -203,9 +226,13 @@ def index_status(wiki_dir: Path, state_dir: Path) -> dict:
         for relpath, text in articles
         if indexed_entries.get(relpath, {}).get("hash") != _content_hash(text)
     ]
+    chunks = sum(len(entry.get("chunks", [])) for entry in indexed_entries.values())
+    indexed = len(articles) - len(stale)
     return {
         "total": len(articles),
-        "indexed": len(articles) - len(stale),
+        "indexed": indexed,
+        "chunks": chunks,
+        "chunks_per_article": round(chunks / indexed, 1) if indexed else 0.0,
         "stale": stale,
         "model": model,
         "note": note,
@@ -226,11 +253,20 @@ def semantic_ranking(query: str, index: dict) -> list[tuple[Path, float]]:
     from kb.config import WIKI_DIR
 
     try:
-        query_vector = embed_texts([f"search_query: {query}"])[0]
+        query_vector = embed_texts([_QUERY_PREFIX + query])[0]
     except Exception:
         return []
-    scored = [
-        (Path(WIKI_DIR) / relpath, _cosine(query_vector, entry["vector"]))
-        for relpath, entry in index["articles"].items()
-    ]
+
+    scored: list[tuple[Path, float]] = []
+    for relpath, entry in index["articles"].items():
+        similarities = [
+            _cosine(query_vector, chunk["vector"])
+            for chunk in entry.get("chunks", [])
+            if chunk.get("vector")
+        ]
+        if not similarities:
+            continue
+        # Máximo, não soma: artigo longo não deve pontuar mais por ter mais seções.
+        scored.append((Path(WIKI_DIR) / relpath, max(similarities)))
+
     return sorted(scored, key=lambda item: item[1], reverse=True)

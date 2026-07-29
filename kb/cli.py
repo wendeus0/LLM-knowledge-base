@@ -1082,7 +1082,7 @@ def index_build(
         typer.echo(str(exc))
         raise typer.Exit(code=1) from None
     typer.echo(
-        f"{report['indexed']} artigo(s) indexado(s), {report['unchanged']} inalterado(s), "
+        f"{report['indexed']} artigo(s) indexado(s) em {report['embedded_chunks']} chunk(s), {report['unchanged']} inalterado(s), "
         f"{report['removed']} removido(s), {report['truncated']} truncado(s) — "
         f"modelo {report['model']} (dim {report['dim']})"
     )
@@ -1102,7 +1102,11 @@ def index_status_cmd():
     from kb.embeddings import _embed_base_url, index_status
 
     status = index_status(WIKI_DIR, STATE_DIR)
-    typer.echo(f"{status['indexed']}/{status['total']} artigos indexados — modelo {status['model']}")
+    typer.echo(
+        f"{status['indexed']}/{status['total']} artigos indexados "
+        f"({status['chunks']} chunks, {status['chunks_per_article']} por artigo) "
+        f"— modelo {status['model']}"
+    )
     if status["note"]:
         typer.echo(status["note"])
     for relpath in status["stale"]:
