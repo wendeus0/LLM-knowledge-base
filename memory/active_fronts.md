@@ -8,7 +8,7 @@ type: project
 
 ### Retrieval medido — features 014 a 022 (2026-07-30)
 
-**Status:** entregue e medido; branch `feat/semantic-retrieval-foundation` com 10 commits, **sem push**
+**Status:** mergeado em `main` (`f694190`), 16 commits. Servidores locais sobem por LaunchAgent.
 **Resumo:** `recall@5` de 0,230 (lexical) para **0,467**; MRR de 0,127 para **0,343**. Cada ganho medido contra golden de 152 casos.
 
 | Feature | Resultado |
@@ -26,6 +26,38 @@ type: project
 **Decisão fechada:** rerank com `bonsai-27b-1bit` local e perfil `deterministic`. O modelo da VM é 13× mais rápido e pior.
 
 **Próximo:** restringir a saída do rerank (top-5 em vez de ordenar 20) — sampling corrige omissão, não alucinação de índice.
+
+**Alcance corrigido em 2026-07-30:** o rerank existia só para o `bench`. Agora `kb search --rerank N` (opt-in) e `kb qa` (ligado por padrão em todos os perfis, `--no-rerank` / `KB_RERANK_DEPTH` para sair). Sete features registraram ganho num caminho que nenhum comando expunha.
+
+### Engenharia reversa + roadmap revisado (2026-07-28)
+
+**Status:** map `WAYFINDER_CLEAR` — 5/5 tickets resolvidos, sem névoa restante. Plano em `~/.claude/plans/apenas-isso-pode-ser-frolicking-falcon.md`
+**Artefatos:** `docs/research/2026-07-28-engenharia-reversa/{MAP.md, SINTESE.md, BACKLOG.md, DOSSIE-*.md, tickets/}` — 11 itens de backlog ordenados por valor
+**Resumo:** wayfinder para levantar dossiê de engenharia reversa + portes candidatos. Executado via `fable-gpt` (GPT 5.6 Terra) com review zero-trust. Sem compromisso de implementar.
+
+**O que cada repo resolveu:**
+- **Hikari-knowledge** — markdown autoritativo + grafo derivado + vetor opcional por RRF (`300/(10+rank)`, calibrado para nunca deslocar hit lexical exato) + curadoria por gates.
+- **graphify** — retrieval léxico-IDF + travessia de grafo, **sem vetor em ponto algum**; sem match, responde `No matching nodes found.` e para. Prosa é cidadã de segunda classe.
+- **rowboat** — memória pessoal em Markdown carregado no prompt; Qdrant só para RAG de documentos, filtrado por projeto. A UI expõe estado operacional, não conteúdo.
+
+**Convergência:** arquivo é a verdade nos três; vetor só em papel auxiliar e delimitado. Valida a aposta do kb — e expõe que os três mantêm uma camada derivada (grafo, grafo, curadoria) que o kb não tem.
+
+**Out of scope registrado:** decidir se o kb terá UI própria — vira esforço separado.
+
+**Descoberta que redefiniu o roadmap:** as features **011, 012 e 013 já estão implementadas** em `~/dev/personal/LLM-knowledge-base`, sem commit desde 2026-07-15. `kb/embeddings.py` com canal semântico no RRF, `kb index build|status`, perfis de contexto. Servidor: LM Studio em `localhost:1234` com `nomic-embed-text-v2-moe` (não Ollama, apesar do que SPEC e REPORT dizem).
+
+**Corpus medido (2026-07-28):** 2.781 `.md` em `~/vault/wiki` (1.759 fora de `summaries/`, 1.022 em `summaries/`), 4.26M palavras; `~/vault/library` com 869 fontes / 4.79M palavras. `kb index status` reporta `2059/2059` — denominador é o próprio índice, não o corpus.
+
+**Achados sobre o kb — ainda abertos:**
+- `kb/lint.py:37` — `articles[:20]`: auditoria semântica vê 20 de 2.781 sem avisar.
+- `kb/compile.py:204-210` — `discover_compile_targets` não consulta o manifesto; `kb/jobs.py:35` chama sem argumento, então o job agendado reprocessaria o corpus inteiro.
+- `kb/search.py:_iter_docs` — relê e tokeniza a wiki a cada busca (3 varreduras/query); `kb/graph.py:17-23` faz `rglob` completo por wikilink dentro do BFS.
+- Slug `[:60]` sem colisão em `compile.py:216`, `outputs.py:40`, `qa.py:150`.
+- `kb/heal.py:98` faz `unlink` enquanto `archive.py` move com backup.
+
+**Corrigidos em 2026-07-30:**
+- `kb/git.py` — resolvia tudo contra `ROOT`; com `KB_DATA_DIR` fora do repo, `--commit` era descartado em silêncio. Agora resolve o repo que contém cada arquivo e avisa quando não há nenhum. `~/vault` virou repo git (`0160552`).
+- `tests/conftest.py` — isola todo o estado, não só `WIKI_DIR`, e desliga refresh de índice e rerank na suíte.
 
 ### Plano de robustez do core (2026-07-09)
 
