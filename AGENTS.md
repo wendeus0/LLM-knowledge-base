@@ -32,7 +32,7 @@ Se houver conflito:
 - Framework: Typer (CLI), Rich (terminal UI)
 - Cliente LLM: OpenAI SDK (compatível com OpenCode Go)
 - Armazenamento: JSON (`kb_state/`), Markdown (`wiki/`) dentro do `KB_DATA_DIR` do usuário
-- Busca: contagem simples de palavras-chave em Markdown
+- Busca: RRF sobre quatro canais — keyword, densidade, BM25 e semântico por embeddings (`kb/search.py`), com rerank opcional por LLM (`kb/rerank.py`)
 - Versionamento: Git com ativação explícita por comando (`--commit`; `--no-commit` segue válido por compatibilidade)
 
 ## Comandos do projeto
@@ -63,10 +63,19 @@ kb qa "pergunta"         # Perguntar com routing por fonte nativa
 kb qa "pergunta" -f      # Perguntar e arquivar resposta (file-back)
 kb qa "pergunta" -f      # File-back local sem commit por padrão
 kb qa "pergunta" -f --commit # File-back com versionamento explícito
-kb search "termo"        # Buscar na wiki
+kb qa "pergunta" --no-rerank # Sem reordenação por LLM (mais rápido, MRR cai de 0,343 para 0,242)
+kb search "termo"        # Buscar na wiki (híbrido: keyword + densidade + BM25 + semântico)
+kb search "termo" --rerank 20 # Reordenar os 20 primeiros com o LLM
+kb index build          # (Re)construir o índice de embeddings do canal semântico
+kb index status         # Estado do índice e do servidor de embeddings
+kb bench                # recall@k e MRR contra o golden set
 kb heal --n 10          # Stochastic heal: N arquivos aleatórios
 kb heal --allow-sensitive --commit # Healing sensível com versionamento explícito
 kb lint                 # Health checks (audit)
+kb stats                # Dashboard de métricas locais da wiki
+kb diff                 # Alterações da wiki via git diff
+kb archive              # Mover artigos stale/órfãos de wiki/ para archive/
+kb noise scan|apply     # Higiene de capítulos-ruído do corpus
 kb jobs list            # Listar jobs agendáveis
 kb jobs run <job>       # Executar job canônico
 ```

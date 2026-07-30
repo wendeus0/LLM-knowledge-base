@@ -85,7 +85,8 @@ O repositório principal entrega a engine. O conteúdo do usuário deve viver fo
 - OpenAI SDK opcional para recursos LLM
 - OpenCode Go API (OpenAI-compatible)
 - Git automático em todo write
-- Busca lexical simples em Markdown
+- Busca híbrida: RRF sobre keyword, densidade, BM25 e canal semântico por embeddings
+- Rerank opcional por LLM (`kb search --rerank N`; ligado por padrão no `kb qa`)
 - Markdown + YAML frontmatter
 
 ## Configuração de ambiente
@@ -117,21 +118,21 @@ KB_MODEL=qwen2.5-coder:7b
 2. **Importação de livros integrada** — `kb import-book` quebra EPUB/PDF textual em capítulos markdown dentro de `raw/books/` e pode compilar tudo com `--compile`
 3. **Stochastic heal** — `kb heal` processa N arquivos aleatórios, corrige links, deleta stubs
 4. **Git automático** — writes no corpus local podem gerar commit (estratégia Pawel Huryn: append/update, nunca rewrite)
-5. **Sem RAG sofisticado** — TF-IDF simples + busca de palavra-chave funciona bem até ~100 artigos/400K palavras
+5. **Retrieval medido, não presumido** — `kb bench` mede recall@k e MRR contra um golden set. No vault real (1.033 artigos, 4,2M palavras): lexical dá `recall@5` 0,230; somar o canal semântico leva a 0,414; rerank dos 20 primeiros a temperatura 0 leva a 0,467, com MRR de 0,127 para 0,343. Sem vector store — brute-force em memória basta neste volume
 6. **Obsidian oficial** — o frontend recomendado é o Obsidian apontando para `<KB_DATA_DIR>/wiki`
 
 ## Contexto técnico atual
 
-**Feature ativa:** nenhuma — backlog: 008-kb-stats, 009-kb-diff, 010-multi-vault-foundation (SPEC pendente, ver `features/`)
+**Feature ativa:** nenhuma — backlog em `docs/research/2026-07-28-engenharia-reversa/BACKLOG.md` (11 portes por valor)
 **Stack:** Python 3.11+, Typer, Rich
 **Build:** `pip install -e .`
-**Testes:** `python -m pytest`
+**Testes:** `python -m pytest` (602 testes)
+**Servidores locais:** LaunchAgents `com.wendeus.kb-embed` (:1234) e `com.wendeus.kb-rerank` (:8081) sobem no login
 **Alterações recentes:**
 
+- (mergeado) 014–022 semantic-retrieval-foundation: canal semântico, `kb bench`, chunking, expansão de query, rerank por LLM e perfis de sampling
+- (mergeado) 010-multi-vault-spec (PR #45), 009-kb-diff (PR #44), 008-kb-stats (PR #43)
 - (mergeado) llm-wiki-v2-foundation: fundação da wiki v2 (PR #35)
-- (mergeado) ingest-url: ingestão a partir de URL (PR #32)
-- (mergeado) 006-kb-archive: comando `kb archive` para mover artigos stale/órfãos de wiki/ → archive/ (PR #31/#33)
-- (backlog) 008-kb-stats, 009-kb-diff, 010-multi-vault-foundation (SPEC pendente)
 
 ## Layout de docs
 
