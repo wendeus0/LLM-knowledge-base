@@ -119,7 +119,9 @@ class TestSearchCommand:
             result = runner.invoke(app, ["search", "query"])
 
         assert result.exit_code == 0
-        mock_search.assert_called_once_with("query", mode="hybrid", expand=None)
+        mock_search.assert_called_once_with(
+            "query", mode="hybrid", expand=None, rerank_depth=None
+        )
         mock_print.assert_any_call(
             f"[bold]article[/] [dim]({path})[/] score=10"
         )
@@ -499,6 +501,7 @@ class TestQaCommand:
             depth=1,
             profile="fast",
             top_k=None,
+            rerank_depth=None,
         )
 
     def test_should_handle_sensitive_content_error_with_confirmation(self):
@@ -566,6 +569,7 @@ class TestQaCommand:
             depth=1,
             profile="fast",
             top_k=None,
+            rerank_depth=None,
         )
         mock_print.assert_any_call(
             f"\n[dim]Arquivado em:[/] [green]{tmp_path / 'output.md'}[/]"
@@ -591,6 +595,7 @@ class TestQaCommand:
             depth=1,
             profile="fast",
             top_k=None,
+            rerank_depth=None,
         )
 
     def test_should_support_custom_depth(self):
@@ -613,6 +618,7 @@ class TestQaCommand:
             depth=3,
             profile="fast",
             top_k=None,
+            rerank_depth=None,
         )
 
     def test_should_support_to_wiki_flag(self):

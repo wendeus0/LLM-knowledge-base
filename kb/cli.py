@@ -445,6 +445,11 @@ def qa(
         min=1,
         help="Sobrepõe o número de artigos recuperados do perfil ativo",
     ),
+    no_rerank: bool = typer.Option(
+        False,
+        "--no-rerank",
+        help="Desliga a reordenação por LLM (mais rápido, MRR medido cai de 0,343 para 0,242)",
+    ),
 ):
     """Responde uma pergunta consultando as fontes do kb."""
     from kb.cmds.qa.run import execute_qa_command
@@ -463,6 +468,7 @@ def qa(
             depth=depth,
             profile="deep" if deep else "fast",
             top_k=top_k,
+            rerank_depth=0 if no_rerank else None,
         )
         console.print(Markdown(response))
         if saved:
@@ -491,6 +497,12 @@ def search(
         "--expand",
         help="Reescreve a pergunta antes da busca semântica: terms|hyde (custa uma chamada ao LLM)",
     ),
+    rerank_depth: int = typer.Option(
+        None,
+        "--rerank",
+        min=2,
+        help="Reordena os N primeiros candidatos com o LLM (custa uma chamada; 20 foi o melhor MRR medido)",
+    ),
 ):
     """Busca artigos na wiki por palavra-chave."""
     from pathlib import Path
@@ -498,7 +510,7 @@ def search(
     from kb.search import search as do_search
 
     try:
-        results = do_search(query, mode=mode, expand=expand)
+        results = do_search(query, mode=mode, expand=expand, rerank_depth=rerank_depth)
     except ValueError as exc:
         typer.echo(str(exc))
         raise typer.Exit(code=1) from None

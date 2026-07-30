@@ -50,12 +50,14 @@ def answer(
     traverse: bool = True,
     depth: int | None = None,
     profile: str = "fast",
+    rerank_depth: int | None = None,
 ) -> str:
     from kb.config import get_retrieval_profile
 
     resolved = get_retrieval_profile(profile)
     effective_top_k = top_k if top_k is not None else resolved["top_k"]
     effective_traverse = traverse and resolved["traverse"]
+    effective_rerank = rerank_depth if rerank_depth is not None else resolved["rerank_depth"]
     decision, context_parts = build_context(
         question,
         top_k=effective_top_k,
@@ -63,6 +65,7 @@ def answer(
         depth=depth,
         doc_chars=resolved["doc_chars"],
         traversal_budget=resolved["traversal_budget"],
+        rerank_depth=effective_rerank,
     )
 
     if not context_parts:
@@ -124,6 +127,7 @@ def answer_and_file(
     depth: int | None = None,
     profile: str = "fast",
     index_refresh_enabled: bool = True,
+    rerank_depth: int | None = None,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
@@ -136,6 +140,7 @@ def answer_and_file(
         traverse=traverse,
         depth=depth,
         profile=profile,
+        rerank_depth=rerank_depth,
     )
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",

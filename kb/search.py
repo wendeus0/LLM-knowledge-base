@@ -134,9 +134,9 @@ def _semantic_rank(query: str) -> list[tuple[Path, float]]:
     return ranking
 
 
-def find_relevant(query: str, top_k: int = 5) -> list[Path]:
+def find_relevant(query: str, top_k: int = 5, rerank_depth: int | None = None) -> list[Path]:
     """Retorna artigos mais relevantes para a query usando ranking híbrido."""
-    results = search(query, top_k=top_k, mode="hybrid")
+    results = search(query, top_k=top_k, mode="hybrid", rerank_depth=rerank_depth)
     return [item["path"] for item in results]
 
 

@@ -27,7 +27,13 @@ def test_execute_qa_command_should_call_answer_when_file_back_disabled():
     assert response == "Resposta"
     assert saved is None
     mock_answer.assert_called_once_with(
-        "Pergunta", allow_sensitive=False, traverse=True, depth=1, profile="fast", top_k=None
+        "Pergunta",
+        allow_sensitive=False,
+        traverse=True,
+        depth=1,
+        profile="fast",
+        top_k=None,
+        rerank_depth=None,
     )
 
 
@@ -57,6 +63,7 @@ def test_execute_qa_command_should_call_answer_and_file_when_file_back_enabled()
         depth=2,
         profile="fast",
         top_k=None,
+        rerank_depth=None,
         index_refresh_enabled=True,
     )
 
@@ -81,6 +88,7 @@ def test_cli_qa_should_render_markdown_from_cmd_layer():
         depth=2,
         profile="fast",
         top_k=None,
+        rerank_depth=None,
     )
     assert mock_print.called
 
@@ -112,6 +120,7 @@ def test_cli_qa_should_retry_when_sensitive_confirmed():
         depth=1,
         profile="fast",
         top_k=None,
+        rerank_depth=None,
     )
     mock_execute.assert_any_call(
         question="pergunta",
@@ -123,6 +132,7 @@ def test_cli_qa_should_retry_when_sensitive_confirmed():
         depth=1,
         profile="fast",
         top_k=None,
+        rerank_depth=None,
     )
     assert mock_print.called
 

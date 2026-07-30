@@ -19,8 +19,12 @@ def _no_side_effect_llm_calls(monkeypatch):
     a suíte passou de 4s para 80s antes de alguém notar.
 
     Testes que exercitam o refresh removem a variável explicitamente.
+
+    Mesmo motivo para o rerank: ligá-lo por padrão no QA fez os testes de perfil
+    baterem no provider de reordenação, 4s por teste.
     """
     monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+    monkeypatch.setenv("KB_RERANK_DEPTH", "0")
 
 
 @pytest.fixture

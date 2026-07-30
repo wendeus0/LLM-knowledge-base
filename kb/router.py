@@ -43,12 +43,13 @@ def _build_wiki_context(
     depth: int | None = None,
     doc_chars: int | None = None,
     traversal_budget: int | None = None,
+    rerank_depth: int | None = None,
 ) -> list[str]:
     from kb.config import qa_doc_chars
     from kb.graph import traverse as graph_traverse
 
     max_chars = doc_chars if doc_chars is not None else qa_doc_chars()
-    seed_files = find_relevant(question, top_k=top_k)
+    seed_files = find_relevant(question, top_k=top_k, rerank_depth=rerank_depth)
     extra_files = []
     if traverse and seed_files:
         extra_files = graph_traverse(
@@ -104,6 +105,7 @@ def build_context(
     depth: int | None = None,
     doc_chars: int | None = None,
     traversal_budget: int | None = None,
+    rerank_depth: int | None = None,
 ) -> tuple[RouteDecision, list[str]]:
     decision = decide_route(question)
 
@@ -115,6 +117,7 @@ def build_context(
             depth=depth,
             doc_chars=doc_chars,
             traversal_budget=traversal_budget,
+            rerank_depth=rerank_depth,
         )
     elif decision.route == "raw":
         context = _build_raw_context(question, top_k, doc_chars=doc_chars)
@@ -132,6 +135,7 @@ def build_context(
         depth=depth,
         doc_chars=doc_chars,
         traversal_budget=traversal_budget,
+        rerank_depth=rerank_depth,
     )
 
 
