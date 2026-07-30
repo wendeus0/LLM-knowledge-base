@@ -145,6 +145,16 @@ Semear casos de avaliação usando o título do artigo como pergunta mede casame
 
 Três experimentos seguidos deram deltas de 1 a 2 casos em 50 — dentro do erro padrão de ~7pp. Ampliar para 152 casos (erro ~4pp) foi o que permitiu distinguir o ganho do rerank. **Instrumento antes de experimento.**
 
+### Ganho medido pelo instrumento pode não existir no produto
+
+`rerank_depth` era parâmetro de `search()`, e só o `bench` o passava. As tabelas registravam +42% de MRR (0,242 → 0,343) num caminho que **nenhum comando expunha**: `kb search` não tinha a flag, e nem `qa`/`router` a repassavam. Sete features de retrieval passaram por cima disso sem que a suíte notasse — os testes chamavam a função, não a CLI.
+
+**Regra:** medida vale para a superfície que a produziu. Antes de registrar ganho, execute pelo comando que o usuário digita.
+
+### Watchdog e supervisor não são intercambiáveis
+
+`lms server start` sobe o servidor e **retorna**; `llama-server` fica em foreground. Com `KeepAlive` no primeiro, o launchd relança em loop — o processo sempre "morre" com sucesso. Cada um pede sua forma: `StartInterval` + script idempotente para quem retorna, `KeepAlive` para quem fica.
+
 ### Substituição em lote sem dry-run corrompe import
 
 Script automatizado trocou `from kb.client import ... is_provider_resource_limit_error` por `from kb.sampling import ...` e inseriu import com indentação inválida. `core/rules/workflow-feature.md` § "mudança ampla e mecânica" exige dry-run e conferência de diffstat justamente para isso.

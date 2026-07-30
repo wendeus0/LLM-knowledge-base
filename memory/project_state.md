@@ -9,7 +9,9 @@ type: project
 Atualizada: 2026-07-30
 
 - **Branch:** `feat/semantic-retrieval-foundation` (10 commits, **sem push**; main @ 0c9d5ee)
-- **Tests:** `586 passed, 0 failed` ✅ — cobertura 92%
+- **Tests:** `591 passed, 0 failed` ✅ — cobertura 92%
+- **Servidores locais:** LaunchAgents `com.wendeus.kb-embed` (:1234, watchdog 60s) e `com.wendeus.kb-rerank` (:8081, KeepAlive) sobem no login; logs em `~/Library/Logs/kb-*.log`
+- **Vault versionado:** `~/vault` é repo git desde 2026-07-30 (commit 0160552, 4.281 arquivos); `kb/git.py` resolve o repo que contém cada arquivo — antes `--commit` era descartado em silêncio
 - **Lint:** ruff `kb tests` clean
 - **Módulos novos:** `sampling.py`, `rerank.py`, `query_expansion.py`, `bench.py`, `chunking.py`, `embed_server.py`, `embeddings.py`, `noise.py`
 
