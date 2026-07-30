@@ -1,7 +1,7 @@
 # REPORT — 011-corpus-noise-filter
 
 **Data:** 2026-07-15
-**Status:** `DONE` (código local; commit pendente de solicitação do dono)
+**Status:** `DONE` — mergeado em `main` (f694190, 2026-07-30)
 **Ciclo:** grilling (DOMAIN) → SPEC → RED (17 testes) → GREEN → REFACTOR → VALIDATE
 
 ## O que mudou

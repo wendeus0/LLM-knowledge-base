@@ -1,7 +1,7 @@
 # REPORT — 012-semantic-retrieval
 
 **Data:** 2026-07-15
-**Status:** `DONE_WITH_CONCERNS` (código local; commit pendente; concerns abaixo)
+**Status:** `DONE_WITH_CONCERNS` — mergeado em `main` (f694190, 2026-07-30); concerns abaixo
 **Ciclo:** SPEC → RED (16 testes) → GREEN → REFACTOR → VALIDATE → dogfood no vault real
 
 ## O que mudou

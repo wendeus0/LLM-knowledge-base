@@ -8,9 +8,10 @@ type: project
 
 ### P1 — baratos e destravam o resto
 
-1. **Documentar a config vencedora no `.env.example`:** rerank com `bonsai-27b-1bit` (`localhost:8081`) e perfil `deterministic`. Sem isso a configuração medida se perde.
-2. **Decidir onde o golden set de 152 casos mora.** Hoje em `~/vault/kb_state/bench/golden.json`, num vault não versionado. Diferente do índice, **não é reconstruível** — os 50 casos curados são trabalho manual.
-3. **Push e PR** dos 10 commits da branch `feat/semantic-retrieval-foundation` (aguardando pedido explícito do dono).
+1. **Decidir onde o golden set de 152 casos mora.** Hoje em `~/vault/kb_state/bench/golden.json`, num vault não versionado. Diferente do índice, **não é reconstruível** — os 50 casos curados são trabalho manual. É a única pendência P1 que sobrou.
+
+~~2. Documentar a config vencedora no `.env.example`~~ — feito em 2026-07-30.
+~~3. Push da branch~~ — mergeada em `main` (`f694190`) e publicada.
 
 ### P2 — próximo ganho de retrieval
 

@@ -20,7 +20,7 @@ Pendências e decisões abertas.
 | P1         | Rerodar suíte completa com cobertura real e incluir `kb/cli.py` no relatório                                           | ✅ Concluído — `139` testes passando; cobertura total `78%`; `kb/cli.py` em `60%`                                                                            | 2026-04-08 |
 | P1         | Elevar cobertura total para >=90% e fechar gaps em `kb/cli.py`, `kb/client.py`, `kb/git.py` e `kb/book_import_core.py` | ✅ Concluído — `223` testes passando; cobertura total `96%`; `kb/cli.py` `98%`, `kb/client.py` `97%`, `kb/git.py` `100%`, `kb/book_import_core.py` `97%`     | 2026-04-08 |
 | P1         | Tirar a frente atual de `main` e finalizar o fluxo Git em branch dedicada                                              | ✅ Concluído parcialmente — branch `feat/test-coverage-90` criada; ainda faltam `feature-scope-guard`, `enforce-workflow` e ação explícita de commit/push/PR | 2026-04-08 |
-| P2         | Embeddings + RAG híbrido                                                                                               | Pendente (futuro) — escopo coberto por RF-05 de `llm-wiki-v2-foundation`                                                                                     | 2026-04-03 |
+| P2         | Embeddings + RAG híbrido                                                                                               | ✅ Concluído — features 012/014–022; ADR-0017. `recall@5` 0,230 → 0,467, MRR 0,127 → 0,343 no golden de 152 casos                                            | 2026-07-30 |
 | P1         | Fechar `ingest-url` via PR                                                                                             | ✅ Concluído — PR #32 mergeado (commit `6072c1d`) + artefatos docs                                                                                            | 2026-04-22 |
 | P1         | Fechar `006-kb-archive` via PR                                                                                         | ✅ Concluído — PR #31 mergeado (`5f56418`) + PR #33 arquivamento (`6150b4a`)                                                                                  | 2026-04-22 |
 | P2         | Triar backlog de 10 propostas de feature do usuário                                                                    | ✅ Concluído — 3 ondas priorizadas em `memory/next_steps.md`; item BM25 descartado (já entregue)                                                              | 2026-04-22 |
@@ -103,11 +103,11 @@ Pendências e decisões abertas.
 - Avaliar tornar `TOPICS` configurável em vez de fixo no código
 - Definir se `examples/` deve crescer com seeds neutros adicionais ou permanecer mínimo
 
-**Embeddings + RAG**
+**Embeddings + RAG** — ✅ resolvido em 2026-07-30 (ADR-0017)
 
-- Atual: busca lexical simples funciona para a escala atual (~14 artigos em wiki/ai/)
-- Quando escalar: adicionar embeddings + índice vetorial
-- Não bloqueia a baseline atual
+- Era: "busca lexical simples funciona para a escala atual (~14 artigos em wiki/ai/)"
+- Virou: o corpus chegou a 1.033 artigos e o lexical media `recall@5` 0,230. Canal semântico + rerank levaram a 0,467
+- Índice vetorial dedicado permanece rejeitado: brute-force em memória basta até ~5.000 artigos
 
 ## Sessão 2026-07-15/16 — stack local + features 011-013
 
@@ -132,7 +132,7 @@ Pendências e decisões abertas.
 | --- | --- | --- | --- |
 | P1 | **10 commits sem push** na branch `feat/semantic-retrieval-foundation` | Features 011–022. Push e PR só com pedido explícito do dono | 2026-07-30 |
 | P1 | **Golden set (152 casos) vive em `~/vault/kb_state/bench/golden.json`, não versionado** | Diferente do índice, **não é reconstruível**: os 50 casos curados são trabalho manual. Cópia volátil em scratchpad da sessão | 2026-07-30 |
-| P1 | Documentar em `.env.example` a configuração medida como melhor: rerank com `bonsai-27b-1bit` e temperatura 0 | MRR 0,343 contra 0,242 sem rerank (+42%); sem doc, a config se perde | 2026-07-30 |
+| ~~P1~~ | ~~Documentar em `.env.example` a configuração medida como melhor~~ | ✅ Concluído — `.env.example` traz a tabela medida, o motivo de o granite4 ser pior que não reordenar, e as duas URLs de provider | 2026-07-30 |
 | P2 | Restringir a saída do rerank: pedir top-5 em vez de ordenar 20 | Ataca alucinação de índice, que sampling **não** corrige (granite4: 32 inválidos mesmo a temp 0) | 2026-07-30 |
 | P2 | Índice de embeddings em 148 MB (chunking por seção, 8.685 chunks) sem ganho de recall comprovado | 017 mediu +1 caso em 50 (ruído) e MRR pior; mantida por eliminar truncamento de 35% do corpus. Quantizar ou reverter se o tamanho incomodar | 2026-07-30 |
 | P2 | `preflight()` cobre "provider morto no início", não "morreu no meio" | Duas medições foram perdidas por isso; só o contador `failed` revelou. Verificação contínua durante o lote ficou fora de escopo | 2026-07-30 |
@@ -143,3 +143,11 @@ Pendências e decisões abertas.
 | P3 | Revisar `expected` do golden onde há artigos irmãos igualmente válidos | Parte das falhas restantes é erro de medida, não de busca (verificado em amostra) | 2026-07-30 |
 | P3 | Expandir golden além de 152 casos | Erro padrão em ~4pp; experimentos com delta menor que isso continuam inconclusivos | 2026-07-30 |
 | P3 | VM `g0dw1n` não é dedicada: hospeda CI runners de `visep` e `infinityfit`, 15 GB de RAM | Rerank em lote compete com os containers | 2026-07-30 |
+
+## Sessão 2026-07-30 — higienização de artefatos
+
+| Prioridade | Item | Contexto | Data |
+| --- | --- | --- | --- |
+| P2 | Reconciliar `docs/superpowers/plans/2026-07-09-core-robustness.md` — 73 checkboxes abertos, zero marcados | Os artefatos que o plano promete já existem (`frontmatter.py`, `templates_loader.py`, `templates/`, `stats.py`, `diff.py`) e 008/009 foram entregues nos PRs #43/#44. Marcar exige verificar item a item contra o código; nota de status adicionada no topo do plano enquanto isso não acontece | 2026-07-30 |
+| P2 | `features/010-multi-vault-foundation` é a única aberta e segue em `draft` desde abril | Decidir se entra no roadmap ou vai para `_archived/` como descartada. O BACKLOG da engenharia reversa avaliou os 11 portes contra vault único, por decisão explícita | 2026-07-30 |
+| P3 | `docs/architecture/TDD.md` não foi revisado nesta higienização | Data de 2026-04-07; não se sabe se a estratégia de testes descrita ainda corresponde à suíte de 602 testes | 2026-07-30 |

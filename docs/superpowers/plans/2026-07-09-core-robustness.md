@@ -1,5 +1,9 @@
 # kb — Plano de Robustez do Core + Template de Artigo + Backlog
 
+> **Status em 2026-07-30 (higienização):** o plano foi **executado em boa parte, mas nunca marcado** — os 73 checkboxes seguem abertos enquanto os artefatos que ele promete já existem: `kb/frontmatter.py`, `kb/templates_loader.py`, `kb/templates/{article,chapter}.md`, `kb/stats.py`, `kb/diff.py`. As features 008-kb-stats e 009-kb-diff foram entregues nos PRs #43 e #44; a SPEC de multi-vault (010) segue em `draft`.
+>
+> Os checkboxes **não** foram marcados nesta higienização porque isso exigiria verificar cada item contra o código, item a item. Enquanto isso não for feito, este arquivo é registro de intenção, não de estado — para o estado, ver `memory/project_state.md`. Reconciliação registrada em `PENDING_LOG.md`.
+
 > **Para workers agênticos:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` (recomendado) ou `superpowers:executing-plans` para implementar task a task. Passos usam checkboxes (`- [ ]`).
 > Este arquivo é a cópia de trabalho canônica do plano — mantenha-o atualizado conforme as tasks avançam.
 

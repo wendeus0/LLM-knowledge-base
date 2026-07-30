@@ -69,8 +69,16 @@ Engine CLI que mantém uma knowledge base viva a partir de documentos brutos: in
 | `compile.py` | Pipeline raw → wiki: prompt, escrita com frontmatter, claims compilados |
 | `qa.py` | Q&A com routing por fonte; opcional file-back em `outputs/` ou wiki |
 | `router.py` | Decide rota (`wiki`/`learnings`/`raw`/`knowledge`) e monta contexto |
-| `search.py` | Busca lexical (keyword/TF-IDF simples) sobre `wiki/` |
+| `search.py` | Ranking híbrido sobre `wiki/`: RRF de keyword, densidade, BM25 e canal semântico |
+| `embeddings.py` | Índice de vetores do corpus; similaridade por cosseno em memória |
+| `embed_server.py` | Probe e autostart do servidor de embeddings; degradação avisada |
+| `chunking.py` | Divisão de artigo por seção antes de embedar |
+| `rerank.py` | Reordenação dos primeiros candidatos por LLM, com provider próprio e instrumentação |
+| `query_expansion.py` | Reescrita da pergunta (`terms`/`hyde`) para o canal semântico |
+| `sampling.py` | Perfis de sampling nomeados (`deterministic`, `analytical`, ...) |
+| `bench.py` | `recall@k` e MRR contra o golden set — o gate de qualquer mudança de retrieval |
 | `heal.py` | Stochastic heal de N arquivos: links, stubs, reviewed_at |
+| `noise.py` | Detecção e higiene de capítulos-ruído do corpus |
 | `lint.py` | Health checks da wiki (wikilinks quebrados + auditoria LLM) |
 | `claims.py` | Lifecycle de claims: confiança, supersession, decaimento |
 | `audit.py` | Trilha append-only de eventos sobre claims |
@@ -115,7 +123,7 @@ kb compile
 
 kb qa "pergunta"
   → router.decide_route() → wiki | learnings | raw | knowledge
-  → router.build_context() (search lexical + graph.traverse de wikilinks)
+  → router.build_context() (search híbrido + rerank por LLM + graph.traverse de wikilinks)
   → claims.find_relevant_claims() → client.chat(SYSTEM + contexto)
   → terminal (Rich Markdown)
   → [-f] outputs.write_output()  [--to-wiki] arquiva como artigo  [--commit] git.commit()
@@ -172,11 +180,11 @@ reviewed_at: <ISO-8601>
 | Source of truth do código | Engine no repo, corpus em `KB_DATA_DIR` | Separar evolução da engine de dados pessoais | 0001, 0011 |
 | Framework CLI | Typer + Rich | Sub-apps tipados, UX rica em terminal | 0002 |
 | Versionamento | Git opt-in via `--commit` | Writes locais por padrão; histórico explícito | 0003, 0016 |
-| Recuperação | Busca lexical (keyword/TF-IDF) | Suficiente até ~100 artigos / 400K palavras | 0004 |
+| Recuperação | RRF de 4 canais (keyword, densidade, BM25, semântico) + rerank por LLM | Medido: `recall@5` 0,230 → 0,467 e MRR 0,127 → 0,343 no golden de 152 casos | 0017 (supera 0004) |
 | Manutenção da wiki | Stochastic heal de N arquivos | Escala para vaults grandes sem custo total | 0005 |
 | Routing de Q&A | Heurística por fonte (PAL-inspired) | Selecionar contexto certo por intenção da pergunta | 0006 |
 | Conteúdo sensível | Guardrails + `--allow-sensitive` explícito | Falha fechada para chamadas a provider externo | 0007 |
-| Contexto de Q&A | Travessia de wikilinks | Enriquece sem custo de embeddings | 0008 |
+| Contexto de Q&A | Travessia de wikilinks sobre os artigos recuperados | Alcança relação conceitual que nenhum canal de ranking expressa | 0008 |
 | File-back de QA | `outputs/` separado de `wiki/` | Não polui a wiki compilada com respostas ad hoc | 0009 |
 | Formato LLM | Belt-and-suspenders no parsing | Defesa contra fences e ruído na saída | 0010 |
 | Provider/model | Validação par base_url ↔ modelo + fallback | Erros claros e degradação previsível | 0012 |
@@ -194,6 +202,7 @@ reviewed_at: <ISO-8601>
 - `--commit` é explícito por comando; `--no-commit` permanece aceito por compatibilidade
 - API key apenas em `.env` (`KB_API_KEY`); nunca em código ou em commits
 - LLM não escreve a wiki manualmente — toda escrita passa pelo pipeline
-- Sem RAG/embeddings até o corpus exigir (>500 artigos)
+- Embeddings locais e brute-force em memória; sem vector store dedicado até ~5.000 artigos (ADR-0017)
+- Toda mudança de retrieval passa por `kb bench` antes de ser adotada — medição, não plausibilidade
 - OpenCode Go aceita apenas modelos sem prefixo (`kimi-k2.5`, `minimax-2.7`, `glm-5`)
 - `repo_mode: solo` — contribuidor único; permite fix proativo de issues encontrados durante o trabalho

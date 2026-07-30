@@ -1,7 +1,7 @@
 ---
 title: Corte de ruído de corpus — filtro na importação + limpeza retroativa
 epic: infra
-status: in_progress
+status: done
 pr:
 ---
 

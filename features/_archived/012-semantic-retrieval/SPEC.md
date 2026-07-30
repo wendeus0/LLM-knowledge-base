@@ -1,7 +1,7 @@
 ---
 title: Retrieval semântico — embeddings locais Nomic no search/qa híbrido
 epic: search
-status: in_progress
+status: done
 pr:
 ---
 

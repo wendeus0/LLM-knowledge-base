@@ -10,8 +10,29 @@ Ciclo central:
 
 1. Ingestão de fontes em `raw/`
 2. Compilação assistida por LLM para `wiki/`
-3. Consulta (`qa`) e busca (`search`) sobre a wiki
+3. Consulta (`qa`) e busca (`search`) sobre a wiki — ranking híbrido de 4 canais + rerank por LLM
 4. Healing (`heal`) e auditoria (`lint`) para manter qualidade
+
+## Onde encontrar o quê
+
+Este arquivo é catálogo: aponta, não substitui.
+
+| Pergunta | Documento |
+|---|---|
+| Como o sistema é desenhado? | `docs/architecture/SDD.md` |
+| Por que uma decisão foi tomada assim? | `docs/adr/` — 17 ADRs; o 0017 supera o 0004 |
+| Qual o estado atual e o que vem depois? | `memory/project_state.md`, `memory/next_steps.md` |
+| O que já deu errado antes? | `memory/pitfalls.md`, `ERROR_LOG.md` |
+| Qual o backlog de evolução? | `docs/research/2026-07-28-engenharia-reversa/BACKLOG.md` (11 portes por valor) |
+| Como escrever uma SPEC? | `docs/architecture/SPEC_FORMAT.md` |
+| Que features existiram? | `features/` (abertas) e `features/_archived/` (concluídas) |
+
+## Estado atual (2026-07-30)
+
+- **Feature aberta:** `010-multi-vault-foundation` (`draft`) — única em `features/`.
+- **Última entrega:** features 011–022, fundação de retrieval semântico, mergeadas em `main` (`f694190`).
+- **Retrieval:** `recall@5` 0,467 e MRR 0,343 no golden de 152 casos — dobro e quase triplo do lexical puro. Toda mudança futura passa por `kb bench` antes de ser adotada (ADR-0017).
+- **Dependência operacional:** `kb qa` em qualidade plena exige servidor de embeddings (:1234) e de rerank (:8081); ausentes, degrada com aviso.
 
 ## Princípios norteadores
 

@@ -1,7 +1,7 @@
 ---
 title: Context budget — cap por artigo + perfis de retrieval (fast/deep/paper/article)
 epic: qa
-status: in_progress
+status: done
 pr:
 ---
 
