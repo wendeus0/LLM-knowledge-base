@@ -53,6 +53,11 @@ Pendências e decisões abertas.
 
 ## P2 (Nice-to-have)
 
+**[deferido] docs/API.md sem o grupo `jobs` e `handoff create`**
+
+- Origem: sanitização do README 2026-07-09 — `stats`/`diff`/`archive` documentados; `jobs list|run|gate|cron|doc-gate` e `handoff create` seguem fora da referência CLI
+- Fechar num ciclo próprio de docs (5+ subcomandos, seção nova)
+
 **[deferido] Coluna `savings_pct` órfã no schema de tracking.db**
 
 - Origem: refactor/dead-code-cut 2026-07-09 (plano de robustez, Task 9)
@@ -103,3 +108,38 @@ Pendências e decisões abertas.
 - Atual: busca lexical simples funciona para a escala atual (~14 artigos em wiki/ai/)
 - Quando escalar: adicionar embeddings + índice vetorial
 - Não bloqueia a baseline atual
+
+## Sessão 2026-07-15/16 — stack local + features 011-013
+
+**Anotação do dono no encerramento:** seguiremos os testes do KB; eventualmente testar o **Bonsai 8B 1-bit** para execução dessas tarefas (gate: golden set da feature 014).
+
+| Prioridade | Item | Contexto | Data |
+| --- | --- | --- | --- |
+| P1 | Commit das features 011 (noise filter), 012 (semantic retrieval), 013 (context budget) + defaults locais | Tudo DONE local com REPORTs; working tree sem commit por decisão de fluxo | 2026-07-16 |
+| P2 | Feature 014 — `kb bench` + golden set (~12-15 perguntas do vault, grader de fidelidade) | Gate da decisão Bonsai 8B p/ QA cotidiano e do bench dos modelos da VM G0dwin | 2026-07-16 |
+| P2 | Servidores locais não sobem no boot (`lms server start` + `start-bonsai-server.sh` manuais) | Candidato a launchd; sem eles o kb degrada p/ lexical e o chat falha | 2026-07-16 |
+| P2 | Chunking + re-rank + sumários-como-sinal-de-retrieval | SPEC própria (evolução da 012); ganho estrutural de latência+precisão | 2026-07-16 |
+| P2 | Investigação tensor API Metal → PR ao fork PrismML-Eng/llama.cpp | Time-box 1 sessão de diagnóstico; ganho potencial 3-10x no prompt processing | 2026-07-16 |
+| P3 | Decisão sobre `summaries/` duplicando artigos no índice de embeddings | Resultados podem vir em dobro (ex.: circuit-breaker.md 2x) | 2026-07-16 |
+| P3 | MLX 1-bit (4.8G) guardado aguardando suporte upstream | Watch cloud semanal ativo (segundas ~9h07 BRT) | 2026-07-16 |
+| P3 | [deferido] Bench de modelos da VM G0dwin | VM offline (connection refused); usar golden set da 014 quando ligar | 2026-07-16 |
+
+## Sessão 2026-07-29/30 — retrieval medido (features 014–022)
+
+**Resolvidos desta lista:** commit das 011/012/013 (P1, feito); `kb bench` + golden set (P2, feito na 016 com 152 casos); chunking + rerank (P2, feito nas 017/020); `summaries/` duplicando o índice (P3, feito — renomeado para `_summaries/`); bench dos modelos da VM (P3 deferido — VM online, granite4 medido).
+
+| Prioridade | Item | Contexto | Data |
+| --- | --- | --- | --- |
+| P1 | **10 commits sem push** na branch `feat/semantic-retrieval-foundation` | Features 011–022. Push e PR só com pedido explícito do dono | 2026-07-30 |
+| P1 | **Golden set (152 casos) vive em `~/vault/kb_state/bench/golden.json`, não versionado** | Diferente do índice, **não é reconstruível**: os 50 casos curados são trabalho manual. Cópia volátil em scratchpad da sessão | 2026-07-30 |
+| P1 | Documentar em `.env.example` a configuração medida como melhor: rerank com `bonsai-27b-1bit` e temperatura 0 | MRR 0,343 contra 0,242 sem rerank (+42%); sem doc, a config se perde | 2026-07-30 |
+| P2 | Restringir a saída do rerank: pedir top-5 em vez de ordenar 20 | Ataca alucinação de índice, que sampling **não** corrige (granite4: 32 inválidos mesmo a temp 0) | 2026-07-30 |
+| P2 | Índice de embeddings em 148 MB (chunking por seção, 8.685 chunks) sem ganho de recall comprovado | 017 mediu +1 caso em 50 (ruído) e MRR pior; mantida por eliminar truncamento de 35% do corpus. Quantizar ou reverter se o tamanho incomodar | 2026-07-30 |
+| P2 | `preflight()` cobre "provider morto no início", não "morreu no meio" | Duas medições foram perdidas por isso; só o contador `failed` revelou. Verificação contínua durante o lote ficou fora de escopo | 2026-07-30 |
+| P2 | Perfis `analytical`, `generative` e `diverse` escolhidos por julgamento, **não medidos** | Só `deterministic` tem evidência. Medir os outros exige instrumento para qualidade de prosa, que não existe | 2026-07-30 |
+| P2 | Busca lexical é o gargalo do bench: `_iter_docs` relê os 1.033 arquivos por query (~3s) | Com cache de rerank quente, 152 casos ainda levam 9 min. Índice lexical persistente resolveria | 2026-07-30 |
+| P3 | `ik_llama.cpp` com `--fit --fit-margin` e KV cache q4_0 para viabilizar um 35B na VM | Reabriria o teste de compressão declarado inviável (ornith-35b: 19,7 GB em 15 GB de RAM). Referência: post de Lucas Samuel Vieira (2026). Ressalva: memory pinning dele é CUDA, a VM é AMD/ROCm | 2026-07-30 |
+| P3 | `top_k`, `min_p`, `repeat_penalty` inacessíveis via cliente OpenAI-compat | Só trafegam pela API nativa do runtime. Limita o que a feature 022 pode controlar | 2026-07-30 |
+| P3 | Revisar `expected` do golden onde há artigos irmãos igualmente válidos | Parte das falhas restantes é erro de medida, não de busca (verificado em amostra) | 2026-07-30 |
+| P3 | Expandir golden além de 152 casos | Erro padrão em ~4pp; experimentos com delta menor que isso continuam inconclusivos | 2026-07-30 |
+| P3 | VM `g0dw1n` não é dedicada: hospeda CI runners de `visep` e `infinityfit`, 15 GB de RAM | Rerank em lote compete com os containers | 2026-07-30 |

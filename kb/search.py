@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import re
+import sys
 from pathlib import Path
 
 from kb.config import WIKI_DIR
@@ -22,9 +23,10 @@ def _extract_snippet(text: str, terms: set[str]) -> str:
 
 
 def _iter_docs() -> list[tuple[Path, str, list[str]]]:
+    """Corpus da busca lexical — mesma convenção do índice semântico: `_*` e `.*` fora."""
     docs: list[tuple[Path, str, list[str]]] = []
     for md in WIKI_DIR.rglob("*.md"):
-        if md.name == "_index.md":
+        if any(part.startswith(("_", ".")) for part in md.relative_to(WIKI_DIR).parts):
             continue
         text = md.read_text(encoding="utf-8", errors="replace")
         docs.append((md, text, _tokenize(text)))
@@ -102,19 +104,82 @@ def _rrf_fuse(rankings: list[list[tuple[Path, float]]], k: int = 60) -> dict[Pat
     return fused
 
 
-def find_relevant(query: str, top_k: int = 5) -> list[Path]:
+_semantic_warned = False
+
+
+def _warn_semantic_degraded(reason: str) -> None:
+    """Anuncia a degradação uma vez por execução, sem poluir stdout."""
+    global _semantic_warned
+    if _semantic_warned:
+        return
+    _semantic_warned = True
+    print(
+        f"aviso: canal semântico indisponível ({reason}) — resultados vêm só do lexical",
+        file=sys.stderr,
+    )
+
+
+def _semantic_rank(query: str) -> list[tuple[Path, float]]:
+    """Canal semântico da fusão; sem índice válido, retorna [] (fallback lexical)."""
+    from kb.config import STATE_DIR
+    from kb.embeddings import load_index, semantic_ranking
+
+    index = load_index(STATE_DIR)
+    if index is None:
+        _warn_semantic_degraded("índice ausente ou de outro modelo; rode `kb index build`")
+        return []
+    ranking = semantic_ranking(query, index)
+    if not ranking:
+        _warn_semantic_degraded("servidor de embeddings não respondeu; veja `kb index status`")
+    return ranking
+
+
+def find_relevant(query: str, top_k: int = 5, rerank_depth: int | None = None) -> list[Path]:
     """Retorna artigos mais relevantes para a query usando ranking híbrido."""
-    results = search(query, top_k=top_k, mode="hybrid")
+    results = search(query, top_k=top_k, mode="hybrid", rerank_depth=rerank_depth)
     return [item["path"] for item in results]
 
 
-def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
+SEARCH_MODES = ("hybrid", "lexical", "keyword")
+
+
+def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
+    """Reordena os `depth` primeiros pelo julgamento do LLM, preservando o resto."""
+    from kb.rerank import rerank as do_rerank
+
+    head, tail = results[:depth], results[depth:]
+    candidates = [
+        {"slug": item["path"].stem, "title": item["path"].stem, "snippet": item.get("snippet", "")}
+        for item in head
+    ]
+    by_slug = {item["path"].stem: item for item in head}
+    reordered = [by_slug[c["slug"]] for c in do_rerank(query, candidates) if c["slug"] in by_slug]
+    return reordered + tail
+
+
+def search(
+    query: str,
+    top_k: int = 10,
+    mode: str = "hybrid",
+    expand: str | None = None,
+    rerank_depth: int | None = None,
+) -> list[dict]:
     """Retorna resultados com snippet para exibição no CLI.
 
     mode:
-    - hybrid (default): RRF(keyword + density + bm25)
+    - hybrid (default): RRF(keyword + density + bm25 + semântico quando há índice)
+    - lexical: RRF(keyword + density + bm25), sem consultar o canal semântico
     - keyword: comportamento legado por contagem de termos
+
+    expand: estratégia de expansão da query aplicada **apenas** ao canal
+    semântico. Os lexicais funcionam por casamento de termo e seriam diluídos
+    por vocabulário gerado.
     """
+    if mode not in SEARCH_MODES:
+        raise ValueError(
+            f"modo de busca desconhecido: {mode!r} (use um de {', '.join(SEARCH_MODES)})"
+        )
+
     keyword_rank, density_rank, bm25_rank, snippets = _build_rankings(query)
 
     if mode == "keyword":
@@ -127,7 +192,18 @@ def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
             for path, score in keyword_rank[:top_k]
         ]
 
-    fused = _rrf_fuse([keyword_rank, density_rank, bm25_rank])
+    rankings = [keyword_rank, density_rank, bm25_rank]
+    if mode == "hybrid":
+        semantic_query = query
+        if expand:
+            from kb.query_expansion import expand_query
+
+            semantic_query = expand_query(query, expand)
+        semantic_rank = _semantic_rank(semantic_query)
+        if semantic_rank:
+            rankings.append(semantic_rank)
+
+    fused = _rrf_fuse(rankings)
     channel_keyword = dict(keyword_rank)
     channel_density = dict(density_rank)
     channel_bm25 = dict(bm25_rank)
@@ -144,8 +220,11 @@ def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
         reverse=True,
     )
 
+    # Com rerank, é preciso buscar mais fundo do que se vai devolver.
+    fetch = max(top_k, rerank_depth or 0)
+
     results: list[dict] = []
-    for path in ranked_paths[:top_k]:
+    for path in ranked_paths[:fetch]:
         results.append(
             {
                 "path": path,
@@ -160,4 +239,7 @@ def search(query: str, top_k: int = 10, mode: str = "hybrid") -> list[dict]:
             }
         )
 
-    return results
+    if rerank_depth and len(results) > 1:
+        results = _apply_rerank(query, results, rerank_depth)
+
+    return results[:top_k]

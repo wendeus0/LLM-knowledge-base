@@ -22,6 +22,7 @@ from kb.frontmatter import parse
 from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
+from kb.sampling import params
 from kb.state import (
     extract_summary,
     find_compiled_entry,
@@ -231,7 +232,7 @@ def _resolve_output_path(raw_path: Path, topic: str, title: str) -> Path:
 
 
 def _summary_path(article_path: Path) -> Path:
-    summaries_dir = WIKI_DIR / "summaries"
+    summaries_dir = WIKI_DIR / "_summaries"
     relative_parent = article_path.parent.relative_to(WIKI_DIR)
     target_dir = summaries_dir / relative_parent
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -312,7 +313,9 @@ def compile_to_artifact(
                         raw_path, content, book_context=book_context
                     ),
                 },
-            ]
+            ],
+            # Redigir artigo em prosa a partir da fonte.
+            **params("generative"),
         )
     except Exception as exc:
         if not is_provider_resource_limit_error(exc):
@@ -335,7 +338,8 @@ def compile_to_artifact(
                         book_context=book_context,
                     ),
                 },
-            ]
+            ],
+            **params("generative"),
         )
 
     compiled_markdown = _strip_outer_fence(response)
@@ -408,6 +412,7 @@ def compile_many(
     allow_sensitive: bool = False,
     no_commit: bool = True,
     update_index_enabled: bool = True,
+    index_refresh_enabled: bool = True,
     on_progress: Callable[[], None] | None = None,
 ) -> CompileBatchResult:
     ordered_targets = [_resolve_raw_path(target) for target in targets]
@@ -457,6 +462,11 @@ def compile_many(
     if outputs and update_index_enabled:
         update_index(no_commit=no_commit)
 
+    if outputs:
+        from kb.embeddings import refresh_embeddings_index
+
+        refresh_embeddings_index(enabled=index_refresh_enabled)
+
     failures = [failures_by_index[index] for index in sorted(failures_by_index)]
     return CompileBatchResult(outputs=outputs, failures=failures)
 
@@ -467,7 +477,7 @@ def update_index(no_commit: bool = True) -> None:
 
     articles: list[str] = []
     for md in sorted(WIKI_DIR.rglob("*.md")):
-        if md.name == "_index.md" or "summaries" in md.parts:
+        if md.name == "_index.md" or "_summaries" in md.parts:
             continue
         rel = md.relative_to(WIKI_DIR)
         articles.append(f"- [[{md.stem}]] (`{rel}`)")

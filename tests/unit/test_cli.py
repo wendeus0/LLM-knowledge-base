@@ -119,7 +119,9 @@ class TestSearchCommand:
             result = runner.invoke(app, ["search", "query"])
 
         assert result.exit_code == 0
-        mock_search.assert_called_once_with("query")
+        mock_search.assert_called_once_with(
+            "query", mode="hybrid", expand=None, rerank_depth=None
+        )
         mock_print.assert_any_call(
             f"[bold]article[/] [dim]({path})[/] score=10"
         )
@@ -391,7 +393,9 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=True)
+        mock_heal.assert_called_once_with(
+            10, allow_sensitive=False, no_commit=True, index_refresh_enabled=True
+        )
         mock_print.assert_any_call("  [green]✓[/] a.md [dim](healed)[/]")
         mock_print.assert_any_call("  [dim]·[/] b.md [dim](reviewed_no_changes)[/]")
 
@@ -417,7 +421,9 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal", "--n", "5"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(5, allow_sensitive=False, no_commit=True)
+        mock_heal.assert_called_once_with(
+            5, allow_sensitive=False, no_commit=True, index_refresh_enabled=True
+        )
 
     def test_should_support_explicit_commit_flag(self):
         with (
@@ -429,7 +435,9 @@ class TestHealCommand:
             result = runner.invoke(app, ["heal", "--commit"])
 
         assert result.exit_code == 0
-        mock_heal.assert_called_once_with(10, allow_sensitive=False, no_commit=False)
+        mock_heal.assert_called_once_with(
+            10, allow_sensitive=False, no_commit=False, index_refresh_enabled=True
+        )
 
     def test_should_handle_sensitive_content_error_with_confirmation(self):
         from kb.guardrails import SensitiveContentError, SensitiveFinding
@@ -491,6 +499,9 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=False,
             depth=1,
+            profile="fast",
+            top_k=None,
+            rerank_depth=None,
         )
 
     def test_should_handle_sensitive_content_error_with_confirmation(self):
@@ -556,6 +567,9 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=False,
             depth=1,
+            profile="fast",
+            top_k=None,
+            rerank_depth=None,
         )
         mock_print.assert_any_call(
             f"\n[dim]Arquivado em:[/] [green]{tmp_path / 'output.md'}[/]"
@@ -579,6 +593,9 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=True,
             depth=1,
+            profile="fast",
+            top_k=None,
+            rerank_depth=None,
         )
 
     def test_should_support_custom_depth(self):
@@ -599,6 +616,9 @@ class TestQaCommand:
             no_commit=True,
             no_traverse=False,
             depth=3,
+            profile="fast",
+            top_k=None,
+            rerank_depth=None,
         )
 
     def test_should_support_to_wiki_flag(self):

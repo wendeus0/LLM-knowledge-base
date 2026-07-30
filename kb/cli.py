@@ -21,8 +21,10 @@ app = typer.Typer(
     epilog=(
         "Opções por comando:\n\n"
         "ingest <src...>  [--no-commit|--commit] [--compile]\n\n"
-        "import-book <arquivo...>  [--output PATH] [--compile] [--force] [--ocr]"
+        "import-book <arquivo...>  [--output PATH] [--compile] [--force] [--ocr] [--keep-noise]"
         "  [--workers/-j INT] [--chunk-pages INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
+        "noise scan  |  noise apply [--no-commit|--commit]\n\n"
+        "index build [--force]  |  index status\n\n"
         "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
@@ -41,9 +43,13 @@ app = typer.Typer(
 jobs_app = typer.Typer(help="Jobs canônicos e agendáveis do kb")
 discovery_app = typer.Typer(help="Descoberta automatizada e ingestão periódica")
 handoff_app = typer.Typer(help="Handoff operacional de sessão")
+noise_app = typer.Typer(help="Higiene de capítulos-ruído do corpus (scan/apply)")
+index_app = typer.Typer(help="Índice de embeddings do vault (build/status)")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(discovery_app, name="discovery")
 app.add_typer(handoff_app, name="handoff")
+app.add_typer(noise_app, name="noise")
+app.add_typer(index_app, name="index")
 console = Console()
 
 
@@ -140,6 +146,11 @@ def import_book(
     force: bool = typer.Option(
         False, "--force", help="Reimportar livros já existentes em raw/books/"
     ),
+    keep_noise: bool = typer.Option(
+        False,
+        "--keep-noise",
+        help="Importa também capítulos-ruído (agradecimentos, prefácio, elogios etc.)",
+    ),
     workers: int = typer.Option(
         4, "--workers", "-j", help="Número de livros processados em paralelo"
     ),
@@ -161,7 +172,7 @@ def import_book(
             return path, "skip", target_dir
         try:
             written_files, metadata_path = import_epub(
-                path, target_dir, use_ocr=ocr, chunk_pages=chunk_pages
+                path, target_dir, use_ocr=ocr, chunk_pages=chunk_pages, keep_noise=keep_noise
             )
             return path, "ok", (written_files, metadata_path)
         except (BookImportError, PermissionError) as exc:
@@ -211,6 +222,24 @@ def import_book(
 
     console.print()
     console.print(table)
+
+    for path in paths:
+        status, detail = results_map[path]
+        if status != "ok" or not detail:
+            continue
+        try:
+            book_metadata = json.loads(detail[1].read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for entry in book_metadata.get("excluded_chapters", []):
+            typer.echo(f"excluído (ruído): {entry['title']} [{entry['category']}]")
+        for title in book_metadata.get("ambiguous_chapters", []):
+            typer.echo(f"mantido (não classificado): {title}")
+        if book_metadata.get("noise_classification_skipped"):
+            typer.echo(
+                "aviso: não foi possível classificar capítulos-ruído "
+                f"(sem títulos utilizáveis) — nada foi excluído de {path.name}"
+            )
 
     if len(paths) == 1:
         status, detail = results_map[paths[0]]
@@ -322,6 +351,11 @@ def compile(
         "--no-commit/--commit",
         help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
+    no_index_refresh: bool = typer.Option(
+        False,
+        "--no-index-refresh",
+        help="Não atualiza o índice de embeddings ao fim (útil em importações grandes)",
+    ),
 ):
     """Compila raw/ → wiki/ usando LLM."""
     from kb.cmds.compile.run import execute_compile_command
@@ -341,6 +375,7 @@ def compile(
         no_commit=no_commit,
         interactive_sensitive=True,
         confirm_sensitive=_confirm_sensitive,
+        index_refresh_enabled=not no_index_refresh,
     )
 
     for line in result.message_lines:
@@ -399,6 +434,22 @@ def qa(
         "--depth",
         help="Profundidade de traversal de wikilinks (padrão: 1; use --no-traverse para desativar)",
     ),
+    deep: bool = typer.Option(
+        False,
+        "--deep",
+        help="Perfil deep: mais artigos e contexto maior por artigo (mais lento, mais completo)",
+    ),
+    top_k: int = typer.Option(
+        None,
+        "--top-k",
+        min=1,
+        help="Sobrepõe o número de artigos recuperados do perfil ativo",
+    ),
+    no_rerank: bool = typer.Option(
+        False,
+        "--no-rerank",
+        help="Desliga a reordenação por LLM (mais rápido, MRR medido cai de 0,343 para 0,242)",
+    ),
 ):
     """Responde uma pergunta consultando as fontes do kb."""
     from kb.cmds.qa.run import execute_qa_command
@@ -415,6 +466,9 @@ def qa(
             no_commit=no_commit,
             no_traverse=no_traverse,
             depth=depth,
+            profile="deep" if deep else "fast",
+            top_k=top_k,
+            rerank_depth=0 if no_rerank else None,
         )
         console.print(Markdown(response))
         if saved:
@@ -435,13 +489,31 @@ def qa(
 
 
 @app.command()
-def search(query: str = typer.Argument(..., help="Termos de busca")):
+def search(
+    query: str = typer.Argument(..., help="Termos de busca"),
+    mode: str = typer.Option("hybrid", "--mode", help="hybrid|lexical|keyword"),
+    expand: str = typer.Option(
+        None,
+        "--expand",
+        help="Reescreve a pergunta antes da busca semântica: terms|hyde (custa uma chamada ao LLM)",
+    ),
+    rerank_depth: int = typer.Option(
+        None,
+        "--rerank",
+        min=2,
+        help="Reordena os N primeiros candidatos com o LLM (custa uma chamada; 20 foi o melhor MRR medido)",
+    ),
+):
     """Busca artigos na wiki por palavra-chave."""
     from pathlib import Path
 
     from kb.search import search as do_search
 
-    results = do_search(query)
+    try:
+        results = do_search(query, mode=mode, expand=expand, rerank_depth=rerank_depth)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from None
     if not results:
         console.print("[yellow]Nenhum resultado encontrado.[/]")
         raise typer.Exit()
@@ -630,6 +702,11 @@ def heal(
         "--no-commit/--commit",
         help="Padrão: escreve localmente sem commit; use --commit para versionar",
     ),
+    no_index_refresh: bool = typer.Option(
+        False,
+        "--no-index-refresh",
+        help="Não atualiza o índice de embeddings ao fim",
+    ),
 ):
     """Heal estocástico: pega N artigos aleatórios, corrige links, remove stubs, stampa reviewed."""
     from kb.guardrails import SensitiveContentError, summarize_findings
@@ -637,7 +714,12 @@ def heal(
 
     console.print(f"[dim]Healing {n} arquivos aleatórios...[/]\n")
     try:
-        log = do_heal(n, allow_sensitive=allow_sensitive, no_commit=no_commit)
+        log = do_heal(
+            n,
+            allow_sensitive=allow_sensitive,
+            no_commit=no_commit,
+            index_refresh_enabled=not no_index_refresh,
+        )
     except SensitiveContentError as exc:
         console.print(f"[yellow]{summarize_findings(exc)}[/]")
         if not (
@@ -973,3 +1055,237 @@ def handoff_create(
         decisions=decisions,
     )
     console.print(f"[green]Handoff criado:[/] {path}")
+
+
+@noise_app.command("scan")
+def noise_scan():
+    """Lista candidatos a ruído já ingeridos (dry-run; não altera nada)."""
+    from kb.config import RAW_DIR, WIKI_DIR
+    from kb.noise import scan_corpus
+
+    candidates = scan_corpus(RAW_DIR, WIKI_DIR)
+    for candidate in candidates:
+        typer.echo(candidate.name)
+    typer.echo(f"{len(candidates)} candidato(s) a ruído")
+
+
+@noise_app.command("apply")
+def noise_apply(
+    no_commit: bool = typer.Option(
+        True,
+        "--no-commit/--commit",
+        help="Padrão: move localmente sem commit; use --commit para versionar",
+    ),
+):
+    """Move candidatos a ruído para archive/ (nunca deleta)."""
+    from kb.config import ARCHIVE_DIR, RAW_DIR, WIKI_DIR
+    from kb.noise import archive_candidates, scan_corpus
+
+    candidates = scan_corpus(RAW_DIR, WIKI_DIR)
+    moved = archive_candidates(candidates, ARCHIVE_DIR)
+    for destination in moved:
+        typer.echo(f"arquivado: {destination.name}")
+    typer.echo(f"{len(moved)} arquivo(s) movido(s) para archive/")
+    if moved and not no_commit:
+        from kb.git import commit
+
+        commit("chore(corpus): archive noise chapters", [*moved])
+
+
+@index_app.command("build")
+def index_build(
+    force: bool = typer.Option(False, "--force", help="Re-embeda todos os artigos, ignorando o cache"),
+):
+    """Gera/atualiza o índice de embeddings do vault (incremental por hash)."""
+    from kb.config import STATE_DIR, WIKI_DIR
+    from kb.embeddings import build_index
+
+    try:
+        report = build_index(WIKI_DIR, STATE_DIR, force=force)
+    except RuntimeError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from None
+    typer.echo(
+        f"{report['indexed']} artigo(s) indexado(s) em {report['embedded_chunks']} chunk(s), {report['unchanged']} inalterado(s), "
+        f"{report['removed']} removido(s), {report['truncated']} truncado(s) — "
+        f"modelo {report['model']} (dim {report['dim']})"
+    )
+
+
+@index_app.command("status")
+def index_status_cmd():
+    """Cobertura do índice de embeddings: indexados/total, modelo e pendências."""
+    from kb.config import STATE_DIR, WIKI_DIR
+    from kb.embed_server import (
+        autostart_cmd,
+        autostart_enabled,
+        ensure_server,
+        model_available,
+        probe_timeout,
+    )
+    from kb.embeddings import _embed_base_url, index_status
+
+    status = index_status(WIKI_DIR, STATE_DIR)
+    typer.echo(
+        f"{status['indexed']}/{status['total']} artigos indexados "
+        f"({status['chunks']} chunks, {status['chunks_per_article']} por artigo) "
+        f"— modelo {status['model']}"
+    )
+    if status["note"]:
+        typer.echo(status["note"])
+    for relpath in status["stale"]:
+        typer.echo(f"pendente: {relpath}")
+
+    server = ensure_server(
+        _embed_base_url(),
+        autostart_enabled=autostart_enabled(),
+        autostart_cmd=autostart_cmd(),
+        probe_timeout=probe_timeout(),
+    )
+    if not server.reachable:
+        typer.echo(f"servidor: inacessível em {server.endpoint} ({server.error})")
+        typer.echo(f"suba com `{autostart_cmd()}` ou defina KB_EMBED_AUTOSTART=1")
+    elif model_available(server, status["model"]):
+        typer.echo(f"servidor: ok em {server.endpoint} — modelo {status['model']} disponível")
+    else:
+        typer.echo(
+            f"servidor: ok em {server.endpoint} — modelo {status['model']} AUSENTE; "
+            f"disponíveis: {', '.join(server.models) or 'nenhum'}"
+        )
+
+
+@app.command()
+def bench(
+    mode: str = typer.Option(
+        "hybrid", "--mode", help="Configuração de busca a medir: hybrid|lexical"
+    ),
+    k: int = typer.Option(5, "--k", min=1, help="Corte do recall@k"),
+    seed: bool = typer.Option(
+        False, "--seed", help="Gera golden set a partir dos títulos do corpus"
+    ),
+    seed_questions: int = typer.Option(
+        None,
+        "--seed-questions",
+        min=1,
+        help="Gera N casos com perguntas escritas pelo LLM (acrescenta ao golden existente)",
+    ),
+    sample_seed: int = typer.Option(42, "--sample-seed", help="Semente da amostragem"),
+    limit: int | None = typer.Option(
+        None, "--limit", min=1, help="Máximo de casos ao semear"
+    ),
+    expand: str = typer.Option(
+        None, "--expand", help="Expandir a query antes de buscar: terms|hyde"
+    ),
+    rerank_depth: int = typer.Option(
+        None, "--rerank", min=2, help="Reordenar os N primeiros candidatos com o LLM"
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Saída parseável"),
+):
+    """Mede recall@k e MRR da recuperação contra o golden set do vault."""
+    import json as _json
+
+    from kb.bench import golden_path, run_bench, seed_golden, write_golden
+    from kb.config import STATE_DIR, WIKI_DIR
+
+    destination = golden_path(STATE_DIR)
+
+    if seed:
+        cases = seed_golden(WIKI_DIR, limit=limit)
+        write_golden(destination, cases)
+        typer.echo(f"{len(cases)} caso(s) gravados em {destination}")
+        typer.echo("revise e edite as perguntas — títulos são apenas o piso da medição")
+        return
+
+    if seed_questions:
+        from kb.bench import generate_cases, load_golden
+
+        existing_cases = load_golden(destination) or []
+        covered = {slug for case in existing_cases for slug in case.get("expected", [])}
+        typer.echo(
+            f"gerando {seed_questions} caso(s); {len(existing_cases)} já no golden. "
+            "Uma chamada ao LLM por artigo — pode demorar."
+        )
+
+        accumulated = list(existing_cases)
+
+        def _persist(case):
+            accumulated.append(case)
+            write_golden(destination, accumulated)
+
+        novos = generate_cases(
+            WIKI_DIR, seed_questions, seed=sample_seed, existing=covered, on_case=_persist
+        )
+        typer.echo(f"{len(novos)} caso(s) gerados — golden agora com {len(accumulated)}")
+        typer.echo(f"revise por amostra: {destination}")
+        return
+
+    try:
+        report = run_bench(mode=mode, k=k, expand=expand, rerank_depth=rerank_depth)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from None
+
+    if report is None:
+        typer.echo(f"nenhum golden set em {destination}")
+        typer.echo("gere um inicial com `kb bench --seed` e edite os casos")
+        raise typer.Exit(code=1)
+
+    summary = report["summary"]
+
+    if as_json:
+        typer.echo(
+            _json.dumps(
+                {
+                    "mode": report["mode"],
+                    "expand": report["expand"],
+                    "corpus": report["corpus"],
+                    "semantic_active": report["semantic_active"],
+                    "rerank_stats": report.get("rerank_stats"),
+                    "summary": summary,
+                    "misses": [
+                        {"question": r.question, "expected": r.expected, "rank": r.rank}
+                        for r in report["results"]
+                        if not r.hit_at_k and not r.invalid
+                    ],
+                },
+                ensure_ascii=False,
+            )
+        )
+        return
+
+    canal = (
+        "canal semântico ativo"
+        if report["semantic_active"]
+        else ("canal semântico INATIVO — resultado é lexical" if report["mode"] == "hybrid" else "sem canal semântico")
+    )
+    typer.echo(
+        f"modo {report['mode']} — {report['corpus']} artigos no corpus, "
+        f"{summary['total']} caso(s) válido(s), {summary['invalid']} inválido(s) — {canal}"
+    )
+    typer.echo(
+        f"recall@{summary['k']} = {summary['recall_at_k']:.3f}  "
+        f"MRR = {summary['mrr']:.3f}  ({summary['hits']}/{summary['total']})"
+    )
+
+    rerank_stats = report.get("rerank_stats")
+    if rerank_stats and (rerank_stats["calls"] or rerank_stats["cache_hits"]):
+        if rerank_stats["calls"]:
+            typer.echo(
+                f"rerank: {rerank_stats['calls']} chamada(s), "
+                f"cobertura {rerank_stats['coverage']:.0%} dos candidatos pedidos, "
+                f"{rerank_stats['severe_omission']} com omissão severa, "
+                f"{rerank_stats['out_of_range_total']} índice(s) inválido(s), "
+                f"{rerank_stats['failed']} falha(s)"
+            )
+        else:
+            typer.echo(
+                f"rerank: {rerank_stats['cache_hits']} resultado(s) do cache, "
+                "nenhuma chamada nova — rode com cache limpo para medir a cobertura"
+            )
+
+    misses = [r for r in report["results"] if not r.hit_at_k and not r.invalid]
+    for result in misses[:10]:
+        position = "fora do ranking" if result.rank is None else f"posição {result.rank}"
+        typer.echo(f"  falhou: {result.question[:60]} → {position}")
+    if len(misses) > 10:
+        typer.echo(f"  ... e mais {len(misses) - 10} caso(s)")

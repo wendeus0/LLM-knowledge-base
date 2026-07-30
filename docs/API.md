@@ -264,6 +264,101 @@ kb heal --n 20 --commit
   - `✓` (green): arquivo curado (`healed`)
   - `✗` (red): stub deletado (`deleted_stub`)
   - `·` (dim): revisado sem mudanças (`reviewed_no_changes`)
+  - output inválido do LLM é descartado (`skipped_invalid_output`) — artigo permanece intacto
+- Antes de qualquer sobrescrita ou deleção, o original é copiado para `wiki/.heal_backup/`
+
+---
+
+#### `kb stats`
+
+Exibe dashboard de métricas da wiki: claims por status, histórico de comandos dos últimos 7 dias e contagem de artigos por tópico.
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Obrigatório | Padrão  | Descrição                                        |
+| --------- | ---- | ----------- | ------- | ------------------------------------------------ |
+| `--json`  | Flag | Não         | `False` | Imprime métricas em JSON parseable, sem Rich     |
+
+**Exemplo:**
+
+```bash
+# Dashboard Rich (tabelas + barras de progresso active/stale)
+kb stats
+
+# Saída machine-readable
+kb stats --json
+```
+
+**Retorno:**
+
+- Sucesso: tabelas Rich (claims por status com pct, histórico 7d, artigos por tópico) ou JSON com as chaves `claims`, `history_7d`, `articles`
+- Vault vazio: zeros em todas as métricas, sem erro
+- Código: `0`
+
+---
+
+#### `kb diff`
+
+Mostra alterações da wiki via `git diff`, com formatação Rich por linha. Requer que `KB_DATA_DIR` seja um repositório git.
+
+**Parâmetros:**
+
+| Parâmetro | Tipo | Obrigatório | Padrão | Descrição                                        |
+| --------- | ---- | ----------- | ------ | ------------------------------------------------ |
+| `--stat`  | Flag | Não         | `False`| Mostra resumo estatístico do diff                |
+| `--since` | str  | Não         | `HEAD` | Ref git para comparar contra (commit, tag, branch) |
+
+**Exemplo:**
+
+```bash
+# Diff da wiki vs último commit
+kb diff
+
+# Resumo estatístico
+kb diff --stat
+
+# Comparar contra ref arbitrária
+kb diff --since HEAD~3
+```
+
+**Retorno:**
+
+- Sucesso: diff colorido (`+` verde, `-` vermelho, headers dim) + seção "Arquivos novos (não rastreados)" quando houver artigos ainda sem commit
+- Sem mudanças e sem untracked: `Sem alterações`, código `0`
+- `KB_DATA_DIR` sem git ou ref inválida (inclusive refs iniciando com `-`): mensagem clara, código `1`
+
+---
+
+#### `kb archive`
+
+Move artigos stale ou órfãos de `wiki/` para `archive/`, com backup versionado no destino.
+
+**Parâmetros:**
+
+| Parâmetro      | Tipo | Obrigatório | Padrão  | Descrição                                          |
+| -------------- | ---- | ----------- | ------- | --------------------------------------------------- |
+| `--stale`      | Flag | Não         | `False` | Move artigos stale (usa threshold de stale_pct)     |
+| `--older-than` | int  | Não         | `None`  | Move artigos não editados há N dias                 |
+| `--dry-run`    | Flag | Não         | `False` | Preview em tabela, sem mover arquivos               |
+
+**Exemplo:**
+
+```bash
+# Preview dos candidatos
+kb archive --stale --dry-run
+
+# Mover artigos stale
+kb archive --stale
+
+# Mover artigos parados há mais de 90 dias
+kb archive --older-than 90
+```
+
+**Retorno:**
+
+- Sucesso: lista dos artigos movidos (`→ archive/<path>`) ou tabela de preview com `--dry-run`
+- Sem candidatos: `Nenhum artigo candidato a archive.`
+- Código: `0`; erros de path fora de `wiki/` são reportados com código `1`
 
 ---
 

@@ -1,40 +1,26 @@
 ---
 name: Next Steps
-description: Próximos passos recomendados (atualizado a cada sessão)
+description: Próximos passos priorizados
 type: project
 ---
 
-## Imediato
+## Atualizado: 2026-07-30
 
-1. **Executar o plano de robustez** — `docs/superpowers/plans/2026-07-09-core-robustness.md`, fase a fase (Fase 0 em curso na branch `chore/truth-sync`). Ordem: verdade-fonte → CI → hardening → template → cortes → cobertura → backlog.
-2. **Abrir PRs por fase** quando o dono confirmar push (branches empilhadas até lá).
+### P1 — baratos e destravam o resto
 
-## Backlog priorizado (revisto 2026-07-09)
+1. **Documentar a config vencedora no `.env.example`:** rerank com `bonsai-27b-1bit` (`localhost:8081`) e perfil `deterministic`. Sem isso a configuração medida se perde.
+2. **Decidir onde o golden set de 152 casos mora.** Hoje em `~/vault/kb_state/bench/golden.json`, num vault não versionado. Diferente do índice, **não é reconstruível** — os 50 casos curados são trabalho manual.
+3. **Push e PR** dos 10 commits da branch `feat/semantic-retrieval-foundation` (aguardando pedido explícito do dono).
 
-| # | Feature | Esforço | Status |
-|---|---------|---------|--------|
-| 008 | `kb stats` (dashboard Rich) | ~3h | SPEC draft — Task 11 do plano |
-| 009 | `kb diff` (git diff formatado) | ~2h | SPEC draft — Task 12 do plano |
-| 010 | multi-vault-foundation | SPEC | Task 13 do plano (só SPEC, HITL) |
+### P2 — próximo ganho de retrieval
 
-### Ondas seguintes (sem mudança desde 2026-04-22)
+4. **Restringir a saída do rerank:** pedir os N mais relevantes em vez de ordenar 20. É o que resta depois da 022 provar que sampling corrige omissão mas não alucinação de índice. Gate: `kb bench --rerank 20` contra `recall@5 = 0,467 / MRR = 0,343`.
+5. **Índice lexical persistente.** `_iter_docs` relê os 1.033 arquivos por query (~3s); é o gargalo de qualquer medição agora que o rerank tem cache.
+6. **Verificação contínua do provider durante o lote.** O `preflight` cobre só o início; duas medições foram perdidas por falha no meio.
 
-| # | Feature | Esforço | Bloqueio |
-|---|---------|---------|----------|
-| — | `kb watch` (compile automático via watchdog) | ~4h | idéia — sem SPEC |
-| — | ingest DOCX | ~3h | idéia — sem SPEC |
-| 011 | `kb export` (HTML/PDF/EPUB) | ~6-8h | nenhum |
-| 012 | MCP Server | ~8-12h + ADR | expor claims/retrieval |
-| 013 | ingest RSS/Atom | ~4h | hook `on_schedule` |
-| 014 | ingest CSV/TSV | ~2h | valor limitado |
+### P3 — condicionados
 
-## Médio prazo (P2 herdado)
-
-- Validar `compile_many()` contra provider real com `--workers 4`
-- Refinar guardrail de credenciais (falso positivo em nomes de variável)
-- Embeddings + RAG híbrido — reavaliar quando wiki > ~200 artigos
-- Débitos deferidos do plano: split de `book_import_core.py`, extração de lógica do `cli.py`, unificar slugify, coluna `savings_pct` órfã
-
-## Bloqueadores
-
-Nenhum. Baseline verde: 327/327 testes, ruff clean.
+7. **Expandir o golden além de 152 casos** se algum experimento futuro tiver delta esperado abaixo de ~4pp.
+8. **`ik_llama.cpp` com `--fit` e KV cache q4_0** para viabilizar um 35B na VM — reabriria o teste de compressão. Ressalva: memory pinning da referência é CUDA, a VM é AMD/ROCm.
+9. **Revisar `expected` do golden** onde há artigos irmãos igualmente válidos; parte das falhas restantes é erro de medida.
+10. **Quantizar ou reverter o chunking** se os 148 MB de índice incomodarem — a 017 não comprovou ganho de recall.

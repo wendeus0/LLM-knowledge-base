@@ -6,6 +6,27 @@ type: project
 
 ## Frente ativa
 
+### Retrieval medido — features 014 a 022 (2026-07-30)
+
+**Status:** entregue e medido; branch `feat/semantic-retrieval-foundation` com 10 commits, **sem push**
+**Resumo:** `recall@5` de 0,230 (lexical) para **0,467**; MRR de 0,127 para **0,343**. Cada ganho medido contra golden de 152 casos.
+
+| Feature | Resultado |
+|---|---|
+| 014 embed-server-autostart | servidor sobe sozinho; degradação deixa de ser silenciosa |
+| 015 index-auto-refresh | índice acompanha compile/heal/qa; incremental (0,65s sem re-embed) |
+| 016 bench-golden-set | `kb bench` com recall@k e MRR — o instrumento que viabilizou o resto |
+| 017 chunking-por-secao | **negativo:** +1 caso em 50, MRR pior. Mantida por eliminar truncamento de 35% do corpus |
+| 018 expansao-de-query | HyDE +4pp; `terms` zero. Opt-in (~10s/query) |
+| 019 golden-expandido | 50 → 152 casos; erro padrão de ~7pp para ~4pp |
+| 020 rerank-llm | **+5,3pp recall, +24% MRR** — maior ganho da sequência |
+| 021 rerank-provider-dedicado | **negativo:** `granite4` pior que não reordenar (0,388 < 0,414) |
+| 022 perfis-de-sampling | temp 0 no rerank: **MRR +42%** sobre não reordenar |
+
+**Decisão fechada:** rerank com `bonsai-27b-1bit` local e perfil `deterministic`. O modelo da VM é 13× mais rápido e pior.
+
+**Próximo:** restringir a saída do rerank (top-5 em vez de ordenar 20) — sampling corrige omissão, não alucinação de índice.
+
 ### Plano de robustez do core (2026-07-09)
 
 **Status:** em execução — plano em `docs/superpowers/plans/2026-07-09-core-robustness.md`
@@ -40,3 +61,8 @@ Ver "Open questions" no plano (`docs/superpowers/plans/2026-07-09-core-robustnes
 - Cortar todo código morto (runner.py, savings, wrappers cmds/lint|search).
 - Backlog 008/009 entra como fase final do plano.
 - Template de artigo: default versionado na engine (`kb/templates/`) com override em `<KB_DATA_DIR>/templates/`.
+
+## 2026-07-16
+
+1. **014 — kb bench + golden set** (próxima; gate do Bonsai 8B — anotação do dono)
+2. Chunking + re-rank (SPEC própria) · 3. Tensor API → PR fork · 4. Módulos paper/artigo → API/app (roadmap DOMAIN 011)

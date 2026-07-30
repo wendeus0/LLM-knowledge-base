@@ -18,3 +18,4 @@ htmlcov/
 # Obsidian machine-specific config
 .obsidian/
 **/.obsidian/
+docs/reports/

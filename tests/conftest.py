@@ -10,6 +10,23 @@ def pytest_addoption(parser):
         group.addoption("--cov-report", action="append", default=[])
 
 
+@pytest.fixture(autouse=True)
+def _no_side_effect_llm_calls(monkeypatch):
+    """Nenhum teste chama provider real.
+
+    A feature 015 pendurou refresh de índice no fim de compile/heal/qa. Sem este
+    guard, esses testes fazem probe do servidor e chegam a embedar de verdade —
+    a suíte passou de 4s para 80s antes de alguém notar.
+
+    Testes que exercitam o refresh removem a variável explicitamente.
+
+    Mesmo motivo para o rerank: ligá-lo por padrão no QA fez os testes de perfil
+    baterem no provider de reordenação, 4s por teste.
+    """
+    monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+    monkeypatch.setenv("KB_RERANK_DEPTH", "0")
+
+
 @pytest.fixture
 def tmp_raw_wiki(tmp_path, monkeypatch):
     """Setup raw/, wiki/ e outputs/ temporários para testes com monkeypatch global"""
@@ -46,6 +63,8 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
     monkeypatch.setattr("kb.heal.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.lint.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.router.RAW_DIR", raw)
+    monkeypatch.setattr("kb.router.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.core.tracking.DB_PATH", state_dir / "tracking.db")
     monkeypatch.setattr("kb.state.STATE_DIR", state_dir)
     monkeypatch.setattr("kb.state.KNOWLEDGE_PATH", knowledge_path)
     monkeypatch.setattr("kb.state.LEARNINGS_PATH", learnings_path)
@@ -59,9 +78,16 @@ def tmp_raw_wiki(tmp_path, monkeypatch):
 
 @pytest.fixture
 def tmp_wiki(tmp_path, monkeypatch):
-    """Setup wiki/ com estrutura de tópicos e monkeypatch de WIKI_DIR"""
+    """Setup wiki/ com estrutura de tópicos e monkeypatch de WIKI_DIR.
+
+    Isola também o estado do vault: qualquer comando que escreva em kb_state/
+    (índice de embeddings, manifesto, tracking) precisa cair no tmp_path, nunca
+    no vault real do usuário.
+    """
     wiki = tmp_path / "wiki"
+    state_dir = tmp_path / "kb_state"
     wiki.mkdir()
+    state_dir.mkdir()
     for topic in ["cybersecurity", "ai", "python", "typescript"]:
         (wiki / topic).mkdir()
 
@@ -70,6 +96,20 @@ def tmp_wiki(tmp_path, monkeypatch):
     monkeypatch.setattr("kb.heal.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.lint.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.search.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.router.WIKI_DIR", wiki)
+
+    monkeypatch.setattr("kb.config.STATE_DIR", state_dir)
+    monkeypatch.setattr("kb.state.STATE_DIR", state_dir)
+    monkeypatch.setattr("kb.config.MANIFEST_PATH", state_dir / "manifest.json")
+    monkeypatch.setattr("kb.state.MANIFEST_PATH", state_dir / "manifest.json")
+    monkeypatch.setattr("kb.config.KNOWLEDGE_PATH", state_dir / "knowledge.json")
+    monkeypatch.setattr("kb.state.KNOWLEDGE_PATH", state_dir / "knowledge.json")
+    monkeypatch.setattr("kb.config.LEARNINGS_PATH", state_dir / "learnings.json")
+    monkeypatch.setattr("kb.state.LEARNINGS_PATH", state_dir / "learnings.json")
+    monkeypatch.setattr("kb.config.CLAIMS_PATH", state_dir / "claims.jsonl")
+    monkeypatch.setattr("kb.claims.CLAIMS_PATH", state_dir / "claims.jsonl")
+    monkeypatch.setattr("kb.config.AUDIT_PATH", state_dir / "audit.jsonl")
+    monkeypatch.setattr("kb.core.tracking.DB_PATH", state_dir / "tracking.db")
 
     return wiki
 

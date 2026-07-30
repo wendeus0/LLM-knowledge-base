@@ -19,9 +19,9 @@ MANIFEST_PATH = STATE_DIR / "manifest.json"
 CLAIMS_PATH = STATE_DIR / "claims.jsonl"
 AUDIT_PATH = STATE_DIR / "audit.jsonl"
 
-API_KEY = os.getenv("KB_API_KEY")
-BASE_URL = os.getenv("KB_BASE_URL", "https://opencode.ai/zen/go/v1")
-MODEL = os.getenv("KB_MODEL", "kimi-k2.5")
+API_KEY = os.getenv("KB_API_KEY", "local")
+BASE_URL = os.getenv("KB_BASE_URL", "http://localhost:8081/v1")
+MODEL = os.getenv("KB_MODEL", "bonsai-27b-1bit")
 
 DEFAULT_TOPICS = ["cybersecurity", "ai", "python", "typescript"]
 
@@ -72,3 +72,38 @@ def wiki_topic_dir(topic: str) -> Path:
 
 WIKILINK_TRAVERSAL_DEPTH = 1
 MAX_CONTEXT_TOKENS = 8000
+
+
+QA_DOC_CHARS_DEFAULT = 4000
+
+# Profundidade medida no golden de 152 casos: ordenar 20 candidatos elevou o MRR
+# de 0,242 para 0,343. O ganho vem de buscar fundo e entregar poucos — por isso
+# vale nos perfis de top_k baixo, não só nos deep.
+RERANK_DEPTH_DEFAULT = 20
+
+RETRIEVAL_PROFILES = {
+    "fast": {"top_k": 3, "doc_chars": 4000, "traverse": True, "traversal_budget": 1500, "rerank_depth": RERANK_DEPTH_DEFAULT},
+    "deep": {"top_k": 5, "doc_chars": 8000, "traverse": True, "traversal_budget": 4000, "rerank_depth": RERANK_DEPTH_DEFAULT},
+    "paper": {"top_k": 3, "doc_chars": 4000, "traverse": False, "traversal_budget": 0, "rerank_depth": RERANK_DEPTH_DEFAULT},
+    "article": {"top_k": 5, "doc_chars": 8000, "traverse": True, "traversal_budget": 4000, "rerank_depth": RERANK_DEPTH_DEFAULT},
+}
+
+
+def qa_doc_chars(default: int = QA_DOC_CHARS_DEFAULT) -> int:
+    return int(os.getenv("KB_QA_DOC_CHARS", default))
+
+
+def qa_rerank_depth(default: int = RERANK_DEPTH_DEFAULT) -> int:
+    """Profundidade do rerank no QA; 0 desliga."""
+    return int(os.getenv("KB_RERANK_DEPTH", default))
+
+
+def get_retrieval_profile(name: str) -> dict:
+    """Perfil de retrieval nomeado; KB_QA_DOC_CHARS e KB_RERANK_DEPTH sobrepõem o perfil."""
+    if name not in RETRIEVAL_PROFILES:
+        valid = ", ".join(sorted(RETRIEVAL_PROFILES))
+        raise ValueError(f"Perfil de retrieval desconhecido: {name}. Válidos: {valid}")
+    profile = dict(RETRIEVAL_PROFILES[name])
+    profile["doc_chars"] = qa_doc_chars(profile["doc_chars"])
+    profile["rerank_depth"] = qa_rerank_depth(profile["rerank_depth"])
+    return profile

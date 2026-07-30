@@ -12,6 +12,7 @@ from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.outputs import write_output as _write_output
 from kb.router import build_context
+from kb.sampling import params
 from kb.state import add_learning
 
 SYSTEM = """Você é um assistente de knowledge base. Responda perguntas com base nos artigos fornecidos.
@@ -44,13 +45,27 @@ source: qa
 
 def answer(
     question: str,
-    top_k: int = 5,
+    top_k: int | None = None,
     allow_sensitive: bool = False,
     traverse: bool = True,
     depth: int | None = None,
+    profile: str = "fast",
+    rerank_depth: int | None = None,
 ) -> str:
+    from kb.config import get_retrieval_profile
+
+    resolved = get_retrieval_profile(profile)
+    effective_top_k = top_k if top_k is not None else resolved["top_k"]
+    effective_traverse = traverse and resolved["traverse"]
+    effective_rerank = rerank_depth if rerank_depth is not None else resolved["rerank_depth"]
     decision, context_parts = build_context(
-        question, top_k=top_k, traverse=traverse, depth=depth
+        question,
+        top_k=effective_top_k,
+        traverse=effective_traverse,
+        depth=depth,
+        doc_chars=resolved["doc_chars"],
+        traversal_budget=resolved["traversal_budget"],
+        rerank_depth=effective_rerank,
     )
 
     if not context_parts:
@@ -92,7 +107,9 @@ def answer(
                     f"Pergunta: {question}"
                 ),
             },
-        ]
+        ],
+        # Responder com base nos artigos fornecidos, sem extrapolar.
+        **params("analytical"),
     )
     add_learning(
         "retrieval", f"Pergunta '{question}' roteada para {decision.route}", source="qa"
@@ -102,12 +119,15 @@ def answer(
 
 def answer_and_file(
     question: str,
-    top_k: int = 5,
+    top_k: int | None = None,
     allow_sensitive: bool = False,
     no_commit: bool = True,
     to_wiki: bool = False,
     traverse: bool = True,
     depth: int | None = None,
+    profile: str = "fast",
+    index_refresh_enabled: bool = True,
+    rerank_depth: int | None = None,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
@@ -119,6 +139,8 @@ def answer_and_file(
         allow_sensitive=allow_sensitive,
         traverse=traverse,
         depth=depth,
+        profile=profile,
+        rerank_depth=rerank_depth,
     )
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
@@ -133,7 +155,9 @@ def answer_and_file(
                 "role": "user",
                 "content": f"Pergunta: {question}\n\nResposta:\n{response}",
             },
-        ]
+        ],
+        # Redigir artigo a partir da resposta: prosa, não extração.
+        **params("generative"),
     )
 
     topic = "general"
@@ -152,6 +176,9 @@ def answer_and_file(
         folder.mkdir(parents=True, exist_ok=True)
         out = folder / f"{slug}.md"
         out.write_text(article, encoding="utf-8")
+        from kb.embeddings import refresh_embeddings_index
+
+        refresh_embeddings_index(enabled=index_refresh_enabled)
     else:
         _, out = _write_output(question, article, topic, no_commit=True)
 
