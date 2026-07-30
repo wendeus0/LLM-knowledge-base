@@ -107,3 +107,44 @@ type: project
 - **MLX 1-bit não roda em runtime nenhum de fábrica** (LM Studio, mlx-lm oficial) — só nos forks PrismML; compilar o fork MLX exige Xcode completo (compilador `metal` não vem no CLT, mesmo em modo JIT).
 - **Trocar modelo de embedding exige rebuild do índice** — o gate de integridade (012) detecta e degrada p/ lexical, mas a busca fica pior em silêncio; conferir `kb index status` após mexer em modelos.
 - **ubatch maior nem sempre ajuda**: 1024 deu +29% de pp; 2048 PIOROU (pressão de memória em 16GB) — sempre medir, nunca extrapolar.
+
+## Sessão 2026-07-29/30 — armadilhas de medição e isolamento
+
+### Fixture que isola metade do estado é pior que não isolar
+
+`tmp_wiki` isolava `WIKI_DIR` mas não `STATE_DIR`. Enquanto nada escrevia em `kb_state/` durante testes, ninguém notou. Quando a feature 015 pendurou refresh de índice no `heal`, um teste passou a **reconstruir o índice do vault real a partir de uma wiki temporária de 1 artigo** — 1.037 vetores viraram 1, e a suíte continuou verde.
+
+**Detecção:** grave um sentinela no artefato real, rode a suíte, confira se sobreviveu. `tests/unit/test_conftest_isolation.py` é a guarda permanente.
+
+### Default silencioso em parâmetro de modo
+
+`search(mode=...)` só tratava `"keyword"`; qualquer outro valor caía no híbrido. `--mode lexical` mediu híbrido, e a "comparação" produziu dois números idênticos que eu quase reportei como resultado. **Valor desconhecido deve levantar, não escolher por você.**
+
+### Medição contra provider morto devolve a baseline, não erro
+
+Rerank degrada para a ordem original quando o LLM falha — correto por design. Consequência: com o provider fora, 152 chamadas falharam e o bench reportou exatamente o número da baseline. **Parecia válido.** Só o contador `failed` da instrumentação revelou. Preflight antes do lote é o mínimo; ele não cobre "morreu no meio".
+
+### Cache tem de incluir tudo que muda a resposta
+
+A chave do cache de rerank incluía modelo e candidatos, mas não os parâmetros de sampling. Medir o efeito de temperatura 0 teria reusado respostas geradas a 0,8 — conclusão sobre o cache, disfarçada de conclusão sobre sampling.
+
+### Omissão e alucinação são modos de falha distintos, e só um é configurável
+
+O rerank descartava índice inválido, duplicado e omitido **em silêncio**. Instrumentar mostrou que:
+
+- **omissão** (modelo devolve menos posições) é largamente artefato de temperatura — no bonsai, cobertura foi de 75% para 93% com temp 0;
+- **alucinação de índice** (citar o candidato 23 numa lista de 20) é determinística — o granite4 manteve 32 inválidos sob decodificação gulosa.
+
+Cobertura alta com índices inventados é **pior que triagem parcial confiável**, e pior que não reordenar. O modo de falha domina a taxa de falha.
+
+### Golden set por título superestima em ~2×
+
+Semear casos de avaliação usando o título do artigo como pergunta mede casamento de string. Deu `recall@5 = 0,860`; com 50 perguntas conceituais escritas à mão, a realidade era `0,420`. Qualquer decisão tomada sobre o primeiro número partiria de premissa errada.
+
+### Amostra pequena esconde ruído como resultado
+
+Três experimentos seguidos deram deltas de 1 a 2 casos em 50 — dentro do erro padrão de ~7pp. Ampliar para 152 casos (erro ~4pp) foi o que permitiu distinguir o ganho do rerank. **Instrumento antes de experimento.**
+
+### Substituição em lote sem dry-run corrompe import
+
+Script automatizado trocou `from kb.client import ... is_provider_resource_limit_error` por `from kb.sampling import ...` e inseriu import com indentação inválida. `core/rules/workflow-feature.md` § "mudança ampla e mecânica" exige dry-run e conferência de diffstat justamente para isso.

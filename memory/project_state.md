@@ -6,11 +6,31 @@ type: project
 
 ## Estado global
 
-Atualizada: 2026-07-09
+Atualizada: 2026-07-30
 
-- **Branch:** `chore/truth-sync` (Fase 0 do plano de robustez; main @ a12ef49)
-- **Tests:** `327 passed, 0 failed` ✅ (fix do teste bomba-relógio de analytics/history em 2026-07-09)
+- **Branch:** `feat/semantic-retrieval-foundation` (10 commits, **sem push**; main @ 0c9d5ee)
+- **Tests:** `586 passed, 0 failed` ✅ — cobertura 92%
 - **Lint:** ruff `kb tests` clean
+- **Módulos novos:** `sampling.py`, `rerank.py`, `query_expansion.py`, `bench.py`, `chunking.py`, `embed_server.py`, `embeddings.py`, `noise.py`
+
+### Retrieval — números medidos (golden de 152 casos, corpus de 1.033 artigos)
+
+| Configuração | recall@5 | MRR |
+|---|---|---|
+| lexical (keyword + densidade + BM25) | 0,230 | 0,127 |
+| híbrido (+ canal semântico) | 0,414 | 0,242 |
+| híbrido + rerank 20 @ temp 0,8 | 0,467 | 0,299 |
+| **híbrido + rerank 20 @ temp 0** | **0,467** | **0,343** |
+
+Do lexical puro à melhor configuração: **recall dobrou** (0,230 → 0,467) e **MRR quase triplicou** (0,127 → 0,343). `recall@20 = 0,720` é o teto ainda disponível para ordenação.
+
+**Config vencedora:** `KB_RERANK_MODEL=bonsai-27b-1bit` local (porta 8081) com perfil `deterministic`. O `granite4:tiny-h` da VM é 13× mais rápido e **pior que não reordenar** (0,388).
+
+### Corpus real (medido)
+
+- `~/vault/wiki`: **1.037 artigos** indexáveis, 4,26M palavras. Exclusões por convenção `_*`/`.*`: `_summaries/` (1.022), `_sources/` (712).
+- `~/vault/library`: 869 fontes (800 md, 17 pdf, 6 epub), 4,79M palavras.
+- Índice de embeddings: **148 MB**, formato 2 (chunking por seção), 8.685 chunks, `nomic-embed-text-v2-moe`.
 - **Python:** 3.11+ (venv local Python 3.14, `.venv/`)
 - **CI:** workflows atuais só rodam gates operacionais (`jobs gate`, `doc-gate`); pytest+ruff entram na Fase 1 do plano
 
