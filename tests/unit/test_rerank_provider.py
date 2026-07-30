@@ -38,6 +38,24 @@ class TestProviderResolution:
 
 
 class TestCacheKeyIsolation:
+    def test_should_miss_cache_when_sampling_changes(self, _state, monkeypatch):
+        """Resposta depende da temperatura: mudá-la tem de invalidar o cache.
+
+        Sem isso, medir o efeito de temperatura 0 reusaria respostas geradas a
+        0,8 e a conclusão seria sobre o cache, não sobre o sampling.
+        """
+        calls = []
+        monkeypatch.setattr(
+            rerank_module, "_call_llm", lambda messages: calls.append(1) or "1, 2, 3"
+        )
+        candidates = [{"slug": f"a{i}", "title": f"A{i}", "snippet": "x"} for i in range(5)]
+
+        rerank_module.rerank("q", candidates)
+        monkeypatch.setenv("KB_SAMPLING_DETERMINISTIC_TEMP", "0.7")
+        rerank_module.rerank("q", candidates)
+
+        assert len(calls) == 2
+
     def test_should_miss_cache_when_rerank_model_changes(self, _state, monkeypatch):
         calls = []
         monkeypatch.setattr(

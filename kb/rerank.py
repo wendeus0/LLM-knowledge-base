@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from kb.client import chat
+from kb.sampling import params
 
 CACHE_FILENAME = "rerank.json"
 _SNIPPET_CHARS = 300
@@ -110,10 +111,16 @@ def rerank_base_url() -> str:
 
 
 def _call_llm(messages: list[dict]) -> str:
-    """Fronteira de rede do rerank — provider próprio quando configurado."""
+    """Fronteira de rede do rerank — provider próprio quando configurado.
+
+    Ordenar índices não admite variação: os dois caminhos usam o perfil
+    determinístico. Com o default do provider (0,8 no Ollama), a 021 mediu 36
+    índices fora da faixa de 20 candidatos.
+    """
+    sampling = params("deterministic")
     dedicated_url = os.getenv("KB_RERANK_BASE_URL")
     if not dedicated_url:
-        return chat(messages=messages, model=rerank_model())
+        return chat(messages=messages, model=rerank_model(), **sampling)
 
     from openai import OpenAI
 
@@ -121,7 +128,7 @@ def _call_llm(messages: list[dict]) -> str:
         api_key=os.getenv("KB_RERANK_API_KEY", "ollama"), base_url=dedicated_url
     )
     response = client.chat.completions.create(
-        model=rerank_model(), messages=messages
+        model=rerank_model(), messages=messages, **sampling
     )
     return response.choices[0].message.content or ""
 
@@ -145,9 +152,11 @@ def preflight() -> None:
 
 
 def _cache_key(question: str, candidates: list[dict]) -> str:
+    """Inclui modelo e sampling: os dois mudam a resposta, os dois invalidam."""
     model = rerank_model()
+    sampling = json.dumps(params("deterministic"), sort_keys=True)
     slugs = "|".join(candidate.get("slug", "") for candidate in candidates)
-    return hashlib.sha256(f"{model}|{question}|{slugs}".encode()).hexdigest()
+    return hashlib.sha256(f"{model}|{sampling}|{question}|{slugs}".encode()).hexdigest()
 
 
 def _read_cache() -> dict:

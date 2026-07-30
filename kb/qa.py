@@ -12,6 +12,7 @@ from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
 from kb.outputs import write_output as _write_output
 from kb.router import build_context
+from kb.sampling import params
 from kb.state import add_learning
 
 SYSTEM = """Você é um assistente de knowledge base. Responda perguntas com base nos artigos fornecidos.
@@ -103,7 +104,9 @@ def answer(
                     f"Pergunta: {question}"
                 ),
             },
-        ]
+        ],
+        # Responder com base nos artigos fornecidos, sem extrapolar.
+        **params("analytical"),
     )
     add_learning(
         "retrieval", f"Pergunta '{question}' roteada para {decision.route}", source="qa"
@@ -147,7 +150,9 @@ def answer_and_file(
                 "role": "user",
                 "content": f"Pergunta: {question}\n\nResposta:\n{response}",
             },
-        ]
+        ],
+        # Redigir artigo a partir da resposta: prosa, não extração.
+        **params("generative"),
     )
 
     topic = "general"

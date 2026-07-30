@@ -166,6 +166,7 @@ def generate_cases(
     from kb.client import chat
     from kb.embeddings import _iter_articles
     from kb.frontmatter import parse
+    from kb.sampling import params
 
     articles = {Path(rel).stem: (rel, text) for rel, text in _iter_articles(wiki_dir)}
     chosen = sample_articles(sorted(articles), n, seed=seed, exclude=existing or set())
@@ -181,7 +182,9 @@ def generate_cases(
                 messages=[
                     {"role": "system", "content": _QUESTION_PROMPT},
                     {"role": "user", "content": f"Título: {title}\n\n{body[:1500]}"},
-                ]
+                ],
+                # Casos de avaliação precisam variar: aqui a diversidade é o objetivo.
+                **params("diverse"),
             )
         except Exception:
             continue

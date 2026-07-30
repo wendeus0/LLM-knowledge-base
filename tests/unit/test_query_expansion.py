@@ -23,7 +23,7 @@ def _state(tmp_path, monkeypatch):
 class TestExpandQuery:
     def test_should_keep_original_terms_in_terms_strategy(self, _state, monkeypatch):
         monkeypatch.setattr(
-            query_expansion, "chat", lambda messages: "grafos, caminho mínimo, Dijkstra"
+            query_expansion, "chat", lambda messages, **_kw: "grafos, caminho mínimo, Dijkstra"
         )
 
         expanded = query_expansion.expand_query("trajeto mais barato numa rede", "terms")
@@ -35,7 +35,7 @@ class TestExpandQuery:
         monkeypatch.setattr(
             query_expansion,
             "chat",
-            lambda messages: "O algoritmo de Dijkstra encontra caminhos mínimos em grafos ponderados.",
+            lambda messages, **_kw: "O algoritmo de Dijkstra encontra caminhos mínimos em grafos ponderados.",
         )
 
         expanded = query_expansion.expand_query("trajeto mais barato numa rede", "hyde")
@@ -44,7 +44,7 @@ class TestExpandQuery:
         assert len(expanded) > len("trajeto mais barato numa rede")
 
     def test_should_fall_back_to_original_when_llm_fails(self, _state, monkeypatch, capsys):
-        def _boom(messages):
+        def _boom(messages, **_kw):
             raise RuntimeError("provider fora")
 
         monkeypatch.setattr(query_expansion, "chat", _boom)
@@ -55,7 +55,7 @@ class TestExpandQuery:
         assert "expans" in capsys.readouterr().err.lower()
 
     def test_should_fall_back_to_original_when_llm_returns_empty(self, _state, monkeypatch):
-        monkeypatch.setattr(query_expansion, "chat", lambda messages: "   ")
+        monkeypatch.setattr(query_expansion, "chat", lambda messages, **_kw: "   ")
 
         assert query_expansion.expand_query("pergunta original", "terms") == "pergunta original"
 
@@ -70,7 +70,7 @@ class TestCache:
     def test_should_not_call_llm_twice_for_same_question(self, _state, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            query_expansion, "chat", lambda messages: calls.append(1) or "termo tecnico"
+            query_expansion, "chat", lambda messages, **_kw: calls.append(1) or "termo tecnico"
         )
 
         query_expansion.expand_query("mesma pergunta", "terms")
@@ -79,7 +79,7 @@ class TestCache:
         assert len(calls) == 1
 
     def test_should_persist_cache_between_processes(self, _state, monkeypatch):
-        monkeypatch.setattr(query_expansion, "chat", lambda messages: "termo tecnico")
+        monkeypatch.setattr(query_expansion, "chat", lambda messages, **_kw: "termo tecnico")
         query_expansion.expand_query("pergunta", "terms")
 
         payload = json.loads((_state / "query_expansion.json").read_text(encoding="utf-8"))
@@ -89,7 +89,7 @@ class TestCache:
     def test_should_miss_cache_when_model_changes(self, _state, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            query_expansion, "chat", lambda messages: calls.append(1) or "termo"
+            query_expansion, "chat", lambda messages, **_kw: calls.append(1) or "termo"
         )
 
         query_expansion.expand_query("pergunta", "terms")
@@ -101,7 +101,7 @@ class TestCache:
     def test_should_miss_cache_when_strategy_changes(self, _state, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            query_expansion, "chat", lambda messages: calls.append(1) or "termo"
+            query_expansion, "chat", lambda messages, **_kw: calls.append(1) or "termo"
         )
 
         query_expansion.expand_query("pergunta", "terms")
@@ -111,6 +111,6 @@ class TestCache:
 
     def test_should_survive_corrupted_cache(self, _state, monkeypatch):
         (_state / "query_expansion.json").write_text("{ invalido", encoding="utf-8")
-        monkeypatch.setattr(query_expansion, "chat", lambda messages: "termo")
+        monkeypatch.setattr(query_expansion, "chat", lambda messages, **_kw: "termo")
 
         assert "termo" in query_expansion.expand_query("pergunta", "terms")

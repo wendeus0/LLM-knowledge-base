@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from kb.client import chat
+from kb.sampling import params
 
 STRATEGIES = ("terms", "hyde")
 CACHE_FILENAME = "query_expansion.json"
@@ -87,7 +88,9 @@ def expand_query(query: str, strategy: str = "terms") -> str:
             messages=[
                 {"role": "system", "content": _PROMPTS[strategy]},
                 {"role": "user", "content": query},
-            ]
+            ],
+            # Gerar vocabulário técnico plausível pede alguma folga.
+            **params("generative"),
         )
     except Exception as exc:
         print(f"aviso: expansão de query indisponível ({exc}) — usando a pergunta original", file=sys.stderr)

@@ -5,6 +5,7 @@ import re
 from kb.client import chat
 from kb.config import WIKI_DIR
 from kb.guardrails import assert_safe_for_provider
+from kb.sampling import params
 
 SYSTEM = """Você é um auditor de knowledge base. Analise os artigos fornecidos e identifique:
 1. Inconsistências ou informações contraditórias entre artigos
@@ -43,7 +44,9 @@ def lint_wiki(allow_sensitive: bool = False) -> str:
         messages=[
             {"role": "system", "content": SYSTEM},
             {"role": "user", "content": f"Artigos da wiki:\n\n{context}"},
-        ]
+        ],
+        # Auditoria: relatar o que existe, não imaginar problemas.
+        **params("analytical"),
     )
 
     if broken:

@@ -12,6 +12,7 @@ from kb.frontmatter import parse
 from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
+from kb.sampling import params
 
 SYSTEM = """Você é um editor de knowledge base. Dado um artigo em markdown:
 1. Encontre conceitos mencionados sem [[wikilink]] e adicione-os
@@ -110,7 +111,9 @@ def heal(
             messages=[
                 {"role": "system", "content": SYSTEM},
                 {"role": "user", "content": text},
-            ]
+            ],
+            # Editar sem inventar: o prompt proíbe alterar conteúdo substantivo.
+            **params("analytical"),
         )
 
         if response.strip() == "NO_CHANGES":

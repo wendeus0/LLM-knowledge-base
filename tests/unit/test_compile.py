@@ -383,7 +383,7 @@ class TestCompileMany:
         first.write_text("# Second\nConteúdo")
         second.write_text("# First\nConteúdo")
 
-        def fake_chat(*, messages):
+        def fake_chat(*, messages, **_kw):
             prompt = messages[1]["content"]
             if "b-second.md" in prompt:
                 return """---
@@ -429,7 +429,7 @@ Conteúdo do primeiro arquivo.
         good.write_text("# Good\nConteúdo")
         bad.write_text("# Bad\nConteúdo")
 
-        def fake_chat(*, messages):
+        def fake_chat(*, messages, **_kw):
             prompt = messages[1]["content"]
             if "bad.md" in prompt:
                 raise RuntimeError("provider failed")
@@ -470,7 +470,7 @@ Conteúdo bom.
         max_active_calls = 0
         lock = threading.Lock()
 
-        def fake_chat(*, messages):
+        def fake_chat(*, messages, **_kw):
             nonlocal active_calls, max_active_calls
             prompt = messages[1]["content"]
             source_name = prompt.splitlines()[0].split(":", 1)[1].strip()

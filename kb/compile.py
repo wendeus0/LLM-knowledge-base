@@ -22,6 +22,7 @@ from kb.frontmatter import parse
 from kb.fsutil import atomic_write_text
 from kb.git import commit
 from kb.guardrails import assert_safe_for_provider
+from kb.sampling import params
 from kb.state import (
     extract_summary,
     find_compiled_entry,
@@ -312,7 +313,9 @@ def compile_to_artifact(
                         raw_path, content, book_context=book_context
                     ),
                 },
-            ]
+            ],
+            # Redigir artigo em prosa a partir da fonte.
+            **params("generative"),
         )
     except Exception as exc:
         if not is_provider_resource_limit_error(exc):
@@ -335,7 +338,8 @@ def compile_to_artifact(
                         book_context=book_context,
                     ),
                 },
-            ]
+            ],
+            **params("generative"),
         )
 
     compiled_markdown = _strip_outer_fence(response)
