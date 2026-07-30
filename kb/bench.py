@@ -227,8 +227,9 @@ def run_bench(
     depth = max(k, 10)
 
     if rerank_depth:
-        from kb.rerank import reset_stats
+        from kb.rerank import preflight, reset_stats
 
+        preflight()
         reset_stats()
 
     semantic_active = False

@@ -100,8 +100,52 @@ def _cache_path() -> Path:
     return Path(config.STATE_DIR) / CACHE_FILENAME
 
 
+def rerank_model() -> str:
+    """Modelo do rerank; cai para o modelo geral quando não há um dedicado."""
+    return os.getenv("KB_RERANK_MODEL") or os.getenv("KB_MODEL", "")
+
+
+def rerank_base_url() -> str:
+    return os.getenv("KB_RERANK_BASE_URL") or os.getenv("KB_BASE_URL", "")
+
+
+def _call_llm(messages: list[dict]) -> str:
+    """Fronteira de rede do rerank — provider próprio quando configurado."""
+    dedicated_url = os.getenv("KB_RERANK_BASE_URL")
+    if not dedicated_url:
+        return chat(messages=messages, model=rerank_model())
+
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=os.getenv("KB_RERANK_API_KEY", "ollama"), base_url=dedicated_url
+    )
+    response = client.chat.completions.create(
+        model=rerank_model(), messages=messages
+    )
+    return response.choices[0].message.content or ""
+
+
+def preflight() -> None:
+    """Confirma que o provider de rerank responde, antes de rodar um lote.
+
+    Existe porque uma queda de energia derrubou o túnel no meio de uma medição:
+    152 chamadas falharam, cada uma degradou corretamente para a ordem original,
+    e o resultado final foi idêntico à baseline — 18 minutos para produzir um
+    número que parecia válido e não media nada.
+    """
+    try:
+        _call_llm([{"role": "user", "content": "Responda apenas: 1"}])
+    except Exception as exc:
+        raise RuntimeError(
+            f"provider de rerank não respondeu ({rerank_base_url() or 'default'}, "
+            f"modelo {rerank_model()}): {exc}. Corrija antes de rodar o lote — "
+            "sem isso a medição degrada para a baseline sem avisar."
+        ) from exc
+
+
 def _cache_key(question: str, candidates: list[dict]) -> str:
-    model = os.getenv("KB_MODEL", "")
+    model = rerank_model()
     slugs = "|".join(candidate.get("slug", "") for candidate in candidates)
     return hashlib.sha256(f"{model}|{question}|{slugs}".encode()).hexdigest()
 
@@ -148,8 +192,8 @@ def rerank(question: str, candidates: list[dict]) -> list[dict]:
     )
 
     try:
-        answer = chat(
-            messages=[
+        answer = _call_llm(
+            [
                 {"role": "system", "content": _PROMPT},
                 {"role": "user", "content": f"Pergunta: {question}\n\nCandidatos:\n{listing}"},
             ]

@@ -46,14 +46,14 @@ class TestParseOrder:
 
 class TestRerank:
     def test_should_reorder_by_llm_judgement(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "3, 1, 2")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "3, 1, 2")
 
         ordered = rerank_module.rerank("pergunta", CANDIDATES)
 
         assert [c["slug"] for c in ordered] == ["charlie", "alpha", "bravo"]
 
     def test_should_append_omitted_candidates_in_original_order(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "3")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "3")
 
         ordered = rerank_module.rerank("pergunta", CANDIDATES)
 
@@ -64,7 +64,7 @@ class TestRerank:
         def _boom(messages):
             raise RuntimeError("provider fora")
 
-        monkeypatch.setattr(rerank_module, "chat", _boom)
+        monkeypatch.setattr(rerank_module, "_call_llm", _boom)
 
         ordered = rerank_module.rerank("pergunta", CANDIDATES)
 
@@ -72,14 +72,14 @@ class TestRerank:
         assert "rerank" in capsys.readouterr().err.lower()
 
     def test_should_keep_original_order_when_answer_unparseable(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "sei lá")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "sei lá")
 
         ordered = rerank_module.rerank("pergunta", CANDIDATES)
 
         assert [c["slug"] for c in ordered] == ["alpha", "bravo", "charlie"]
 
     def test_should_never_lose_a_candidate(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "2")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "2")
 
         ordered = rerank_module.rerank("pergunta", CANDIDATES)
 
@@ -88,7 +88,7 @@ class TestRerank:
     def test_should_not_call_llm_twice_for_same_input(self, _state, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            rerank_module, "chat", lambda messages: calls.append(1) or "1, 2, 3"
+            rerank_module, "_call_llm", lambda messages: calls.append(1) or "1, 2, 3"
         )
 
         rerank_module.rerank("pergunta", CANDIDATES)

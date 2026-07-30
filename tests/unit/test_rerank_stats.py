@@ -46,7 +46,7 @@ class TestParseOrderStats:
 
 class TestAccumulatedStats:
     def test_should_accumulate_across_calls(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "1, 2, 3")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "1, 2, 3")
 
         rerank_module.rerank("q1", _candidates(20))
         rerank_module.rerank("q2", _candidates(20))
@@ -57,7 +57,7 @@ class TestAccumulatedStats:
         assert stats["requested_total"] == 40
 
     def test_should_flag_severe_omission(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "1, 2")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "1, 2")
 
         rerank_module.rerank("q", _candidates(20))
 
@@ -65,7 +65,7 @@ class TestAccumulatedStats:
 
     def test_should_not_flag_severe_omission_when_mostly_complete(self, _state, monkeypatch):
         monkeypatch.setattr(
-            rerank_module, "chat", lambda messages: ", ".join(str(i) for i in range(1, 20))
+            rerank_module, "_call_llm", lambda messages: ", ".join(str(i) for i in range(1, 20))
         )
 
         rerank_module.rerank("q", _candidates(20))
@@ -76,21 +76,21 @@ class TestAccumulatedStats:
         def _boom(messages):
             raise RuntimeError("fora")
 
-        monkeypatch.setattr(rerank_module, "chat", _boom)
+        monkeypatch.setattr(rerank_module, "_call_llm", _boom)
 
         rerank_module.rerank("q", _candidates(20))
 
         assert rerank_module.stats()["failed"] == 1
 
     def test_should_count_unparseable_answer(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "sei lá")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "sei lá")
 
         rerank_module.rerank("q", _candidates(20))
 
         assert rerank_module.stats()["unparseable"] == 1
 
     def test_should_count_cache_hit_separately_from_call(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "1, 2, 3")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "1, 2, 3")
 
         rerank_module.rerank("q", _candidates(20))
         rerank_module.rerank("q", _candidates(20))
@@ -100,7 +100,7 @@ class TestAccumulatedStats:
         assert stats["cache_hits"] == 1
 
     def test_should_reset(self, _state, monkeypatch):
-        monkeypatch.setattr(rerank_module, "chat", lambda messages: "1")
+        monkeypatch.setattr(rerank_module, "_call_llm", lambda messages: "1")
         rerank_module.rerank("q", _candidates(20))
 
         rerank_module.reset_stats()
