@@ -8,7 +8,9 @@ type: project
 
 Atualizada: 2026-07-30
 
-- **Branch:** `main` @ `5e50f91` — a `feat/semantic-retrieval-foundation` (16 commits) foi mergeada em `f694190` e publicada; CI verde
+- **Branch:** `main` @ `94459e3` — a `feat/semantic-retrieval-foundation` (16 commits) foi mergeada em `f694190` e publicada; CI verde
+- **Retrieval na CLI:** `kb search --rerank N` (opt-in) e `kb qa` com rerank ligado por padrão. Até 2026-07-30 o ganho medido não alcançava comando nenhum
+- **Decisão registrada:** ADR-0017 supera o ADR-0004; `stable_decisions.md` D16 supera D4
 - **Tests:** `602 passed, 0 failed` ✅ — cobertura 92%
 - **Features abertas:** só `010-multi-vault-foundation` (`draft`); 008/009 e 011–022 arquivadas em `features/_archived/`
 - **Servidores locais:** LaunchAgents `com.wendeus.kb-embed` (:1234, watchdog 60s) e `com.wendeus.kb-rerank` (:8081, KeepAlive) sobem no login; logs em `~/Library/Logs/kb-*.log`
