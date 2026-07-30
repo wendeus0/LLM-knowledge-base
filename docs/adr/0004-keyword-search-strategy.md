@@ -1,8 +1,13 @@
 # ADR 0004: Estratégia de Busca por Keywords Simples
 
-**Status:** Aceito  
+**Status:** Superado por [ADR 0017](0017-hybrid-retrieval-with-measured-llm-rerank.md) em 2026-07-30  
 **Data:** 2026-04-04  
 **Autor:** Sistema kb
+
+> Dois dos gatilhos de revisão previstos aqui dispararam: busca semântica (§2) e
+> ranking avançado por BM25 (§3). O canal de keywords **não foi removido** — ele
+> continua sendo um dos quatro rankings fundidos por RRF, e este ADR permanece a
+> explicação de por que ele é como é. O que mudou é que deixou de ser o único.
 
 ---
 

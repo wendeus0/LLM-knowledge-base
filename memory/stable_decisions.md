@@ -30,11 +30,13 @@ type: project
 
 ---
 
-### D4: Busca lexical simples antes de embeddings
+### D4: Busca lexical simples antes de embeddings — SUPERADA por D16 (2026-07-30)
 
 **Why:** A escala atual não justifica complexidade extra.
 
 **How to apply:** Embeddings só entram quando o tamanho/qualidade da busca lexical deixarem de ser suficientes.
+
+**Status:** a condição prevista aqui se cumpriu — o corpus chegou a 1.033 artigos e a busca lexical media `recall@5` 0,230. Ver D16 e ADR-0017. O canal lexical não foi removido: continua sendo 3 dos 4 rankings fundidos.
 
 ---
 
@@ -123,3 +125,11 @@ type: project
 **Why:** TOPICS hardcoded não escala com o corpus do usuário. Taxonomia derivável em runtime é mais flexível.
 
 **How to apply:** `KB_TOPICS` env var configura a taxonomia em runtime; quando vazia, a engine usa defaults históricos. compile/qa consomem helpers de config para prompts e resolução de diretório wiki.
+
+---
+
+### D16: Retrieval híbrido, e toda mudança de ranking passa por medição (ADR-0017)
+
+**Why:** supera D4. O corpus ultrapassou a escala em que lexical bastava, e a diferença é medida, não estimada: `recall@5` 0,230 → 0,467, MRR 0,127 → 0,343 no golden de 152 casos. Mais importante que o número é o método — três hipóteses plausíveis (chunking, expansão por termos, modelo de rerank mais rápido) foram **rejeitadas por medição**, e a última era pior que não reordenar.
+
+**How to apply:** ranking é RRF de keyword, densidade, BM25 e semântico, com rerank opcional por LLM a temperatura 0. Nenhuma mudança de retrieval entra sem `kb bench` antes e depois. Sem vector store até ~5.000 artigos. Embeddings locais — o corpus não vai a provider externo para indexar.
