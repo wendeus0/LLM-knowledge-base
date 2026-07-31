@@ -15,6 +15,7 @@ REQ-8: write local é padrão; commit é explícito
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 # RED: falha até ingest-url ser implementada
 from kb.web_ingest import (  # noqa: E402
@@ -505,7 +506,7 @@ class TestSSRFPinning:
             "kb.web_ingest.socket.getaddrinfo",
             lambda *a, **kw: _addrinfo("93.184.216.34", "8.8.8.8"),
         )
-        assert _resolve_and_validate("example.com") == "93.184.216.34"
+        assert _resolve_and_validate("example.com") == ["93.184.216.34", "8.8.8.8"]
 
     def test_should_pin_validated_ip_on_https(self, tmp_path, monkeypatch):
         """O request HTTPS vai para o IP validado, não para o hostname."""
@@ -642,3 +643,98 @@ class TestPinningBehindProxy:
             adapter.poolmanager.connection_pool_kw.get("server_hostname")
             == "example.com"
         )
+
+
+class TestBlockedRangesCoverage:
+    """Encapsulamentos de IPv4 em IPv6 e faixas reservadas."""
+
+    @pytest.mark.parametrize(
+        "endereco",
+        [
+            "64:ff9b::7f00:1",       # NAT64 well-known -> 127.0.0.1
+            "64:ff9b::a9fe:a9fe",    # NAT64 -> 169.254.169.254 (metadata cloud)
+            "2002:7f00:1::",         # 6to4 -> 127.0.0.1
+            "::7f00:1",              # IPv4-compatible deprecado
+            "240.0.0.1",             # reservado
+            "192.0.0.1",
+            "192.0.2.1",
+            "198.51.100.1",
+            "203.0.113.1",
+        ],
+    )
+    def test_should_reject_encapsulated_and_reserved_addresses(
+        self, monkeypatch, endereco
+    ):
+        familia = 30 if ":" in endereco else 2
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(familia, 1, 6, "", (endereco, 0))],
+        )
+
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url(f"https://host.test/{endereco}")
+
+
+class TestMultiAddressFallback:
+    def test_should_try_next_validated_address_when_first_refuses(self, monkeypatch):
+        """
+        Dado um host dual-stack cujo primeiro endereço não conecta,
+        Quando a ingestão roda,
+        Então o segundo endereço validado é tentado — pinar só o primeiro
+        perdia o fallback que o urllib3 fazia sozinho
+        """
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [
+                (30, 1, 6, "", ("2001:db8::1", 0)),
+                (2, 1, 6, "", ("93.184.216.34", 0)),
+            ],
+        )
+
+        tentados = []
+
+        def fake_get(url, host_header, server_hostname, scheme):
+            tentados.append(url)
+            if "2001:db8" in url:
+                raise requests.ConnectionError("sem rota")
+            response = MagicMock()
+            response.status_code = 200
+            response.text = HTML_SAMPLE
+            response.raise_for_status = MagicMock()
+            return response
+
+        monkeypatch.setattr("kb.web_ingest._http_get", fake_get)
+
+        with patch("kb.web_ingest.commit"):
+            ingest_url("https://dual.test/artigo")
+
+        assert len(tentados) == 2
+        assert "93.184.216.34" in tentados[1]
+
+    def test_should_not_fall_through_on_tls_error(self, monkeypatch):
+        """
+        Dado erro de TLS no primeiro endereço,
+        Quando a ingestão roda,
+        Então NÃO tenta o próximo — certificado inválido é do servidor certo,
+        e mascarar isso trocaria uma falha de segurança por uma tentativa a mais
+        """
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [
+                (2, 1, 6, "", ("93.184.216.34", 0)),
+                (2, 1, 6, "", ("93.184.216.35", 0)),
+            ],
+        )
+
+        tentados = []
+
+        def fake_get(url, host_header, server_hostname, scheme):
+            tentados.append(url)
+            raise requests.exceptions.SSLError("hostname mismatch")
+
+        monkeypatch.setattr("kb.web_ingest._http_get", fake_get)
+
+        with pytest.raises(WebIngestError):
+            ingest_url("https://tls.test/artigo")
+
+        assert len(tentados) == 1
