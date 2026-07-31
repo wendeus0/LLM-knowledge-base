@@ -185,3 +185,12 @@ Achados de leitura durante o `wayfinder` de política de corpus (`docs/research/
 | Prioridade | Item | Contexto | Data |
 | --- | --- | --- | --- |
 | P3 | **`.gitignore` exclui `docs/reports/`, mas 12 relatórios estão versionados** | `.gitignore:21` tem `docs/reports/`; ao mesmo tempo `git ls-files` lista 12 arquivos tracked ali (`COVERAGE_2026-04-22.md`, `DEBT_2026-04-22.md`, `SECURITY_AUDIT_2026-04-07.md`, a série `CODEBASE_SPEC_COMPLIANCE_*`). A regra só afeta untracked, então os antigos seguem versionados e os novos exigem `git add -f` — foi o caso do relatório deste sprint. O `CLAUDE.md` § "Layout de docs" documenta `docs/reports/` como "relatórios datados (cobertura, débito, auditoria, conformidade)", o que contradiz o ignore. Decidir: versionar relatórios (remover a linha do gitignore) ou não (destrackear os 12 e ajustar o CLAUDE.md) | 2026-07-31 |
+
+## Sessão 2026-07-31 — review do PR #50 (colisão de stem)
+
+Achados do review adversarial (Codex + Opus fresco) fora do escopo do PR — mesma classe do bug corrigido, em outros módulos.
+
+| Prioridade | Item | Contexto | Data |
+| --- | --- | --- | --- |
+| P2 | **`kb/graph.py`, `kb/archive.py` e `kb/lint.py` ainda chaveiam por stem** | `graph.py:23` (`candidate.stem == slug`): wikilink `[[honeycomb]]` resolve para o homônimo que o `rglob` achar primeiro. `archive.py:40,49` (`_normalize_link(p.stem)` para órfãos): linkar um homônimo faz o outro parecer linkado e bloqueia seu arquivamento. `lint.py:26` (`{p.stem.lower()}`): mesmo colapso na detecção de link quebrado. O vault tem 4 stems duplicados. Corrigir com a mesma identidade `rel_slug` do PR #50 — mas wikilinks por stem são a convenção do Obsidian, então graph/archive/lint precisam decidir entre desambiguar (custo de UX) ou documentar a resolução "primeiro achado" | 2026-07-31 |
+| P3 | **Efeitos operacionais do PR #50 a lembrar na próxima medição** | (1) Cache do rerank invalidado por inteiro — slug novo muda todas as chaves de `_cache_key`; as 611 entradas de `kb_state/rerank.json` viram lixo inalcançável e a próxima `kb bench --rerank 20` re-emite as 152 chamadas (~18 min). (2) `--sample-seed` não reproduz amostras antigas — o pool mudou de stems para rel slugs (medido: 1 em comum de 30 com seed 42). (3) O pool de geração cresceu 1.035 → 1.039: os 4 homônimos agora são amostráveis | 2026-07-31 |
