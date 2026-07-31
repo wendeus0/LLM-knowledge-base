@@ -28,10 +28,11 @@ Conteúdo irrelevante para a query.
 """
 
 
-def _fake_semantic(path, heading="Seção Alvo"):
-    def fake(query, index, with_headings=False):
+def _fake_semantic(path, heading="Seção Alvo", ordinal=0, content_hash=""):
+    def fake(query, index):
         ranking = [(path, 0.9)]
-        return (ranking, {path: heading}) if with_headings else ranking
+        info = {path: {"heading": heading, "ordinal": ordinal, "hash": content_hash}}
+        return ranking, info
 
     return fake
 
@@ -134,24 +135,113 @@ class TestSemanticRankingHeadings:
             },
         }
 
-        ranking, headings = semantic_ranking("consulta", index, with_headings=True)
+        ranking, best_chunks = semantic_ranking("consulta", index)
 
         assert ranking[0][0].name == "a.md"
-        assert headings[ranking[0][0]] == "no alvo"
+        assert best_chunks[ranking[0][0]]["heading"] == "no alvo"
+        assert best_chunks[ranking[0][0]]["ordinal"] == 1
 
-    def test_should_keep_legacy_return_without_headings(self, tmp_path, monkeypatch):
-        """Contrato antigo preservado: sem a flag, retorna só o ranking."""
+    def test_should_return_empty_pair_when_embed_fails(self, tmp_path, monkeypatch):
+        """Falha de embed degrada para ([], {}) — fallback lexical sem quebra."""
         monkeypatch.setattr("kb.config.WIKI_DIR", tmp_path)
-        monkeypatch.setattr(
-            "kb.embeddings.embed_texts",
-            lambda texts, model=None, base_url=None: [[1.0, 0.0]],
-        )
+
+        def boom(texts, model=None, base_url=None):
+            raise RuntimeError("servidor fora")
+
+        monkeypatch.setattr("kb.embeddings.embed_texts", boom)
         index = {"articles": {"a.md": {"chunks": [{"heading": "h", "vector": [1.0, 0.0]}]}}}
 
-        ranking = semantic_ranking("consulta", index)
+        ranking, best_chunks = semantic_ranking("consulta", index)
 
-        assert isinstance(ranking, list)
-        assert ranking[0][0].name == "a.md"
+        assert ranking == []
+        assert best_chunks == {}
+
+
+class TestExactChunkSnippet:
+    def test_should_pick_second_homonym_section_when_its_chunk_wins(self, tmp_wiki, monkeypatch):
+        """
+        Dado um artigo com dois headings `Exemplos` idênticos,
+        Quando o chunk vencedor é o segundo (hash confere, ordinal aponta),
+        Então o snippet vem da segunda seção, não da primeira homônima
+        """
+        from kb.embeddings import _content_hash
+
+        corpo_a = "Primeiro exemplo genérico de configuração. " * 8
+        corpo_b = "O disjuntor semiaberto testa uma chamada por vez. " * 8
+        artigo = (
+            "---\ntitle: Guia\n---\n"
+            f"## Exemplos\n\n{corpo_a}\n\n"
+            f"## Meio\n\n{'Conteúdo intermediário da seção do meio. ' * 8}\n\n"
+            f"## Exemplos\n\n{corpo_b}\n"
+        )
+        wiki = tmp_wiki
+        path = wiki / "ai" / "guia.md"
+        path.write_text(artigo)
+
+        from kb.chunking import build_chunks
+        from kb.embeddings import _DOCUMENT_PREFIX
+
+        chunks = build_chunks("Guia", artigo, max_chars=8000 - len(_DOCUMENT_PREFIX))
+        alvo = next(
+            i for i, c in enumerate(chunks) if c["heading"] == "Exemplos" and "disjuntor" in c["text"]
+        )
+
+        monkeypatch.setattr("kb.embeddings.load_index", lambda state_dir: {"articles": {"x": 1}})
+        monkeypatch.setattr(
+            "kb.embeddings.semantic_ranking",
+            _fake_semantic(path, heading="Exemplos", ordinal=alvo, content_hash=_content_hash(artigo)),
+        )
+
+        results = search("resiliencia distribuida", top_k=5, mode="hybrid")
+
+        assert "disjuntor" in results[0]["snippet"]
+
+    def test_should_fall_through_when_named_section_is_empty(self, tmp_wiki, monkeypatch):
+        """
+        Dado heading que aponta para uma seção vazia (heading colado no próximo),
+        Quando o snippet é extraído pelo caminho stale,
+        Então cai para a primeira seção com prosa — seção vazia reintroduzia
+        o snippet vazio que este fix elimina (14 chunks no vault real)
+        """
+        artigo = (
+            "---\ntitle: Guia\n---\n"
+            "## Vazia\n\n"
+            "## Conteudo\n\n"
+            "Texto real que o cosseno casou.\n"
+        )
+        wiki = tmp_wiki
+        path = wiki / "ai" / "vazia.md"
+        path.write_text(artigo)
+
+        monkeypatch.setattr("kb.embeddings.load_index", lambda state_dir: {"articles": {"x": 1}})
+        monkeypatch.setattr("kb.embeddings.semantic_ranking", _fake_semantic(path, heading="Vazia"))
+
+        results = search("resiliencia distribuida", top_k=5, mode="hybrid")
+
+        assert results[0]["snippet"] == "Texto real que o cosseno casou."
+
+    def test_should_skip_code_fence_when_section_starts_with_code(self, tmp_wiki, monkeypatch):
+        """
+        Dado que a seção vencedora começa com bloco de código,
+        Quando o snippet é extraído,
+        Então pula o fence e devolve a primeira linha de prosa
+        """
+        artigo = (
+            "---\ntitle: Guia\n---\n"
+            "## Seção Alvo\n\n"
+            "```python\nprint('oi')\n```\n\n"
+            "A prosa vem depois do bloco de código.\n"
+        )
+        wiki = tmp_wiki
+        path = wiki / "ai" / "codigo.md"
+        path.write_text(artigo)
+
+        monkeypatch.setattr("kb.embeddings.load_index", lambda state_dir: {"articles": {"x": 1}})
+        monkeypatch.setattr("kb.embeddings.semantic_ranking", _fake_semantic(path))
+
+        results = search("resiliencia distribuida", top_k=5, mode="hybrid")
+
+        assert results[0]["snippet"] == "A prosa vem depois do bloco de código."
 
 
 class TestRerankCacheKeySnippets:

@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.markup import escape as rich_escape
 from rich.progress import (
     BarColumn,
     Progress,
@@ -527,7 +528,7 @@ def search(
         )
         lines.append(f"[bold]{r['path'].stem}[/] [dim]({rel})[/] score={r['score']}")
         if r["snippet"]:
-            lines.append(f"  [dim]{r['snippet'][:120]}[/]")
+            lines.append(f"  [dim]{rich_escape(r['snippet'][:120])}[/]")
 
     for line in lines:
         console.print(line)

@@ -119,11 +119,11 @@ def _warn_semantic_degraded(reason: str) -> None:
     )
 
 
-def _semantic_rank(query: str) -> tuple[list[tuple[Path, float]], dict[Path, str]]:
-    """Canal semântico da fusão + heading vencedor por artigo.
+def _semantic_rank(query: str) -> tuple[list[tuple[Path, float]], dict[Path, dict]]:
+    """Canal semântico da fusão + chunk vencedor por artigo.
 
-    Sem índice válido, retorna ([], {}) — fallback lexical. O heading alimenta
-    o snippet de candidato que só o canal semântico recuperou.
+    Sem índice válido, retorna ([], {}) — fallback lexical. O chunk vencedor
+    alimenta o snippet de candidato que só o canal semântico recuperou.
     """
     from kb.config import STATE_DIR
     from kb.embeddings import load_index, semantic_ranking
@@ -132,34 +132,75 @@ def _semantic_rank(query: str) -> tuple[list[tuple[Path, float]], dict[Path, str
     if index is None:
         _warn_semantic_degraded("índice ausente ou de outro modelo; rode `kb index build`")
         return [], {}
-    ranking, headings = semantic_ranking(query, index, with_headings=True)
+    ranking, best_chunks = semantic_ranking(query, index)
     if not ranking:
         _warn_semantic_degraded("servidor de embeddings não respondeu; veja `kb index status`")
-    return ranking, headings
+    return ranking, best_chunks
 
 
-def _section_snippet(path: Path, heading: str) -> str:
-    """Primeira linha de texto da seção que venceu no cosseno.
+def _first_text_line(text: str) -> str:
+    """Primeira linha de prosa: pula heading, fence, tabela e blockquote."""
+    fence = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            fence = not fence
+            continue
+        if fence or not stripped or stripped.startswith(("#", ">", "|")):
+            continue
+        for marker in ("- ", "* ", "+ "):
+            if stripped.startswith(marker):
+                stripped = stripped[len(marker):].strip()
+                break
+        return stripped
+    return ""
 
-    Índice stale (heading renomeado) cai para o primeiro trecho do corpo —
-    snippet genérico ainda é melhor que o LLM julgar por slug.
+
+def _semantic_snippet(path: Path, info: dict) -> str:
+    """Trecho do chunk que venceu no cosseno.
+
+    Arquivo idêntico ao indexado (hash confere) → o mesmo chunking reproduz o
+    chunk exato pelo ordinal — heading repetido e seção dividida não localizam.
+    Índice stale cai para a seção homônima e depois para o primeiro trecho do
+    corpo — snippet genérico ainda é melhor que o LLM julgar por slug.
     """
-    from kb.chunking import split_sections, strip_frontmatter
+    from kb.chunking import build_chunks, split_sections
 
     try:
-        body = strip_frontmatter(path.read_text(encoding="utf-8", errors="replace"))
+        text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
 
-    sections = split_sections(body)
-    chosen = next((text for name, text in sections if name == heading), None)
-    if chosen is None:
-        chosen = sections[0][1] if sections else body
+    if info.get("hash"):
+        from kb.embeddings import _DOCUMENT_PREFIX, _content_hash
 
-    for line in chosen.splitlines():
-        line = line.strip()
-        if line and not line.startswith("#"):
-            return line
+        if _content_hash(text) == info["hash"]:
+            from kb.frontmatter import parse
+
+            meta, _ = parse(text)
+            title = str(meta.get("title") or path.stem).strip()
+            chunks = build_chunks(title, text, max_chars=8000 - len(_DOCUMENT_PREFIX))
+            ordinal = info.get("ordinal", -1)
+            if 0 <= ordinal < len(chunks):
+                # O texto do chunk começa pelo prefixo "título — heading"; pula-o.
+                piece = chunks[ordinal]["text"].split("\n", 1)[-1]
+                snippet = _first_text_line(piece)
+                if snippet:
+                    return snippet
+
+    sections = split_sections(text)
+    heading = info.get("heading", "")
+    chosen = next((section for name, section in sections if name == heading), None)
+    if chosen is not None:
+        snippet = _first_text_line(chosen)
+        if snippet:
+            return snippet
+    # Seção homônima vazia ou ausente: primeira seção com prosa de verdade —
+    # sem isso, heading de seção vazia reintroduzia o snippet vazio original.
+    for _, section in sections:
+        snippet = _first_text_line(section)
+        if snippet:
+            return snippet
     return ""
 
 
@@ -235,7 +276,7 @@ def search(
         ]
 
     rankings = [keyword_rank, density_rank, bm25_rank]
-    semantic_headings: dict[Path, str] = {}
+    semantic_headings: dict[Path, dict] = {}
     if mode == "hybrid":
         semantic_query = query
         if expand:
@@ -270,7 +311,7 @@ def search(
     for path in ranked_paths[:fetch]:
         snippet = snippets.get(path, "")
         if not snippet and path in semantic_headings:
-            snippet = _section_snippet(path, semantic_headings[path])
+            snippet = _semantic_snippet(path, semantic_headings[path])
         results.append(
             {
                 "path": path,
