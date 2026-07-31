@@ -4,41 +4,46 @@ description: Estado para a próxima sessão
 type: project
 ---
 
-## Handoff — 2026-07-30 (encerramento)
+## Handoff — 2026-07-31 (sprint da política de corpus)
 
-### Onde paramos
+### Onde parou
 
-`main` @ `94459e3`, tudo pushado, working tree limpo, `602 passed` / 92% / ruff limpo. CI verde.
+`main` @ `6cd8d88`, tudo pushado, PR #46 mergeado, CI verde em 3.11/3.12/3.13. Working tree limpo. `608 passed` / 91%.
 
-A branch `feat/semantic-retrieval-foundation` (16 commits) foi mergeada em `f694190` com `--no-ff`. Nada pendente de publicação.
+O sprint respondeu a pergunta que o abriu — *"posso usar o KB para estudar, ou preciso refazer o vault?"* — e a resposta é **nenhum dos dois**. O retrieval já estava consertado (ADR-0017, sprint anterior). O corpus **não é raso**: mediana de 10 headings por artigo, 93% com ≥5. O gargalo é a **camada de compilação**, e o primeiro conserto dela foi entregue.
 
-### O resultado que importa
+### O que entrou
 
-Retrieval saiu de `recall@5 = 0,230` (lexical) para **0,467**, e MRR de `0,127` para **0,343**. Cada ganho medido contra um golden de 152 casos, não estimado.
+- **Wayfinder da política de corpus** — `docs/research/2026-07-30-politica-de-corpus/`, 8 tickets. Destination: ADR que trava origem do conhecimento novo, destino dos 1.037 artigos, wiki como produto ou insumo, e superfície de leitura.
+- **Gate de saída do compile** — `_validate_output` barra seção declarada e vazia e placeholder do template não substituído. Reconhece placeholder comparando com os marcadores reais do template, então `<T extends Base>` e `<div>` passam; cobre o markdown inteiro, frontmatter incluído. 7 testes. Calibrado contra o corpus: 1 reprovado em 1.039 (0,10%).
+- **Infra local medida** — `-ctk q8_0 -ctv q8_0` e `--ctx-size 65536` em `start-bonsai-server.sh`. Footprint 9.609 → 3.178 MB **com 4× o contexto**; o compile de documento de 11k tokens deixou de falhar.
 
-O que funcionou: **canal semântico** (+18pp) e **rerank do top-20 a temperatura 0** (+42% de MRR). O que **não** funcionou, registrado como negativo no ADR-0017 para não ser retentado: chunking por seção, expansão por termos, e trocar o modelo de rerank por um 13× mais rápido (pior que não reordenar).
+### Tickets resolvidos
 
-### O que esta sessão mudou além dos números
+**002 — travessia do caso Google Dorking.** Seis atritos registrados. Os que mais importam: `kb ingest` de página JS-dinâmica traz **zero conteúdo e reporta sucesso** (o GHDB veio só com `"This site requires JavaScript"`); o `qa --deep` é melhor que o `fast` mas custa 2,7× o tempo; e **erro de compile se propaga ao QA** — `"filetype: Concorda apenas um tipo de arquivo"` chegou íntegro às duas respostas medidas. A duplicação prevista aconteceu: o mesmo documento OWASP virou dois artigos, e `wiki/cybersecurity/` foi de 11 para 13.
 
-1. **O ganho medido não chegava a ninguém.** `rerank_depth` só era passado pelo `bench`; nem `kb search` nem `kb qa` o expunham. Agora `--rerank N` no search (opt-in, 2,7s → 36,7s) e ligado por padrão no `qa` (2m15 → 2m26, `--no-rerank` para sair).
-2. **`--commit` nunca versionou nada.** `kb/git.py` resolvia contra o repo do código; com `KB_DATA_DIR` fora dele, o path era descartado e a função retornava `True`. Corrigido, e `~/vault` virou repo git.
-3. **Os servidores locais sobem no login.** LaunchAgents `com.wendeus.kb-embed` (:1234, `StartInterval` 60s com watchdog idempotente) e `com.wendeus.kb-rerank` (:8081, `KeepAlive`). Mecanismos diferentes porque `lms server start` retorna e `llama-server` fica em foreground.
-4. **ADR-0017** registra a decisão de retrieval e supera o ADR-0004, cujos próprios gatilhos de revisão haviam disparado.
-5. **Artefatos sincronizados.** `features/` mostra uma frente aberta em vez de quinze; `SDD.md`, `CONTEXT.md` e `.pi/manifest.yaml` deixaram de descrever um produto que não existe mais.
+**003 — medição do corpus.** A conclusão original do subagente estava errada e foi corrigida no próprio documento: "1.022 artigos com uma seção" media aderência ao template, não rasura. Seguem válidos: **1.035 de 1.037 sem nenhuma referência**, **59 pares** com cosseno ≥0,95, e proveniência perdida (compressão fonte→artigo não é mensurável).
 
-### Próximo passo recomendado
+### Próximo passo
 
-**Restringir a saída do rerank** — pedir os N mais relevantes em vez de ordenar 20. A 022 provou que sampling corrige omissão mas **não** alucinação de índice (o granite4 produziu 32 posições fora de faixa mesmo greedy). Encolher o espaço de saída é o que resta. Gate: `kb bench --rerank 20` contra `recall@5 = 0,467 / MRR = 0,343`.
+**Ticket 001** (frontier, P0): proteger o golden de 152 casos e as **869 fontes de `library/` (185 MB, fora do git)**. O ticket 006 discute recompilar o corpus; sem o material bruto, essa opção não existe.
 
-Antes disso, um P1 que continua aberto: **onde o golden set mora**. Hoje em `~/vault/kb_state/bench/golden.json`, num vault que agora é git mas onde `kb_state/` está parcialmente gitignored. Diferente do índice, ele **não é reconstruível** — os 50 casos curados são trabalho manual.
+Depois, **ticket 004** — destravou com 002 e 003 entregues, e é a decisão da qual as outras derivam.
 
-### Ambiente
+### Armadilhas a não repetir
 
-- **Embeddings:** LM Studio :1234, `nomic-embed-text-v2-moe`. Sobe por LaunchAgent.
-- **Rerank:** `bonsai-27b-1bit` :8081 via `start-bonsai-server.sh`. Sobe por LaunchAgent. Logs em `~/Library/Logs/kb-*.log`.
-- **VM `g0dw1n`:** acessível pela tailnet sem túnel (`100.119.208.90:11434`). Não é dedicada (hospeda CI runners) e modelos >8 GB não cabem em 15 GB.
-- **Vault:** `~/vault` é repo git desde hoje (`0160552`, 4.281 arquivos, 50 MB). `.gitignore` exclui `library/` (185 MB), `embeddings.json` (148 MB) e `tracking.db`.
+Três novas em `pitfalls.md`, todas do tipo "o número não media o que parecia":
+
+1. **Medir aderência a template e chamar de rasura** — teria justificado recompilar 1.037 artigos e destruir estrutura existente.
+2. **Compatibilidade de shader não implica offload** — o `Q1_0` tem shader Vulkan e ainda assim rodou 96% em CPU na VM, a 4,71 tok/s contra 17,6 no Metal local.
+3. **Footprint de processo longo mistura vazamento com configuração** — a queda de 8 GB ao quantizar o KV veio do reinício, não da mudança; a conta previa menos de 1 GB.
+
+### Estado da infra
+
+- `:8081` (`llama-server`, bonsai) roda **fora do launchd** apesar de `KeepAlive`, último exit 1. Se morrer, não volta.
+- A VM `g0dw1n` é **Vulkan**, não ROCm — RX 6600, 8 GB de VRAM, 6,4 GB livres. Baixou o `Bonsai-27B-Q1_0` (4,4 GB) no canário; pode ser removido. O `ornith-1.0:35b` foi deletado a pedido (re-baixável do HF).
+- `~/dev/personal/local-ai-lab` tem mudanças não commitadas, incluindo o `start-bonsai-server.sh` editado (untracked naquele repo) e um relatório de infra escrito por um agente.
 
 ### Prompt de retomada
 
-> Retomando o kb. `main` @ `94459e3`, tudo pushado, 602 testes verdes. Leia `memory/project_state.md` para os números de retrieval, `docs/adr/0017-hybrid-retrieval-with-measured-llm-rerank.md` para a decisão e seus gatilhos de revisão, e `PENDING_LOG.md` para o que ficou aberto. O próximo passo planejado é restringir a saída do rerank (pedir top-5 em vez de ordenar 20), com gate no `kb bench --rerank 20` contra `recall@5 = 0,467 / MRR = 0,343`. O P1 que continua aberto é decidir onde versionar o golden set de 152 casos — ele não é reconstruível. Regra que esta sessão custou caro para aprender: ganho medido pelo instrumento pode não existir no produto; verifique pelo comando que o usuário digita.
+> Retomando o kb em `main` @ `6cd8d88`. O map da política de corpus está em `docs/research/2026-07-30-politica-de-corpus/` com 8 tickets; 002 e 003 resolvidos, frontier em 001. Comece pelo ticket 001 — proteger o golden set e as 869 fontes de `library/`, que estão fora do git — e depois trabalhe o 004, que destravou e é a decisão central do map.

@@ -4,11 +4,19 @@ description: Próximos passos priorizados
 type: project
 ---
 
-## Atualizado: 2026-07-30
+## Atualizado: 2026-07-31
+
+### P0 — a mais urgente do sprint
+
+0. **Proteger o que não é reconstruível** (ticket 001 do map, frontier). O golden de 152 casos (`~/vault/kb_state/bench/golden.json`) e as **869 fontes de `library/` (185 MB, fora do git)** sustentam toda decisão sobre o corpus. O ticket 006 discute recompilar; sem o material bruto, essa opção deixa de existir. Barato e destrava o resto do map.
+
+### P1 — decisão central do map, agora destravada
+
+1. **Ticket 004 — a wiki é produto ou insumo?** Destravou com 002 e 003 entregues. Decide se o compile precisa de gate de profundidade, se a definição de artigo robusto de `011/DOMAIN.md` volta, e se a interface do 007 é leitor ou front do `qa`. As outras decisões derivam desta.
 
 ### P1 — baratos e destravam o resto
 
-1. **Decidir onde o golden set de 152 casos mora.** Hoje em `~/vault/kb_state/bench/golden.json`, num vault não versionado. Diferente do índice, **não é reconstruível** — os 50 casos curados são trabalho manual. É a única pendência P1 que sobrou.
+1. ~~Decidir onde o golden set mora~~ — absorvido pelo item 0 acima, que amplia o escopo para `library/`.
 
 ~~2. Documentar a config vencedora no `.env.example`~~ — feito em 2026-07-30.
 ~~3. Push da branch~~ — mergeada em `main` (`f694190`) e publicada.

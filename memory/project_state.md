@@ -6,17 +6,33 @@ type: project
 
 ## Estado global
 
-Atualizada: 2026-07-30
+Atualizada: 2026-07-31
 
-- **Branch:** `main` @ `94459e3` — a `feat/semantic-retrieval-foundation` (16 commits) foi mergeada em `f694190` e publicada; CI verde
-- **Retrieval na CLI:** `kb search --rerank N` (opt-in) e `kb qa` com rerank ligado por padrão. Até 2026-07-30 o ganho medido não alcançava comando nenhum
-- **Decisão registrada:** ADR-0017 supera o ADR-0004; `stable_decisions.md` D16 supera D4
-- **Tests:** `602 passed, 0 failed` ✅ — cobertura 92%
-- **Features abertas:** só `010-multi-vault-foundation` (`draft`); 008/009 e 011–022 arquivadas em `features/_archived/`
-- **Servidores locais:** LaunchAgents `com.wendeus.kb-embed` (:1234, watchdog 60s) e `com.wendeus.kb-rerank` (:8081, KeepAlive) sobem no login; logs em `~/Library/Logs/kb-*.log`
-- **Vault versionado:** `~/vault` é repo git desde 2026-07-30 (commit 0160552, 4.281 arquivos); `kb/git.py` resolve o repo que contém cada arquivo — antes `--commit` era descartado em silêncio
-- **Lint:** ruff `kb tests` clean
-- **Módulos novos:** `sampling.py`, `rerank.py`, `query_expansion.py`, `bench.py`, `chunking.py`, `embed_server.py`, `embeddings.py`, `noise.py`
+- **Branch:** `main` @ `6cd8d88` — PR #46 (`feat/compile-output-gate`) mergeado; CI verde em 3.11/3.12/3.13
+- **Sprint atual:** política de corpus — wayfinder aberto em `docs/research/2026-07-30-politica-de-corpus/`, 8 tickets, 002 e 003 resolvidos
+- **Gate novo:** `_validate_output` barra seção declarada e vazia e placeholder do template não substituído. Calibrado contra o corpus: 1 reprovado em 1.039 (0,10%)
+- **Tests:** `608 passed` — cobertura 91%, `kb/compile.py` em 92%. Uma falha **local** em `test_diff::..._escape_rich_markup` que **passa no CI** (renderização do Rich dependente de TTY)
+- **Decisão registrada:** ADR-0017 supera o ADR-0004; `stable_decisions.md` D16 supera D4. O ADR da política de corpus é o ticket 008 e depende de 004/005/006/007
+- **Features abertas:** só `010-multi-vault-foundation` (`draft`); 008/009 e 011–022 arquivadas
+- **Servidores locais:** `:1234` (LM Studio, embeddings `nomic-embed-text-v2-moe`) e `:8081` (`llama-server`, `bonsai-27b-1bit`). O `:8081` roda **fora do launchd** apesar de `KeepAlive` — processo órfão
+- **Infra local ajustada e medida em 2026-07-31:** `start-bonsai-server.sh` passou a usar `-ctk q8_0 -ctv q8_0` e `--ctx-size 65536`. Footprint 9.609 MB → 3.178 MB **com 4× o contexto**; velocidade inalterada (17,6 → 16,6 tok/s); o compile de documento de 11k tokens deixou de falhar. Backups `.bak-20260731-{kvquant,ctx16k}`. Repo `local-ai-lab`, não versionado
+- **Vault versionado:** `~/vault` é repo git desde 2026-07-30; `library/` (869 fontes, 185 MB) segue **fora do git**
+- **Lint:** ruff `kb` clean
+
+### O que o sprint estabeleceu sobre o corpus
+
+A pergunta que abriu a sessão — "usar o KB ou refazer o vault?" — foi respondida com medição, e a resposta é **nenhum dos dois**:
+
+| Achado | Número |
+|---|---|
+| Corpus **não** é raso | mediana de **10 headings** por artigo; 93% com ≥5; nenhum sem heading |
+| Mas não segue o template atual | mediana de **1** seção com nome do template |
+| Sem bibliografia | **1.035 de 1.037** artigos com zero referências |
+| Near-duplicates reais | **59 pares** com cosseno ≥ 0,95 |
+| Proveniência perdida | `manifest.json` nunca materializado — recompile **duplica** (provado: o mesmo doc OWASP virou 2 artigos) |
+| Erro de compile chega ao leitor | `"filetype: Concorda apenas um tipo de arquivo"` íntegro nas 2 respostas do `qa` medidas |
+
+O gargalo não é o retrieval (medido e consertado no sprint anterior) nem o corpus: é a **camada de compilação**.
 
 ### Retrieval — números medidos (golden de 152 casos, corpus de 1.033 artigos)
 

@@ -158,3 +158,25 @@ Três experimentos seguidos deram deltas de 1 a 2 casos em 50 — dentro do erro
 ### Substituição em lote sem dry-run corrompe import
 
 Script automatizado trocou `from kb.client import ... is_provider_resource_limit_error` por `from kb.sampling import ...` e inseriu import com indentação inválida. `core/rules/workflow-feature.md` § "mudança ampla e mecânica" exige dry-run e conferência de diffstat justamente para isso.
+
+### Medir aderência a template e chamar de "rasura"
+
+Um subagente mediu "1.022 de 1.037 artigos com exatamente uma seção preenchida" e concluiu que a rasura era uniforme no corpus. O detector contava **nomes literais do template** (`Resumo`, `Como funciona`, …). Contando headings reais, a mediana é **10 por artigo**, com 93% acima de 5 e nenhum artigo sem heading.
+
+Os artigos não eram rasos: eram estruturados sob convenção anterior ao template atual. A conclusão errada teria justificado recompilar 1.037 artigos "para consertar rasura" — destruindo estrutura existente.
+
+**Regra:** antes de aceitar um número que reorienta decisão, verifique **o que o detector de fato conta**. Mesmo modo de falha do golden set por título.
+
+### Compatibilidade de tipo no shader não implica offload
+
+Pesquisa de código-fonte confirmou que existe `dequant_q1_0.comp` no backend Vulkan do llama.cpp (merge em b8742) e que o Ollama 0.30.10 usa b9672 — portanto o `Q1_0` "é suportado". O canário real deu `96%/4% CPU/GPU`: o modelo carregou e gerou tokens rodando quase inteiramente em CPU, a 4,71 tok/s contra 17,6 tok/s no Metal local.
+
+A análise estática acertou a existência do shader e errou o prognóstico operacional. **Suporte declarado ≠ caminho de execução acelerado.** Canário antes de migrar serviço.
+
+### Footprint de processo longo mistura vazamento com configuração
+
+Ao quantizar o KV cache do `llama-server`, o footprint caiu de 9.609 MB para 1.540 MB — aparentemente 8 GB economizados. A conta do KV para o modelo (16 das 64 camadas com atenção softmax; 48 são Gated DeltaNet) prevê **menos de 1 GB** de diferença entre `f16` e `q8_0`.
+
+A queda real veio de o processo antigo ter acumulado memória em horas de compile e QA. Comparar "antes" de um processo velho com "depois" de um recém-iniciado mede o reinício, não a mudança.
+
+**Regra:** meça as duas configurações a partir de processos igualmente aquecidos, com a mesma carga. A medição válida foi a seguinte: 16k → 64k com o mesmo KV `q8_0` custou 1.638 MB, batendo com a previsão da fórmula.
