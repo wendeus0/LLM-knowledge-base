@@ -30,6 +30,21 @@ Custo, para dimensionar: 1.037 a 2.074 chamadas generativas com documento inteir
 - Se arquivar: qual o critério de corte, e ele é reversível?
 - O que acontece com `topics/` (3.584 arquivos, 87 MB) e `_summaries/` (1.022) — derivados que acompanham a decisão.
 
+## Evidência para o grilling
+
+> Compilada em 2026-07-31. Organiza o que a sessão mediu; não decide.
+
+**A opção "recompilar" ficou mais viável em um ponto e continua bloqueada no outro:**
+
+- **O material bruto está protegido** (ticket 001, resolvido): `~/vault` tem remote privado com `library/` versionada via git-lfs — 863 fontes, 161 MB, restauração provada por clone limpo. A opção de recompilar não pode mais ser perdida por falha de disco.
+- **`manifest.json` continua sendo o bloqueio**: nunca foi materializado neste vault, então `find_compiled_entry()` devolve `None` para tudo e um recompile **duplica** em vez de atualizar. Isso agora tem prova empírica, não só teórica: no ticket 002 o mesmo documento OWASP — ingerido uma vez como HTML e outra como markdown — virou **dois artigos** em `wiki/cybersecurity/`, que foi de 11 para 13.
+
+**O custo de recompilar mudou:** o compile agora tem gate de saída (`_validate_output`, PR #46) e container de conteúdo não-confiável (PR #54). Recompilar hoje produz artigos que pelo menos não mentem sobre a própria estrutura. Mas o defeito que 002 achou — seção "Exemplos" sem exemplos, tradução errada no título — **não é pego por nenhum gate**, e as três heurísticas testadas para detectá-lo foram todas descartadas com medição. Recompilar 1.037 artigos hoje reproduziria a mesma classe de defeito em escala.
+
+**A quarta opção (recompilar seletivamente) ganhou um critério concreto:** os **59 pares com cosseno ≥ 0,95** que 003 mediu são um alvo delimitado e verificável — dedup é o V5 do backlog anterior, e o caso OWASP acima é um deles. Recompilar/mesclar 59 pares é outra ordem de grandeza que recompilar tudo.
+
+**Sobre arquivar:** as duas políticas de remoção continuam convivendo (`heal.py` faz `unlink`, `archive.py` move com backup). Nada mudou aqui.
+
 ## Answer
 
 <!-- preencher na resolução -->
