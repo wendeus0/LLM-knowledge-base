@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from kb.jobs import (
     HealthGateError,
     build_operational_cron_lines,
@@ -276,6 +278,35 @@ def test_discovery_job_should_commit_when_autocommit_is_opted_in(
 
     assert mock_discovery.call_args.kwargs["no_commit"] is False
     assert "aguardando revisão" not in output
+
+
+@pytest.mark.parametrize(
+    "valor,commita",
+    [
+        ("1", True),
+        ("true", True),
+        ("TRUE", True),
+        (" yes ", True),
+        ("on", True),
+        ("0", False),
+        ("false", False),
+        ("", False),
+        ("sim", False),
+        ("2", False),
+    ],
+)
+def test_discovery_autocommit_should_parse_flag_conservatively(
+    tmp_raw_wiki, monkeypatch, valor, commita
+):
+    """Fail-safe: só a allowlist liga o commit; qualquer outra coisa mantém desligado."""
+    monkeypatch.setenv("KB_DISCOVERY_AUTOCOMMIT", valor)
+
+    with patch("kb.discovery.run_scheduled_discovery") as mock_discovery:
+        mock_discovery.return_value = _discovery_result()
+
+        run_job("discovery")
+
+    assert mock_discovery.call_args.kwargs["no_commit"] is not commita
 
 
 def test_build_operational_cron_lines_should_include_staggered_chain():

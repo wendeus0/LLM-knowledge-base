@@ -187,6 +187,7 @@ def generate_cases(
     from kb.client import chat
     from kb.embeddings import _iter_articles
     from kb.frontmatter import parse
+    from kb.guardrails import new_sentinel, untrusted_policy, wrap_untrusted
     from kb.sampling import params
 
     articles = {
@@ -201,11 +202,20 @@ def generate_cases(
         meta, body = parse(text)
         title = str(meta.get("title") or Path(slug).name.replace("-", " ")).strip()
 
+        sentinel = new_sentinel()
         try:
             question = chat(
                 messages=[
-                    {"role": "system", "content": _QUESTION_PROMPT},
-                    {"role": "user", "content": f"Título: {title}\n\n{body[:1500]}"},
+                    {
+                        "role": "system",
+                        "content": _QUESTION_PROMPT + untrusted_policy(sentinel),
+                    },
+                    {
+                        "role": "user",
+                        "content": wrap_untrusted(
+                            f"Título: {title}\n\n{body[:1500]}", sentinel
+                        ),
+                    },
                 ],
                 # Casos de avaliação precisam variar: aqui a diversidade é o objetivo.
                 **params("diverse"),

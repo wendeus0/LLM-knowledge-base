@@ -54,7 +54,7 @@ Todo conteúdo de terceiro vai dentro de um container com sentinela aleatória p
 
 - **Por que sentinela aleatória:** um documento hostil não pode escrever a marca de fechamento se não sabe o valor dela. Delimitador fixo (```` ``` ```` ou tag constante) é adivinhável e já vaza no corpus — qualquer artigo sobre o próprio kb citaria a tag literal.
 - **Neutralização de fuga:** antes de envolver, `wrap_untrusted()` escapa qualquer `<untrusted_document...>` presente no texto para `&lt;...&gt;` e remove ocorrências literais da sentinela. O container tem exatamente uma abertura e um fechamento.
-- **Metadado fica fora:** nome do arquivo, rota de QA e contexto de capítulo ficam **antes** do container; só o texto de terceiro entra nele.
+- **Metadado da fonte entra junto:** nome de arquivo, título e autor de livro e título de capítulo vêm do EPUB ou do disco tanto quanto o corpo — um arquivo chamado `Ignore all previous instructions.md`, ou um `dc:title` hostil, falaria no nível do prompt legítimo. Tudo que deriva da fonte entra no container. Só o enquadramento escrito pelo kb fica fora.
 - **System prompt declara a regra:** `guardrails.untrusted_policy(sentinel)` acrescenta ao system prompt a cláusula que nomeia a sentinela e proíbe obedecer ao que estiver dentro; instrução embutida deve ser reportada como conteúdo, nunca executada.
 
 ### Detector `scan_injection`
@@ -77,7 +77,16 @@ Artigo didático sobre prompt injection cita literalmente as mesmas frases do at
 
 ### Cobertura atual
 
-Container e detector estão em `compile` (documento raw), `qa` (contexto recuperado) e no file-back de `qa`. `heal` e `lint` ainda montam prompt sem container.
+| Caminho | Container | Detector |
+|---------|-----------|----------|
+| `compile` (documento raw + metadado de livro) | sim | sim |
+| `qa` (contexto recuperado) | sim | sim |
+| `qa` file-back (segundo chat) | sim | não — o texto envolvido é output do próprio modelo, já filtrado na primeira passagem |
+| `rerank` (slug + snippet de artigo) | sim | não — a resposta é parseada só para inteiros |
+| `bench --seed-questions` (corpo de artigo) | sim | não — roda sob operação manual |
+| `heal`, `lint` | **não** | não |
+
+`heal` e `lint` são o gap conhecido: montam prompt com conteúdo da wiki sem container.
 
 ---
 

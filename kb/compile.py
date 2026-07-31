@@ -248,19 +248,23 @@ def _build_prompt(
 ) -> str:
     label = "Documento pré-processado" if aggressive else "Documento"
     prepared = _prepare_prompt_content(content, aggressive=aggressive)
-    body = wrap_untrusted(prepared, sentinel) if sentinel else prepared
-    prompt = f"{label}: {raw_path.name}\n\n{body}"
-    if not book_context:
-        return prompt
 
-    author = book_context.get("book_author") or "autor desconhecido"
-    preamble = (
-        f"Contexto: capítulo {book_context.get('chapter_index')}/"
-        f"{book_context.get('chapter_count')} "
-        f"(\"{book_context.get('chapter_title')}\") do livro "
-        f"\"{book_context.get('book_title')}\" de {author}."
-    )
-    return f"{preamble}\n{prompt}"
+    # Nome de arquivo, título e autor vêm da fonte tanto quanto o corpo: um
+    # arquivo chamado "Ignore all previous instructions.md" falaria no nível do
+    # prompt legítimo. Metadado de terceiro entra no container junto com o texto.
+    header = f"{label}: {raw_path.name}"
+    if book_context:
+        author = book_context.get("book_author") or "autor desconhecido"
+        header = (
+            f"Contexto: capítulo {book_context.get('chapter_index')}/"
+            f"{book_context.get('chapter_count')} "
+            f"(\"{book_context.get('chapter_title')}\") do livro "
+            f"\"{book_context.get('book_title')}\" de {author}.\n{header}"
+        )
+
+    if not sentinel:
+        return f"{header}\n\n{prepared}"
+    return wrap_untrusted(f"{header}\n\n{prepared}", sentinel)
 
 
 def _is_compile_target(path: Path) -> bool:

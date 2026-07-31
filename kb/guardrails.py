@@ -46,8 +46,11 @@ INJECTION_PATTERNS = {
         r"\b(send|post|envie|poste)\b[^.\n]{0,40}\bhttps?://|"
         r"\b(reveal|leak|revele|vaze|exfiltrate)\b[^.\n]{0,40}\b(api[_ -]?key|token|secret|chave)\b)"
     ),
+    # Alt text e URL limitados: `![` sem fechamento fazia o motor varrer o resto
+    # do documento a cada ocorrência — `"![" * 16000` levava 1,2s, e o compile
+    # processa arquivos de MB.
     "image_exfiltration": re.compile(
-        r"!\[[^\]\n]*\]\(\s*https?://[^)\s]*[?&][^)\s]*\)"
+        r"!\[[^\]\n]{0,200}\]\(\s*https?://[^)\s]{0,400}[?&][^)\s]{0,400}\)"
     ),
 }
 
@@ -100,8 +103,12 @@ def new_sentinel() -> str:
 
 
 def _neutralize_container_markers(text: str, sentinel: str) -> str:
+    # `[^>]` (e não `[^>\n]`) porque tag com newline interno escapava do escape.
+    # Quem de fato impede o fechamento é o replace da sentinela abaixo; este
+    # escape é defesa em profundidade, e defesa em profundidade com buraco vira
+    # buraco no dia em que a outra camada for refatorada.
     escaped = re.sub(
-        rf"(?i)</?\s*{UNTRUSTED_TAG}[^>\n]*>",
+        rf"(?i)</?\s*{UNTRUSTED_TAG}[^>]{{0,200}}>",
         lambda match: match.group(0).replace("<", "&lt;").replace(">", "&gt;"),
         text,
     )
@@ -150,6 +157,21 @@ def scan_injection(text: str) -> list[InjectionFinding]:
     return findings
 
 
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+_URL_QUERY_RE = re.compile(r"(https?://[^\s)]*?)\?[^\s)]*")
+
+
+def sanitize_for_terminal(text: str) -> str:
+    """Deixa um trecho de conteúdo hostil seguro para ir ao stderr.
+
+    O sample vem do documento do atacante: sequência OSC 52 mexe no clipboard
+    de quem lê o aviso, e query string de URL é onde a exfiltração carrega o
+    dado. Um aviso de segurança não pode ser o próprio vetor.
+    """
+    redacted = _URL_QUERY_RE.sub(r"\1?[query-omitida]", text)
+    return _CONTROL_CHARS_RE.sub("?", redacted)
+
+
 def warn_on_injection(text: str, source: str) -> list[InjectionFinding]:
     """Avisa em stderr sobre padrões de injeção e devolve os achados ao chamador."""
     findings = scan_injection(text)
@@ -159,8 +181,8 @@ def warn_on_injection(text: str, source: str) -> list[InjectionFinding]:
             continue
         reported.add(finding.label)
         print(
-            f"[kb] aviso: possível prompt injection em {source}: "
-            f"{finding.label} :: {finding.sample}",
+            f"[kb] aviso: possível prompt injection em {sanitize_for_terminal(source)}: "
+            f"{finding.label} :: {sanitize_for_terminal(finding.sample)}",
             file=sys.stderr,
         )
     return findings

@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 from kb.client import chat
+from kb.guardrails import new_sentinel, untrusted_policy, wrap_untrusted
 from kb.sampling import params
 
 CACHE_FILENAME = "rerank.json"
@@ -200,11 +201,21 @@ def rerank(question: str, candidates: list[dict]) -> list[dict]:
         for index, c in enumerate(candidates, start=1)
     )
 
+    # Slug e snippet vêm de artigos da wiki — conteúdo de terceiro. O dano aqui
+    # é menor (a resposta é parseada só para inteiros), mas um artigo envenenado
+    # controlaria a ordenação do retrieval.
+    sentinel = new_sentinel()
     try:
         answer = _call_llm(
             [
-                {"role": "system", "content": _PROMPT},
-                {"role": "user", "content": f"Pergunta: {question}\n\nCandidatos:\n{listing}"},
+                {"role": "system", "content": _PROMPT + untrusted_policy(sentinel)},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Pergunta: {question}\n\nCandidatos:\n"
+                        f"{wrap_untrusted(listing, sentinel)}"
+                    ),
+                },
             ]
         )
     except Exception as exc:
