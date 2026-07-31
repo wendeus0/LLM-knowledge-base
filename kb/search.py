@@ -148,11 +148,12 @@ def rel_slug(path: Path) -> str:
 
     O stem sozinho colide — o vault tem 4 stems duplicados em topics
     diferentes, e dois no mesmo head faziam um sobrescrever o outro.
+    Fora da wiki (ramo defensivo), o path completo mantém a unicidade.
     """
     try:
-        return str(path.relative_to(WIKI_DIR).with_suffix(""))
+        return path.relative_to(WIKI_DIR).with_suffix("").as_posix()
     except ValueError:
-        return path.stem
+        return path.with_suffix("").as_posix()
 
 
 def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
@@ -161,7 +162,7 @@ def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
 
     head, tail = results[:depth], results[depth:]
     candidates = [
-        {"slug": rel_slug(item["path"]), "title": item["path"].stem, "snippet": item.get("snippet", "")}
+        {"slug": rel_slug(item["path"]), "title": rel_slug(item["path"]), "snippet": item.get("snippet", "")}
         for item in head
     ]
     by_slug = {rel_slug(item["path"]): item for item in head}

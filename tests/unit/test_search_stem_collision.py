@@ -9,7 +9,13 @@ comparava por stem, então um caso podia "acertar" o arquivo errado.
 
 from pathlib import Path
 
-from kb.bench import evaluate_case, slug_matches
+from kb.bench import (
+    evaluate_case,
+    generate_cases,
+    sample_articles,
+    seed_golden,
+    slug_matches,
+)
 from kb.search import _apply_rerank
 
 
@@ -64,18 +70,23 @@ class TestApplyRerankStemCollision:
         assert len(captured["slugs"]) == 2
         assert len(set(captured["slugs"])) == 2
 
-    def test_should_fall_back_to_stem_for_path_outside_wiki(self, tmp_wiki, monkeypatch):
+    def test_should_keep_homonyms_even_for_paths_outside_wiki(self, tmp_wiki, monkeypatch):
         """
-        Dado um path fora de WIKI_DIR (defensivo),
-        Quando _apply_rerank monta o candidato,
-        Então usa o stem em vez de quebrar
+        Dado dois paths distintos fora de WIKI_DIR com o mesmo stem (defensivo),
+        Quando _apply_rerank reordena,
+        Então nenhum desaparece — a identidade de fallback também é única
         """
-        outside = Path("/tmp/fora-da-wiki.md")
+        a = Path("/tmp/topico-a/fora-da-wiki.md")
+        b = Path("/tmp/topico-b/fora-da-wiki.md")
 
-        monkeypatch.setattr("kb.rerank.rerank", lambda q, cands: cands)
+        monkeypatch.setattr("kb.rerank.rerank", lambda q, cands: list(reversed(cands)))
 
-        results = _apply_rerank("x", [_result(outside), _result(outside)], depth=2)
-        assert len(results) == 2
+        results = _apply_rerank("x", [_result(a), _result(b)], depth=2)
+
+        paths = [item["path"] for item in results]
+        assert len(paths) == 2
+        assert a in paths
+        assert b in paths
 
 
 class TestBenchSlugMatching:
@@ -88,6 +99,11 @@ class TestBenchSlugMatching:
         assert slug_matches("ai/algebra-linear", "algebra-linear")
 
     def test_should_match_exact_relative_path(self):
+        """
+        Dado expected com path relativo completo,
+        Quando o ranking traz o mesmo path,
+        Então casa por igualdade exata
+        """
         assert slug_matches("ai/algebra-linear", "ai/algebra-linear")
 
     def test_should_not_match_same_stem_in_wrong_topic_when_expected_is_precise(self):
@@ -110,6 +126,21 @@ class TestBenchSlugMatching:
         assert result.rank == 2
         assert result.hit_at_k
 
+    def test_seed_golden_should_emit_distinct_expected_for_homonyms(self, tmp_wiki):
+        """
+        Dado dois artigos com o mesmo stem em topics diferentes,
+        Quando seed_golden gera os casos,
+        Então cada um recebe expected único (path relativo, não stem)
+        """
+        wiki = tmp_wiki
+        (wiki / "ai" / "honeycomb.md").write_text("---\ntitle: A\n---\n# A\n")
+        (wiki / "python" / "honeycomb.md").write_text("---\ntitle: B\n---\n# B\n")
+
+        cases = seed_golden(wiki)
+
+        expected = [slug for case in cases for slug in case["expected"]]
+        assert sorted(expected) == ["ai/honeycomb", "python/honeycomb"]
+
     def test_evaluate_case_should_distinguish_homonyms_with_precise_expected(self):
         ranked = ["python/algebra-linear", "ai/algebra-linear"]
         result = evaluate_case(
@@ -120,3 +151,34 @@ class TestBenchSlugMatching:
         )
         assert result.rank == 2
         assert not result.hit_at_k
+
+
+class TestGoldenGenerationHomonyms:
+    def test_generate_cases_should_sample_both_homonyms(self, tmp_wiki, monkeypatch):
+        """
+        Dado dois artigos com o mesmo stem em topics diferentes,
+        Quando generate_cases amostra o corpus inteiro,
+        Então os dois entram no pool com expected distinto
+        (antes o dict chaveado por stem colapsava um no outro)
+        """
+        wiki = tmp_wiki
+        (wiki / "ai" / "honeycomb.md").write_text("---\ntitle: Grades\n---\ncorpo A\n")
+        (wiki / "python" / "honeycomb.md").write_text("---\ntitle: Colmeias\n---\ncorpo B\n")
+
+        monkeypatch.setattr("kb.client.chat", lambda **kwargs: "para que serve isso na prática?")
+
+        cases = generate_cases(wiki, n=2, seed=42)
+
+        expected = sorted(slug for case in cases for slug in case["expected"])
+        assert expected == ["ai/honeycomb", "python/honeycomb"]
+
+    def test_sample_articles_should_exclude_all_homonyms_for_legacy_stem(self):
+        """
+        Dado golden legado cobrindo o stem `honeycomb`,
+        Quando sample_articles monta o pool,
+        Então ambos os homônimos saem — over-exclusion deliberada,
+        melhor que gerar caso ambíguo
+        """
+        pool = ["ai/honeycomb", "python/honeycomb", "ai/outro"]
+        chosen = sample_articles(pool, n=3, seed=42, exclude={"honeycomb"})
+        assert chosen == ["ai/outro"]
