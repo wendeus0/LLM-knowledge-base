@@ -87,8 +87,32 @@ def _empty_sections(body):
     return empty
 
 
-def _template_placeholders(body):
-    return re.findall(r"<(?!\s)[^<>\n|]*\s[^<>\n|]*(?<!\s)>", _strip_code(body))
+def _angle_tokens(text):
+    return {w.lower() for w in re.findall(r"\w+", text)}
+
+
+def _template_placeholders(compiled_markdown, template_name="article"):
+    """Marcadores do template que sobreviveram no output.
+
+    Compara contra os placeholders reais do template em vez de adivinhar por
+    formato: `<T extends Base>` e `<div>` não constam do molde e passam, enquanto
+    `<título em português>` — inclusive no frontmatter — é reconhecido mesmo se o
+    modelo truncar a frase.
+    """
+    molde = [
+        (raw, _angle_tokens(raw))
+        for raw in re.findall(r"<[^<>\n]+>", resolve_template(template_name))
+    ]
+    encontrados = []
+    for candidato in re.findall(r"<[^<>\n]+>", _strip_code(compiled_markdown)):
+        alvo = _angle_tokens(candidato)
+        if not alvo:
+            continue
+        for _, tokens_molde in molde:
+            if alvo <= tokens_molde:
+                encontrados.append(candidato)
+                break
+    return encontrados
 
 
 def _validate_output(compiled_markdown, source_name):
@@ -109,7 +133,7 @@ def _validate_output(compiled_markdown, source_name):
             f"{source_name}: seção declarada e vazia: {', '.join(empty)}"
         )
 
-    placeholders = _template_placeholders(body)
+    placeholders = _template_placeholders(compiled_markdown)
     if placeholders:
         raise CompileOutputError(
             f"{source_name}: placeholder do template não substituído: {placeholders[0]}"
