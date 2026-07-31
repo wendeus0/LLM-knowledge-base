@@ -27,6 +27,18 @@ class CaseResult:
     source: str = "curated"
 
 
+def slug_matches(slug: str, expected: str) -> bool:
+    """Um slug do ranking (path relativo sem extensão) casa com um esperado do golden.
+
+    O golden atual guarda stems; expected sem `/` casa por stem (retrocompatível).
+    Expected com `/` exige o path relativo exato — desambigua homônimos, que era
+    exatamente o bug: comparar por stem deixava um caso "acertar" o arquivo errado.
+    """
+    if slug == expected:
+        return True
+    return "/" not in expected and slug.rsplit("/", 1)[-1] == expected
+
+
 def evaluate_case(
     ranked_slugs: list[str],
     expected: list[str],
@@ -36,12 +48,12 @@ def evaluate_case(
 ) -> CaseResult:
     """Posição do primeiro esperado no ranking; caso inválido não é falha de busca."""
     invalid = known_slugs is not None and not any(
-        slug in known_slugs for slug in expected
+        slug_matches(known, wanted) for wanted in expected for known in known_slugs
     )
 
     rank = None
     for position, slug in enumerate(ranked_slugs, start=1):
-        if slug in expected:
+        if any(slug_matches(slug, wanted) for wanted in expected):
             rank = position
             break
 
@@ -220,13 +232,13 @@ def run_bench(
     """Executa o golden set e devolve sumário + casos. None se não há golden set."""
     from kb.config import STATE_DIR, WIKI_DIR
     from kb.embeddings import _iter_articles
-    from kb.search import search
+    from kb.search import rel_slug, search
 
     cases = load_golden(golden_path(STATE_DIR))
     if cases is None:
         return None
 
-    known = {Path(relpath).stem for relpath, _ in _iter_articles(WIKI_DIR)}
+    known = {str(Path(relpath).with_suffix("")) for relpath, _ in _iter_articles(WIKI_DIR)}
     depth = max(k, 10)
 
     if rerank_depth:
@@ -244,7 +256,7 @@ def run_bench(
     results = []
     for case in cases:
         ranked = [
-            Path(item["path"]).stem
+            rel_slug(item["path"])
             for item in search(
                 case["question"],
                 top_k=depth,

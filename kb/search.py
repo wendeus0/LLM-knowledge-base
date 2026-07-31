@@ -143,16 +143,28 @@ def find_relevant(query: str, top_k: int = 5, rerank_depth: int | None = None) -
 SEARCH_MODES = ("hybrid", "lexical", "keyword")
 
 
+def rel_slug(path: Path) -> str:
+    """Identidade única do artigo: path relativo à wiki sem extensão.
+
+    O stem sozinho colide — o vault tem 4 stems duplicados em topics
+    diferentes, e dois no mesmo head faziam um sobrescrever o outro.
+    """
+    try:
+        return str(path.relative_to(WIKI_DIR).with_suffix(""))
+    except ValueError:
+        return path.stem
+
+
 def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
     """Reordena os `depth` primeiros pelo julgamento do LLM, preservando o resto."""
     from kb.rerank import rerank as do_rerank
 
     head, tail = results[:depth], results[depth:]
     candidates = [
-        {"slug": item["path"].stem, "title": item["path"].stem, "snippet": item.get("snippet", "")}
+        {"slug": rel_slug(item["path"]), "title": item["path"].stem, "snippet": item.get("snippet", "")}
         for item in head
     ]
-    by_slug = {item["path"].stem: item for item in head}
+    by_slug = {rel_slug(item["path"]): item for item in head}
     reordered = [by_slug[c["slug"]] for c in do_rerank(query, candidates) if c["slug"] in by_slug]
     return reordered + tail
 
