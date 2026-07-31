@@ -274,3 +274,117 @@ class TestReadStability:
             pathlib.Path.read_text = original_read
 
         assert resultado is None
+
+
+class TestServingFromDiskWithRefreshOn:
+    """O caminho de produção: processo frio servindo lexical.json do disco.
+
+    Os dois P0 do review passaram por aqui: a suíte só exercitava o cache em
+    processo, e a validação de estrutura vivia só na checagem de frescor.
+    """
+
+    def _vault(self, tmp_path, conteudo="# A\n\nresiliencia distribuida importa\n"):
+        wiki = tmp_path / "wiki"
+        (wiki / "ai").mkdir(parents=True)
+        (wiki / "ai" / "a.md").write_text(conteudo)
+        state = tmp_path / "state"
+        state.mkdir()
+        return wiki, state
+
+    def _corrompe(self, state, wiki, entrada):
+        import json
+
+        from kb.lexical_index import INDEX_FILENAME, INDEX_FORMAT, _content_hash
+
+        artigo = wiki / "ai" / "a.md"
+        texto = artigo.read_text()
+        info = artigo.stat()
+        base = {"hash": _content_hash(texto), "size": info.st_size, "mtime": info.st_mtime_ns}
+        (state / INDEX_FILENAME).write_text(
+            json.dumps({"format": INDEX_FORMAT, "docs": {"ai/a.md": {**base, **entrada}}})
+        )
+
+    def test_should_serve_valid_index_from_disk(self, tmp_path, monkeypatch):
+        from kb import lexical_index
+        from kb.lexical_index import build_index, lexical_corpus
+
+        wiki, state = self._vault(tmp_path)
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "1")
+        build_index(wiki, state)
+
+        lexical_index._cache.clear()
+        corpus = lexical_corpus(wiki, state)
+
+        assert corpus is not None
+        assert corpus["ai/a.md"]["tf"]["resiliencia"] == 1
+
+    def test_should_not_reuse_corrupt_entry_that_carries_the_right_hash(
+        self, tmp_path, monkeypatch
+    ):
+        """
+        Dado índice corrompido cujo `hash` bate com o arquivo,
+        Quando o auto-refresh reconstrói (o default de produção),
+        Então a entrada NÃO é reaproveitada — antes voltava verbatim e era
+        regravada como índice válido, estourando KeyError na busca
+        """
+        from kb import lexical_index
+        from kb.lexical_index import lexical_corpus
+
+        wiki, state = self._vault(tmp_path)
+        self._corrompe(state, wiki, {"length": None, "tf": None})
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "1")
+
+        lexical_index._cache.clear()
+        corpus = lexical_corpus(wiki, state)
+
+        assert corpus is not None
+        assert corpus["ai/a.md"]["tf"]["resiliencia"] == 1
+
+    def test_should_reject_tf_with_non_integer_counts(self, tmp_path, monkeypatch):
+        """`tf` com valor string estourava TypeError na comparação da busca."""
+        from kb import lexical_index
+        from kb.lexical_index import lexical_corpus
+
+        wiki, state = self._vault(tmp_path)
+        self._corrompe(state, wiki, {"length": 4, "tf": {"resiliencia": "muitos"}})
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+
+        lexical_index._cache.clear()
+
+        assert lexical_corpus(wiki, state) is None
+
+    def test_should_reject_negative_length(self, tmp_path, monkeypatch):
+        """
+        `length` negativo não levantava nada — envenenava avg_len e produzia
+        score errado em silêncio, que é pior que estourar
+        """
+        from kb import lexical_index
+        from kb.lexical_index import lexical_corpus
+
+        wiki, state = self._vault(tmp_path)
+        self._corrompe(state, wiki, {"length": -5, "tf": {"resiliencia": 1}})
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+
+        lexical_index._cache.clear()
+
+        assert lexical_corpus(wiki, state) is None
+
+    def test_search_should_survive_corrupt_index_end_to_end(self, tmp_wiki, monkeypatch):
+        """A busca inteira, com índice corrompido no disco e refresh ligado."""
+        import json
+
+        from kb.config import STATE_DIR
+        from kb.lexical_index import INDEX_FILENAME, INDEX_FORMAT
+        from kb.search import search
+
+        wiki = tmp_wiki
+        (wiki / "ai" / "a.md").write_text("# A\n\nresiliencia distribuida\n")
+        (STATE_DIR).mkdir(parents=True, exist_ok=True)
+        (STATE_DIR / INDEX_FILENAME).write_text(
+            json.dumps({"format": INDEX_FORMAT, "docs": {"ai/a.md": {"size": 1, "mtime": 2}}})
+        )
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "1")
+
+        resultados = search("resiliencia", top_k=5, mode="lexical")
+
+        assert [r["path"].name for r in resultados] == ["a.md"]

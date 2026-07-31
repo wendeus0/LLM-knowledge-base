@@ -62,19 +62,29 @@ def _fingerprint(wiki_dir):
     return signature
 
 
-def _entry_is_usable(entry):
-    """Entrada com a forma que `_build_rankings` consome.
+def _is_count(value):
+    """Inteiro não-negativo de verdade — `True` é `int` em Python e não conta."""
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
-    JSON sintaticamente válido não garante estrutura: um índice truncado ou
-    editado à mão passava no parse e estourava `KeyError` na busca — o oposto
-    da promessa de que índice corrompido degrada para a leitura direta.
+
+def _entry_is_usable(entry):
+    """Entrada com a forma E os valores que `_build_rankings` consome.
+
+    JSON sintaticamente válido não garante estrutura nem sanidade: entrada sem
+    `length` estourava `KeyError` na busca, `tf` com valor string estourava
+    `TypeError` na comparação, e `length` negativo passava calado envenenando
+    `avg_len` — score errado sem exceção nenhuma, que é o pior dos três.
     """
     return (
         isinstance(entry, dict)
-        and isinstance(entry.get("length"), int)
+        and _is_count(entry.get("length"))
+        and _is_count(entry.get("size"))
+        and _is_count(entry.get("mtime"))
         and isinstance(entry.get("tf"), dict)
-        and isinstance(entry.get("size"), int)
-        and isinstance(entry.get("mtime"), int)
+        and all(
+            isinstance(termo, str) and _is_count(contagem)
+            for termo, contagem in entry["tf"].items()
+        )
     )
 
 
@@ -134,7 +144,10 @@ def _build_docs(wiki_dir, previous):
         text, info = leitura
         digest = _content_hash(text)
         entry = previous.get(relpath)
-        if entry and entry.get("hash") == digest:
+        # `_entry_is_usable` aqui, não só na checagem de frescor: entrada
+        # corrompida com o hash certo era reaproveitada verbatim e regravada
+        # como índice válido, passando por fora de toda a validação.
+        if entry and entry.get("hash") == digest and _entry_is_usable(entry):
             docs[relpath] = {**entry, "size": info.st_size, "mtime": info.st_mtime_ns}
             continue
         tokens = tokenize(text)
@@ -182,7 +195,8 @@ def build_index(wiki_dir, state_dir, force=False):
     fingerprint = _fingerprint(wiki_dir)
     docs, report = _build_docs(wiki_dir, previous)
     _write_docs(state_dir, docs)
-    _remember(wiki_dir, state_dir, fingerprint, docs)
+    if set(docs) == set(fingerprint):
+        _remember(wiki_dir, state_dir, fingerprint, docs)
     return report
 
 

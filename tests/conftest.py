@@ -27,6 +27,22 @@ def _no_side_effect_llm_calls(monkeypatch):
     monkeypatch.setenv("KB_RERANK_DEPTH", "0")
 
 
+@pytest.fixture(autouse=True)
+def _state_dir_never_points_at_real_vault(tmp_path_factory, monkeypatch):
+    """Piso de isolamento: `STATE_DIR` nunca é o do usuário durante a suíte.
+
+    As fixtures de wiki já isolam o estado, mas há testes que monkeypatcham só
+    `kb.search.WIKI_DIR` e dependiam do kill-switch de env acima para não
+    escrever no vault. Foi exatamente essa combinação — isolar a wiki e esquecer
+    o estado — que destruiu o índice de embeddings real em 2026-07-29. Env é
+    kill-switch; isolamento tem de ser estrutural.
+
+    Fixture que isola de propósito sobrescreve isto — vem depois na ordem.
+    """
+    piso = tmp_path_factory.mktemp("kb_state_piso")
+    monkeypatch.setattr("kb.config.STATE_DIR", piso, raising=False)
+
+
 @pytest.fixture
 def tmp_raw_wiki(tmp_path, monkeypatch):
     """Setup raw/, wiki/ e outputs/ temporários para testes com monkeypatch global"""
