@@ -1,7 +1,7 @@
 # Salvar o insubstituível
 
 Type: task
-Status: open
+Status: resolved (2026-07-31)
 
 ## Question
 
@@ -21,4 +21,19 @@ Pontos a resolver:
 
 ## Answer
 
-<!-- preencher na resolução -->
+Resolvido em 2026-07-31: **tudo vai para um único remote privado** — `github.com/wendeus0/kb-vault` — com `library/` dentro do git e binários via git-lfs.
+
+**O que foi feito, verificável:**
+
+- `git-lfs` 3.7.1 instalado; `.gitattributes` do vault trackeia `library/**/*.{pdf,epub,mobi}` — 24 objetos LFS (17 PDF, 6 EPUB, 1 MOBI), 161 MB.
+- `library/` removida do `.gitignore` do vault; commit com 880 arquivos (as 863 fontes reais — 869 menos 6 `.DS_Store` — mais `manifest.json`/`knowledge.json`/`claims.jsonl`/`audit.jsonl` materializados pela travessia do ticket 002, e os 2 artigos de dorking).
+- `gh repo create wendeus0/kb-vault --private --source ~/vault --push` — push completo, LFS 24/24.
+- **Restauração provada por clone limpo** (`--depth 1` em diretório temporário): `golden.json` presente com **152 casos** parseáveis; 863 arquivos em `library/`; PDF amostrado é documento real de 18 MB, não pointer LFS.
+
+**Decisões dos pontos abertos:**
+
+- **O golden fica no vault** (`kb_state/bench/golden.json`), onde é usado — agora versionado com remote. A cópia no repo da engine ficou desnecessária: o risco era ausência de remote, não o lugar.
+- **`library/` é insubstituível e está no git** (LFS para binários). A opção "recompilar" do ticket 006 permanece disponível.
+- **Reconstruível permanece fora do git**, como já estava: `kb_state/embeddings.json` (141 MB, reconstrói em 4m32 via `kb index build`) e `tracking.db` (telemetria). `topics/` e `_summaries/` são derivados mas baratos e pequenos — seguem versionados por simplicidade.
+
+**Política de backup resultante:** um `git push` no vault protege tudo que não se reconstrói. Gatilho de revisão: se a library crescer a ponto de estourar quota LFS do GitHub (armazenamento 10 GB no plano atual), reavaliar binários para storage externo.
