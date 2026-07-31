@@ -613,3 +613,32 @@ class TestSSRFPinning:
 
         with pytest.raises(WebIngestError, match="rede interna"):
             ingest_url("https://example.com/start")
+
+
+class TestPinningBehindProxy:
+    """O pinning não pode derrubar a verificação de certificado atrás de proxy."""
+
+    def test_should_propagate_server_hostname_to_proxy_manager(self):
+        """
+        Dado HTTPS_PROXY configurado,
+        Quando o adapter monta o ProxyManager,
+        Então o server_hostname vai junto — sem isso o túnel valida o
+        certificado contra o IP pinado, não contra o hostname
+        """
+        from kb.web_ingest import _PinnedHTTPSAdapter
+
+        adapter = _PinnedHTTPSAdapter("example.com")
+
+        proxy_manager = adapter.proxy_manager_for("http://proxy.corp:8080")
+
+        assert proxy_manager.connection_pool_kw.get("server_hostname") == "example.com"
+
+    def test_should_keep_server_hostname_in_direct_pool(self):
+        from kb.web_ingest import _PinnedHTTPSAdapter
+
+        adapter = _PinnedHTTPSAdapter("example.com")
+
+        assert (
+            adapter.poolmanager.connection_pool_kw.get("server_hostname")
+            == "example.com"
+        )

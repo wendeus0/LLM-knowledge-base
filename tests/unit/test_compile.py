@@ -649,3 +649,21 @@ class TestManifestArticlePathContainment:
 
         assert out == legit
         assert legit.exists()
+
+
+class TestManifestPathResolvedBeforeWrite:
+    def test_should_return_resolved_path_so_symlink_swap_cannot_win(self, tmp_raw_wiki):
+        """
+        Dado um `article` válido do manifesto,
+        Quando a validação de containment devolve o caminho,
+        Então devolve o já resolvido — com o path original, trocar um diretório
+        por symlink entre a checagem e a escrita ainda escaparia do vault
+        """
+        from kb.compile import WIKI_DIR, _article_path_inside_wiki
+
+        alvo = WIKI_DIR / "ai" / "artigo.md"
+
+        devolvido = _article_path_inside_wiki(str(alvo))
+
+        assert devolvido == alvo.resolve()
+        assert devolvido.is_absolute()

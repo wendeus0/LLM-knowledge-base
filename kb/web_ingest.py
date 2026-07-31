@@ -100,6 +100,14 @@ class _PinnedHTTPSAdapter(_HTTPAdapter):
         kwargs["server_hostname"] = self._server_hostname
         super().init_poolmanager(*args, **kwargs)
 
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        # `proxy_manager_for` monta o ProxyManager por um caminho próprio, sem
+        # passar por `init_poolmanager`. Sem isto, atrás de HTTPS_PROXY o túnel
+        # é aberto para o IP pinado e o certificado passa a ser verificado
+        # contra o IP — o pinning derrubaria a verificação que ele deve preservar.
+        proxy_kwargs["server_hostname"] = self._server_hostname
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
 
 def _http_get(url: str, host_header: str, server_hostname: str, scheme: str):
     """GET no IP pinado, mantendo Host, SNI e verificação de certificado."""

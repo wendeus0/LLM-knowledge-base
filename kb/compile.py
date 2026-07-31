@@ -317,7 +317,10 @@ def _article_path_inside_wiki(existing_article: str) -> Path | None:
         return None
     if resolved == wiki_root or not resolved.is_relative_to(wiki_root):
         return None
-    return article_path
+    # Devolver o caminho já resolvido fecha a janela entre validar e escrever:
+    # com o path original, trocar um diretório por symlink depois da checagem
+    # faria `mkdir`/`mkstemp` seguirem o symlink na hora da escrita.
+    return resolved
 
 
 def _resolve_output_path(raw_path: Path, topic: str, title: str) -> Path:
