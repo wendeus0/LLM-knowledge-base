@@ -18,4 +18,6 @@ htmlcov/
 # Obsidian machine-specific config
 .obsidian/
 **/.obsidian/
-docs/reports/
+
+# Worktrees de agentes (efêmeros)
+.claude/worktrees/

@@ -1,9 +1,13 @@
 ---
 title: Multi-vault foundation — múltiplos vaults sob um KB_DATA_DIR raiz
 epic: infra
-status: draft
+status: archived
+archived_at: 2026-07-31
+archived_reason: draft desde 2026-07-09 sem execução; o BACKLOG da engenharia reversa avaliou os 11 portes contra vault único por decisão explícita, e nenhuma decisão do produto desde então pediu multi-vault. Reabrir exige caso de uso novo, não retomada por inércia.
 pr:
 ---
+
+> **Arquivada em 2026-07-31.** O conteúdo abaixo é o rascunho original, preservado como registro. Os casos de uso confirmados em 2026-07-09 (separar domínios de estudo, compartilhar vault público, vault descartável) continuam válidos como motivação — mas nenhum deles apareceu na prática desde então, e a política de corpus (map de 2026-07-30) decide antes o que o vault é. Se voltar, volta pelo `spec-pipeline` com SPEC revalidada.
 
 # Multi-vault foundation — múltiplos vaults sob um KB_DATA_DIR raiz
 

@@ -115,7 +115,7 @@ Conteúdo de teste.
 
 - **Unit:** 80%+
 - **Integration:** 60%+
-- **Overall:** 70%+
+- **Overall:** 70%+ (piso; a suíte está em 92% desde 2026-07-31)
 
 Command:
 ```bash
@@ -154,21 +154,19 @@ def test_qa_returns_response(monkeypatch):
     assert result == "Mock response"
 ```
 
-## CI (futuro)
+## CI
 
-```yaml
-# .github/workflows/test.yml
-name: Test
-on: [push]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-      - run: pip install -e ".[dev]"
-      - run: pytest --cov=kb
-```
+`.github/workflows/tests.yml` roda a suíte em Python 3.11, 3.12 e 3.13 a cada push e PR. Há ainda `kb-doc-governance.yml` (doc-gate) e `kb-jobs-and-health-gate.yml` (gates operacionais).
+
+## Isolamento de estado — inegociável
+
+Toda fixture que toca a wiki tem de isolar **todo** o `kb_state`, não só `WIKI_DIR`. Em 2026-07-29 a suíte destruiu o índice de embeddings do vault real: `tmp_wiki` isolava a wiki mas não o `STATE_DIR`, e um teste de `heal` reconstruiu o índice a partir da wiki temporária de 1 artigo, gravando por cima dos 1.037 vetores do usuário.
+
+- `tmp_wiki` e `tmp_raw_wiki` isolam `STATE_DIR`, manifest, knowledge, learnings, claims, audit e `tracking.DB_PATH`.
+- `tests/unit/test_conftest_isolation.py` é o guarda dessa propriedade — não remova.
+- Fixtures `autouse` do `conftest.py` desligam efeitos de rede que entraram por default no produto: `KB_INDEX_AUTO_REFRESH=0` e `KB_RERANK_DEPTH=0`. Teste que verifica o default remove a variável explicitamente.
+
+Sintoma de que isso quebrou: a suíte, que roda em segundos, passa a levar dezenas de segundos — é a assinatura de chamada real ao provider.
 
 ## Best practices
 
@@ -177,3 +175,4 @@ jobs:
 3. **Test edge cases** — empty wiki, malformed markdown, wikilinks quebrados
 4. **Integration first** — prioritize end-to-end workflows
 5. **No real API calls** — todos os testes devem rodar offline/mocked
+6. **Medir pela superfície que o usuário usa** — teste que chama a função não prova que a CLI expõe o caminho. Sete features de retrieval mediram +42% de MRR por um parâmetro que nenhum comando passava (2026-07-30).
