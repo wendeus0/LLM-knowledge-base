@@ -1184,7 +1184,13 @@ def bench(
     """Mede recall@k e MRR da recuperação contra o golden set do vault."""
     import json as _json
 
-    from kb.bench import golden_path, run_bench, seed_golden, write_golden
+    from kb.bench import (
+        BenchAbortedError,
+        golden_path,
+        run_bench,
+        seed_golden,
+        write_golden,
+    )
     from kb.config import STATE_DIR, WIKI_DIR
 
     destination = golden_path(STATE_DIR)
@@ -1224,6 +1230,9 @@ def bench(
     except ValueError as exc:
         typer.echo(str(exc))
         raise typer.Exit(code=1) from None
+    except BenchAbortedError as exc:
+        console.print(f"[red]medição interrompida:[/] {exc}")
+        raise typer.Exit(code=1) from None
 
     if report is None:
         typer.echo(f"nenhum golden set em {destination}")
@@ -1240,6 +1249,7 @@ def bench(
                     "expand": report["expand"],
                     "corpus": report["corpus"],
                     "semantic_active": report["semantic_active"],
+                    "degraded": report.get("degraded", False),
                     "rerank_stats": report.get("rerank_stats"),
                     "summary": summary,
                     "misses": [
@@ -1266,6 +1276,11 @@ def bench(
         f"recall@{summary['k']} = {summary['recall_at_k']:.3f}  "
         f"MRR = {summary['mrr']:.3f}  ({summary['hits']}/{summary['total']})"
     )
+    if report.get("degraded"):
+        console.print(
+            "[yellow]medição degradada:[/] houve falha do provider durante o lote — "
+            "cada falha mantém a ordem original, então este número subestima o rerank"
+        )
 
     rerank_stats = report.get("rerank_stats")
     if rerank_stats and (rerank_stats["calls"] or rerank_stats["cache_hits"]):
