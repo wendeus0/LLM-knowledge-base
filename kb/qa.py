@@ -9,7 +9,13 @@ from kb.config import WIKI_DIR as CONFIG_WIKI_DIR
 from kb.config import canonical_topic, topic_prompt_options, wiki_topic_dir
 from kb.frontmatter import parse
 from kb.git import commit
-from kb.guardrails import assert_safe_for_provider
+from kb.guardrails import (
+    assert_safe_for_provider,
+    new_sentinel,
+    untrusted_policy,
+    warn_on_injection,
+    wrap_untrusted,
+)
 from kb.outputs import write_output as _write_output
 from kb.router import build_context
 from kb.sampling import params
@@ -86,24 +92,23 @@ def answer(
     full_context = (
         context if not claims_block else f"{context}\n\n---\n\n{claims_block}"
     )
-    claims_suffix = ""
-    if claims_block:
-        claims_suffix = claims_block + "\n\n"
     assert_safe_for_provider(
         f"Pergunta: {question}\n\n{full_context}",
         source=f"qa:{decision.route}",
         allow_sensitive=allow_sensitive,
     )
+    warn_on_injection(full_context, source=f"qa:{decision.route}")
+    sentinel = new_sentinel()
     response = chat(
         messages=[
-            {"role": "system", "content": SYSTEM},
+            {"role": "system", "content": f"{SYSTEM}\n{untrusted_policy(sentinel)}"},
             {
                 "role": "user",
                 "content": (
                     f"Fonte selecionada: {decision.route}\n"
                     f"Motivo do roteamento: {decision.reason}\n\n"
-                    f"Contexto relevante:\n\n{context}\n\n"
-                    f"{claims_suffix}"
+                    f"Contexto relevante:\n\n"
+                    f"{wrap_untrusted(full_context, sentinel)}\n\n"
                     f"Pergunta: {question}"
                 ),
             },
@@ -148,12 +153,19 @@ def answer_and_file(
         allow_sensitive=allow_sensitive,
     )
 
+    sentinel = new_sentinel()
     article = chat(
         messages=[
-            {"role": "system", "content": _file_back_system_prompt()},
+            {
+                "role": "system",
+                "content": f"{_file_back_system_prompt()}\n{untrusted_policy(sentinel)}",
+            },
             {
                 "role": "user",
-                "content": f"Pergunta: {question}\n\nResposta:\n{response}",
+                "content": (
+                    f"Pergunta: {question}\n\nResposta:\n"
+                    f"{wrap_untrusted(response, sentinel)}"
+                ),
             },
         ],
         # Redigir artigo a partir da resposta: prosa, não extração.

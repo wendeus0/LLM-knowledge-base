@@ -473,7 +473,10 @@ Conteúdo bom.
         def fake_chat(*, messages, **_kw):
             nonlocal active_calls, max_active_calls
             prompt = messages[1]["content"]
-            source_name = prompt.splitlines()[0].split(":", 1)[1].strip()
+            # A linha do documento não é mais a primeira: metadado de origem vive
+            # dentro do container de conteúdo não-confiável.
+            header = next(line for line in prompt.splitlines() if line.startswith("Documento"))
+            source_name = header.split(":", 1)[1].strip()
             title = source_name.replace(".md", "").replace("-", " ").title()
             with lock:
                 active_calls += 1

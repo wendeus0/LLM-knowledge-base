@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -90,25 +91,45 @@ def _run_health_job() -> str:
     return render_health_summary()
 
 
+def discovery_autocommit_enabled() -> bool:
+    """Indica se o conteúdo vindo da web pode ser versionado sem revisão humana."""
+    return os.getenv("KB_DISCOVERY_AUTOCOMMIT", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _run_discovery_job() -> str:
     from kb.discovery import run_scheduled_discovery
 
+    autocommit = discovery_autocommit_enabled()
     result = run_scheduled_discovery(
         max_per_source=2,
         compile_after_ingest=True,
         allow_sensitive=False,
-        no_commit=False,
+        no_commit=not autocommit,
     )
     seen_urls_display = Path(result.get("seen_urls_path", "")).name
-    return (
+    output = (
         "Job discovery executado.\n"
         f"- discovered: {result.get('discovered', 0)}\n"
         f"- ingested: {result.get('ingested', 0)}\n"
         f"- compiled: {result.get('compiled', 0)}\n"
         f"- skipped_seen: {result.get('skipped_seen', 0)}\n"
         f"- compiled_enabled: {result.get('compiled_enabled', False)}\n"
+        f"- autocommit: {autocommit}\n"
         f"- seen_urls_path: {seen_urls_display}\n"
         f"- failures: {len(result.get('failures', []))}"
+    )
+    if autocommit:
+        return output
+    return (
+        f"{output}\n"
+        "- Conteúdo de origem web gravado localmente e aguardando revisão: nada foi "
+        "versionado. Revise raw/ e wiki/ e commite manualmente, ou defina "
+        "KB_DISCOVERY_AUTOCOMMIT=1 para versionar automaticamente."
     )
 
 
@@ -189,7 +210,7 @@ _JOB_DEFINITIONS: dict[str, JobDefinition] = {
         spec=JobSpec(
             name="discovery",
             schedule="0 */6 * * *",
-            description="Descobrir artigos/papers novos, ingerir em raw/ e compilar para wiki quando houver KB_API_KEY.",
+            description="Descobrir artigos/papers novos, ingerir em raw/ e compilar para wiki quando houver KB_API_KEY (sem commit; opt-in por KB_DISCOVERY_AUTOCOMMIT=1).",
             category=classify_job_command("discovery"),
         ),
         handler=_run_discovery_job,

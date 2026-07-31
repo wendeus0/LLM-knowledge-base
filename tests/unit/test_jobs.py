@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from kb.jobs import (
     HealthGateError,
     build_operational_cron_lines,
@@ -235,6 +237,76 @@ def test_run_health_gate_should_return_nonzero_when_violated():
 
     assert code == 1
     assert "threshold_violation" in message
+
+
+def _discovery_result():
+    return {
+        "discovered": 1,
+        "ingested": 1,
+        "compiled": 1,
+        "skipped_seen": 0,
+        "compiled_enabled": True,
+        "seen_urls_path": "/tmp/discovery_seen_urls.json",
+        "failures": [],
+    }
+
+
+def test_discovery_job_should_not_commit_web_content_by_default(
+    tmp_raw_wiki, monkeypatch
+):
+    monkeypatch.delenv("KB_DISCOVERY_AUTOCOMMIT", raising=False)
+
+    with patch("kb.discovery.run_scheduled_discovery") as mock_discovery:
+        mock_discovery.return_value = _discovery_result()
+
+        output = run_job("discovery")
+
+    assert mock_discovery.call_args.kwargs["no_commit"] is True
+    assert "aguardando revisão" in output
+    assert "KB_DISCOVERY_AUTOCOMMIT=1" in output
+
+
+def test_discovery_job_should_commit_when_autocommit_is_opted_in(
+    tmp_raw_wiki, monkeypatch
+):
+    monkeypatch.setenv("KB_DISCOVERY_AUTOCOMMIT", "1")
+
+    with patch("kb.discovery.run_scheduled_discovery") as mock_discovery:
+        mock_discovery.return_value = _discovery_result()
+
+        output = run_job("discovery")
+
+    assert mock_discovery.call_args.kwargs["no_commit"] is False
+    assert "aguardando revisão" not in output
+
+
+@pytest.mark.parametrize(
+    "valor,commita",
+    [
+        ("1", True),
+        ("true", True),
+        ("TRUE", True),
+        (" yes ", True),
+        ("on", True),
+        ("0", False),
+        ("false", False),
+        ("", False),
+        ("sim", False),
+        ("2", False),
+    ],
+)
+def test_discovery_autocommit_should_parse_flag_conservatively(
+    tmp_raw_wiki, monkeypatch, valor, commita
+):
+    """Fail-safe: só a allowlist liga o commit; qualquer outra coisa mantém desligado."""
+    monkeypatch.setenv("KB_DISCOVERY_AUTOCOMMIT", valor)
+
+    with patch("kb.discovery.run_scheduled_discovery") as mock_discovery:
+        mock_discovery.return_value = _discovery_result()
+
+        run_job("discovery")
+
+    assert mock_discovery.call_args.kwargs["no_commit"] is not commita
 
 
 def test_build_operational_cron_lines_should_include_staggered_chain():
