@@ -26,6 +26,21 @@ Candidatos de trabalho que o Obsidian não faz, a validar com o usuário:
 
 **Restrição:** decidir, não construir. Implementação sai pelo `spec-pipeline` como qualquer outra coisa deste map.
 
+## Evidência para o grilling
+
+> Compilada em 2026-07-31. Organiza o que a sessão mediu; não decide.
+
+**A lista de "coisas que o Obsidian não faz" ganhou itens concretos e mensuráveis nesta sessão** — todos do ramo "wiki é insumo", em que a tela mostra estado, não conteúdo:
+
+- **Ver o que o retrieval trouxe e por quê.** Agora existe dado para mostrar: `channel_scores` por canal (keyword/densidade/BM25), o que o rerank moveu, e — desde o PR #51 — de qual seção do artigo saiu o trecho que o reranker leu. Antes disso, candidato só-semântico chegava sem texto nenhum, então nem havia o que exibir.
+- **Medição degradada é estado visível.** O PR #55 fez o bench marcar `degraded` quando o provider falha no meio do lote. Um painel que mostra "esta medição vale / esta não vale" resolve uma classe de erro que já custou duas medições perdidas (2026-07-29 e 2026-07-30) — e o terminal só avisa quem estava olhando na hora.
+- **Conteúdo aguardando revisão.** Com o `discovery` sem auto-commit (PR #54), passa a existir uma fila real de material ingerido e não revisado. Isso é um estado que hoje não tem superfície nenhuma.
+- **Avisos de injeção por artigo.** `scan_injection` emite avisos em stderr — que se perdem. São por natureza uma lista que alguém precisa triar.
+
+**Contra construir:** o Obsidian continua sendo um bom leitor, e todo item acima é de operação, não de leitura. Se o 004 decidir "produto", o ônus da prova para uma tela própria fica alto de novo.
+
+**Método continua o mesmo:** resolver com `prototype` (mock estático basta para separar "quero isso" de "achei bonito"), com o usuário trazendo as inspirações. A saída do ticket é decidir, não construir.
+
 ## Answer
 
 <!-- preencher na resolução -->

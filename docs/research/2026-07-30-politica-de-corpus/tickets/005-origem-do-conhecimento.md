@@ -36,6 +36,22 @@ Casa também com o que já existe: `kb import-book` já quebra EPUB/PDF em capí
 - O kb sugere referência sem verificar existência? Se não, quem verifica?
 - A dependência de LLM grande externa é aceitável na arquitetura, e o que acontece quando ela não está disponível?
 
+## Evidência para o grilling
+
+> Compilada em 2026-07-31. Organiza o que a sessão mediu; não decide.
+
+**A fronteira que este ticket discutia agora tem enforcement.** O charting notou que a proposta "pedir referências, não conteúdo" tem a virtude de fazer atravessar ponteiros em vez de texto. Desde então:
+
+- **O caminho de conteúdo ganhou container** (PR #54): tudo que vem da fonte — corpo, nome de arquivo, título e autor de livro, título de capítulo — entra num delimitador com sentinela aleatória por chamada, e o system prompt proíbe obedecer ao que está lá dentro. Dois reviews adversariais (Codex GPT-5.6 e Opus de contexto fresco) tentaram furar com 15+ payloads; o que passou foi metadado fora do container, corrigido no mesmo ciclo. **Admitir a web deixou de ser a mesma decisão que era**: o vetor principal tem gate.
+- **A cadeia desatendida foi desligada** (mesmo PR): o job `discovery` fazia web → LLM → wiki → **commit automático** a cada 6h. Agora o commit exige `KB_DISCOVERY_AUTOCOMMIT=1`. Foi um default defensivo tomado na sessão — **este ticket é quem decide se fica assim, se volta, ou se vira quarentena explícita (`raw/untrusted/`)**.
+- **Ingestão de web mente menos** (PR #53): página JS-dinâmica que voltava vazia e reportava sucesso agora é recusada antes de escrever. Era o caso do GHDB, a base canônica de dorks, ingerida com zero dorks.
+
+**O que continua sendo o gargalo real, e é anterior à proposta:** o `qa` não sabe que não sabe. Não existe limiar de confiança em lugar nenhum do código — o retrieval devolve o top-3 sempre, mesmo com o melhor match irrisório. Detectar lacuna exige calibração, e calibrar exige o grader de fidelidade que nunca foi construído. **Nenhuma variante desta proposta funciona sem resolver isso primeiro.**
+
+**Sobre alucinação de bibliografia:** segue válido como risco. Nada mudou — `min_refs` continua não existindo em `kb/`, e 1.035 de 1.037 artigos não têm referência nenhuma.
+
+**Restrição nova a considerar:** o ADR-0017 registra a propriedade offline (embeddings locais). Consultar LLM grande via CLI na lacuna quebra isso. Continua sendo decisão deste ticket — mas agora com um dado a mais: a infra local (`bonsai-27b-1bit` em `:8081`) voltou ao launchd e ressuscita sozinha, então o argumento "o local não é confiável o bastante" ficou mais fraco.
+
 ## Answer
 
 <!-- preencher na resolução -->
