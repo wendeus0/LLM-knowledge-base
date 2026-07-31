@@ -59,14 +59,24 @@ def run_update_index(*, no_commit: bool = True):
     return compile_module.update_index(no_commit=no_commit)
 
 
+_PATH_SUFFIXES = {".md", ".markdown", ".txt", ".rst"}
+
+
+def _looks_like_path(target: str) -> bool:
+    return "/" in target or Path(target).suffix.lower() in _PATH_SUFFIXES
+
+
 def _resolve_targets(target: str | None) -> tuple[list[Path], int, list[str], int]:
     lines: list[str] = []
     if target is None:
         return discover_compile_targets(), 0, lines, 0
 
-    path = Path(target)
+    path = Path(target).expanduser()
     if path.exists():
-        return discover_compile_targets(path), 0, lines, 0
+        return discover_compile_targets(path.resolve()), 0, lines, 0
+
+    if _looks_like_path(target):
+        return [], 0, [f"[red]Arquivo não encontrado:[/] {target}"], 1
 
     book_dirs = find_book_dirs(target)
     if not book_dirs:

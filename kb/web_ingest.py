@@ -124,6 +124,66 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
     raise WebIngestError(f"Muitos redirects (>{max_hops}).")
 
 
+_MIN_PROSE_CHARS = 200
+_CHROME_BODY_CHARS = 400
+# Piso baixo de propósito: item de menu é descartado pelo link-ratio, não pelo
+# comprimento. Piso alto derrubava glossário, FAQ e tabela — conteúdo legítimo
+# de linha curta — como se fossem navegação.
+_MIN_LINE_CHARS = 15
+_LINK_RATIO = 0.6
+
+_MD_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_MD_MARKER_RE = re.compile(r"[#>*_`|~\[\]]+")
+
+_SHELL_PAGE_RE = re.compile(
+    r"requires?\s+javascript"
+    r"|enable\s+javascript"
+    r"|javascript\s+(?:is\s+)?(?:disabled|required|not\s+enabled)"
+    r"|turn\s+on\s+javascript"
+    r"|enable\s+cookies"
+    r"|accept\s+(?:all\s+)?cookies"
+    r"|cookie\s+(?:policy|consent)",
+    re.IGNORECASE,
+)
+
+
+def _prose_text(markdown_body: str) -> str:
+    """Extrai a prosa do markdown, descartando navegação e linhas repetidas."""
+    kept: list[str] = []
+    seen: set[str] = set()
+    for raw_line in markdown_body.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        plain = " ".join(_MD_MARKER_RE.sub(" ", _MD_LINK_RE.sub(r"\1", line)).split())
+        if len(plain) < _MIN_LINE_CHARS:
+            continue
+        link_texts = _MD_LINK_RE.findall(line)
+        if link_texts and sum(len(t) for t in link_texts) >= _LINK_RATIO * len(plain):
+            continue
+        if plain in seen:
+            continue
+        seen.add(plain)
+        kept.append(plain)
+    return "\n".join(kept)
+
+
+def _reject_empty_content(markdown_body: str, url: str) -> None:
+    """Recusa páginas cujo markdown é só chrome de navegação ou aviso de JavaScript."""
+    prose = _prose_text(markdown_body)
+    if len(prose) >= _MIN_PROSE_CHARS:
+        return
+    body = " ".join(markdown_body.split())
+    if len(body) < _CHROME_BODY_CHARS and not _SHELL_PAGE_RE.search(body):
+        return
+    raise WebIngestError(
+        f"A página não rendeu conteúdo textual ({len(prose)} chars de prosa após "
+        f"remover navegação) — provável página dinâmica que depende de JavaScript. "
+        f"Abra {url} no navegador, salve a página renderizada como Markdown ou texto "
+        f"e ingira o arquivo local."
+    )
+
+
 def _extract_title(html: str) -> str | None:
     match = re.search(r"<title[^>]*>([^<]+)</title>", html, re.IGNORECASE)
     if match:
@@ -169,6 +229,8 @@ def ingest_url(url: str, no_commit: bool = True) -> Path:
     h.ignore_images = True
     h.body_width = 0
     markdown_body = h.handle(html)
+
+    _reject_empty_content(markdown_body, url)
 
     ingested_at = datetime.now(UTC).isoformat()
     content = (
