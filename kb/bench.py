@@ -16,6 +16,14 @@ from pathlib import Path
 
 GOLDEN_RELPATH = Path("bench") / "golden.json"
 
+# Quantos casos seguidos podem falhar antes de o lote ser dado como perdido.
+# Blip de rede é 1; provider morto é todos daí em diante.
+_MAX_CONSECUTIVE_FAILURES = 3
+
+
+class BenchAbortedError(RuntimeError):
+    """Lote interrompido porque o provider parou de responder no meio."""
+
 
 @dataclass
 class CaseResult:
@@ -266,7 +274,9 @@ def run_bench(
         semantic_active = load_index(STATE_DIR) is not None
 
     results = []
-    for case in cases:
+    consecutive_failures = 0
+    failures_before = 0
+    for position, case in enumerate(cases, start=1):
         ranked = [
             rel_slug(item["path"])
             for item in search(
@@ -277,6 +287,21 @@ def run_bench(
                 rerank_depth=rerank_depth,
             )
         ]
+
+        if rerank_depth:
+            failures_now = _rerank_stats()["failed"]
+            if failures_now > failures_before:
+                consecutive_failures += 1
+                if consecutive_failures >= _MAX_CONSECUTIVE_FAILURES:
+                    raise BenchAbortedError(
+                        f"provider de rerank falhou em {consecutive_failures} caso(s) "
+                        f"seguidos — lote interrompido no caso {position} de {len(cases)}. "
+                        "Cada falha degrada para a ordem original em silêncio: seguir "
+                        "produziria um número que parece válido e não mede nada."
+                    )
+            else:
+                consecutive_failures = 0
+            failures_before = failures_now
         result = evaluate_case(
             ranked,
             case.get("expected", []),
@@ -287,14 +312,19 @@ def run_bench(
         result.source = case.get("source", "curated")
         results.append(result)
 
+    rerank_stats = _rerank_stats() if rerank_depth else None
+
     return {
         "mode": mode,
         "expand": expand,
         "corpus": len(known),
         "semantic_active": semantic_active,
+        # Falha isolada não aborta, mas contamina a medição: sem esta marca, um
+        # lote com degradação parcial é lido como número limpo.
+        "degraded": bool(rerank_stats and rerank_stats["failed"]),
         "summary": aggregate(results, k=k),
         "by_source": aggregate_by_source(results, k=k),
-        "rerank_stats": _rerank_stats() if rerank_depth else None,
+        "rerank_stats": rerank_stats,
         "results": results,
     }
 
