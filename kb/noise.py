@@ -103,6 +103,28 @@ def split_noise(
     return kept, excluded, ambiguous
 
 
+def _chapter_path_inside_book(metadata_path: Path, chapter_file: str) -> Path | None:
+    """Resolve `chapters[].file` dentro do diretório do livro; fora dele, descarta.
+
+    `metadata.json` é estado do vault e pode ter sido adulterado; sem esta checagem
+    um `file` com `../` ou absoluto faz o `noise apply` mover arquivo de qualquer
+    lugar do disco para `archive/`.
+    """
+    candidate_file = Path(chapter_file)
+    if candidate_file.is_absolute() or ".." in candidate_file.parts:
+        return None
+    book_dir = metadata_path.parent
+    candidate = book_dir / candidate_file
+    try:
+        resolved = candidate.resolve()
+        book_root = book_dir.resolve()
+    except OSError:
+        return None
+    if resolved == book_root or not resolved.is_relative_to(book_root):
+        return None
+    return candidate
+
+
 def scan_corpus(
     raw_dir: Path, wiki_dir: Path, taxonomy: dict[str, list[str]] | None = None
 ) -> list[Path]:
@@ -123,8 +145,10 @@ def scan_corpus(
             chapter_file = chapter.get("file")
             if not chapter_file:
                 continue
+            chapter_path = _chapter_path_inside_book(metadata_path, chapter_file)
+            if chapter_path is None:
+                continue
             noisy_chapter_files.add(chapter_file)
-            chapter_path = metadata_path.parent / chapter_file
             if chapter_path.exists():
                 candidates.append(chapter_path)
     if Path(wiki_dir).exists():

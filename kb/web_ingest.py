@@ -13,9 +13,11 @@ from kb.git import commit
 try:
     import html2text as _html2text
     import requests
+    from requests.adapters import HTTPAdapter as _HTTPAdapter
 except ImportError:  # pragma: no cover
     requests = None  # type: ignore[assignment]
     _html2text = None  # type: ignore[assignment]
+    _HTTPAdapter = object  # type: ignore[assignment,misc]
 
 
 class WebIngestError(Exception):
@@ -34,11 +36,25 @@ _BLOCKED_NETWORKS = [
     ipaddress.ip_network("100.64.0.0/10"),
     ipaddress.ip_network("198.18.0.0/15"),
     ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("192.0.0.0/24"),
+    ipaddress.ip_network("192.0.2.0/24"),
+    ipaddress.ip_network("198.51.100.0/24"),
+    ipaddress.ip_network("203.0.113.0/24"),
+    ipaddress.ip_network("240.0.0.0/4"),
+    ipaddress.ip_network("255.255.255.255/32"),
     ipaddress.ip_network("::1/128"),
     ipaddress.ip_network("::/128"),
     ipaddress.ip_network("fc00::/7"),
     ipaddress.ip_network("fe80::/10"),
     ipaddress.ip_network("ff00::/8"),
+    # Encapsulamentos de IPv4 dentro de IPv6: sem isto, `64:ff9b::7f00:1` chega
+    # a 127.0.0.1 pelo gateway NAT64 de uma rede IPv6-only, e o resolvedor DNS64
+    # sintetiza exatamente esse prefixo. `2002::/16` (6to4) e `::/96` (compatível
+    # deprecado) carregam o IPv4 do mesmo jeito.
+    ipaddress.ip_network("64:ff9b::/96"),
+    ipaddress.ip_network("64:ff9b:1::/48"),
+    ipaddress.ip_network("2002::/16"),
+    ipaddress.ip_network("::/96"),
 ]
 
 
@@ -49,38 +65,93 @@ def _require_deps() -> None:
         )
 
 
-def _resolve_and_validate(hostname: str) -> str:
-    """Resolve hostname, validates IPs against blocked networks, returns first safe IP."""
+def _resolve_and_validate(hostname: str) -> list[str]:
+    """Resolve o hostname e valida TODOS os endereços contra as redes bloqueadas.
+
+    Um único endereço em rede bloqueada reprova o hostname inteiro: escolher outro
+    endereço da lista deixaria passar um nome que também aponta para dentro da rede.
+    Devolve a lista validada inteira — pinar só o primeiro perderia o fallback que
+    o urllib3 fazia sozinho, e host dual-stack com IPv6 sem trânsito passaria a
+    falhar por timeout onde antes funcionava.
+    """
     try:
         resolved = socket.getaddrinfo(
             hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
         )
     except socket.gaierror as exc:
         raise WebIngestError(f"Não foi possível resolver hostname: {hostname}") from exc
+    validated: list[str] = []
     for _fam, _, _, _, sockaddr in resolved:
         addr_str = sockaddr[0]
         try:
             addr = ipaddress.ip_address(addr_str)
-            if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
-                addr = addr.ipv4_mapped
         except ValueError:
             continue
+        if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
+            addr = addr.ipv4_mapped
         for network in _BLOCKED_NETWORKS:
             if addr in network:
                 raise WebIngestError(
                     f"URL aponta para endereço de rede interna ({addr}). Não permitido."
                 )
-        return sockaddr[0]
-    raise WebIngestError(f"Sem endereço validado para {hostname}")
+        validated.append(addr_str)
+    if not validated:
+        raise WebIngestError(f"Sem endereço validado para {hostname}")
+    return validated
+
+
+class _PinnedHTTPSAdapter(_HTTPAdapter):
+    """Adapter que conecta ao IP já validado sem perder o SNI do hostname original.
+
+    O pool é aberto para o IP — nenhuma nova resolução de DNS acontece —, mas
+    `server_hostname` mantém o hostname, que é o nome enviado no SNI e o nome
+    contra o qual o certificado do servidor é verificado.
+    """
+
+    def __init__(self, server_hostname, **kwargs):
+        self._server_hostname = server_hostname
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["server_hostname"] = self._server_hostname
+        super().init_poolmanager(*args, **kwargs)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        # `proxy_manager_for` monta o ProxyManager por um caminho próprio, sem
+        # passar por `init_poolmanager`. Sem isto, atrás de HTTPS_PROXY o túnel
+        # é aberto para o IP pinado e o certificado passa a ser verificado
+        # contra o IP — o pinning derrubaria a verificação que ele deve preservar.
+        proxy_kwargs["server_hostname"] = self._server_hostname
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
+
+def _http_get(url: str, host_header: str, server_hostname: str, scheme: str):
+    """GET no IP pinado, mantendo Host, SNI e verificação de certificado."""
+    session = requests.Session()
+    if scheme == "https":
+        session.mount("https://", _PinnedHTTPSAdapter(server_hostname))
+    try:
+        return session.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "Mozilla/5.0", "Host": host_header},
+            allow_redirects=False,
+        )
+    finally:
+        session.close()
 
 
 def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
-    """Follow redirects manually, pinning resolved IP to prevent DNS rebinding.
+    """Segue redirects manualmente conectando sempre ao endereço já validado.
 
-    This is a partial SSRF mitigation: the hostname is resolved once per hop
-    and the connection is made directly to the resolved IP with the original
-    Host header preserved. This eliminates the classic DNS rebinding attack
-    window between validation and connection.
+    A cada salto o hostname é resolvido uma vez, todos os endereços devolvidos são
+    validados contra as redes bloqueadas e a conexão é feita direto ao endereço
+    aprovado — em http e em https. Como não há segunda resolução de DNS entre a
+    validação e a conexão, a janela de DNS rebinding (TOCTOU) fica fechada.
+
+    O pinning não afeta a autenticidade do servidor: em https o SNI e a verificação
+    do certificado continuam usando o hostname original, nunca o IP, e a verificação
+    nunca é desligada.
     """
     for _ in range(max_hops + 1):
         parsed = urlparse(url)
@@ -90,10 +161,14 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
             )
         if not parsed.hostname:
             raise WebIngestError("URL sem hostname.")
-        resolved_ip = _resolve_and_validate(parsed.hostname)
-        if parsed.scheme == "https":
-            pinned_url = url
-        elif parsed.hostname != resolved_ip:
+        validated_ips = _resolve_and_validate(parsed.hostname)
+        host_header = parsed.hostname
+        if parsed.port:
+            host_header = f"{parsed.hostname}:{parsed.port}"
+
+        response = None
+        last_error = None
+        for resolved_ip in validated_ips:
             if ":" in resolved_ip and not resolved_ip.startswith("["):
                 ip_for_url = f"[{resolved_ip}]"
             else:
@@ -102,17 +177,22 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
             if parsed.port:
                 netloc = f"{ip_for_url}:{parsed.port}"
             pinned_url = urlunparse(parsed._replace(netloc=netloc))
-        else:
-            pinned_url = url
-        host_header = parsed.hostname
-        if parsed.port:
-            host_header = f"{parsed.hostname}:{parsed.port}"
-        response = requests.get(
-            pinned_url,
-            timeout=15,
-            headers={"User-Agent": "Mozilla/5.0", "Host": host_header},
-            allow_redirects=False,
-        )
+            try:
+                response = _http_get(
+                    pinned_url, host_header, parsed.hostname, parsed.scheme
+                )
+                break
+            except requests.exceptions.SSLError:
+                # SSLError herda de ConnectionError: sem esta cláusula antes, um
+                # certificado inválido cairia para o próximo endereço e a falha
+                # de autenticidade viraria "problema de conectividade".
+                raise
+            except (requests.ConnectionError, requests.Timeout) as exc:
+                # Só falha de conexão cai para o próximo endereço validado; erro
+                # de HTTP é do servidor certo e não deve ser mascarado.
+                last_error = exc
+        if response is None:
+            raise last_error
         if response.status_code in (301, 302, 303, 307, 308):
             location = response.headers.get("Location")
             if not location:

@@ -15,9 +15,14 @@ REQ-8: write local é padrão; commit é explícito
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 # RED: falha até ingest-url ser implementada
-from kb.web_ingest import WebIngestError, ingest_url  # noqa: E402
+from kb.web_ingest import (  # noqa: E402
+    WebIngestError,
+    _resolve_and_validate,
+    ingest_url,
+)
 
 HTML_SAMPLE = """
 <html>
@@ -98,7 +103,7 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             out = ingest_url("https://example.com/xss")
@@ -120,7 +125,7 @@ class TestIngestUrl:
 
         url = "https://example.com/xss"
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             out = ingest_url(url)
@@ -144,7 +149,7 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             out = ingest_url("https://example.com/xss")
@@ -167,7 +172,7 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             out = ingest_url("https://example.com/no-title")
@@ -190,7 +195,7 @@ class TestIngestUrl:
             "404 Not Found"
         )
 
-        with patch("kb.web_ingest.requests.get", return_value=mock_response):
+        with patch("kb.web_ingest._http_get", return_value=mock_response):
             with pytest.raises(WebIngestError, match="404"):
                 ingest_url("https://example.com/not-found")
 
@@ -205,7 +210,7 @@ class TestIngestUrl:
 
         import requests as _requests
 
-        with patch("kb.web_ingest.requests.get", side_effect=_requests.Timeout()):
+        with patch("kb.web_ingest._http_get", side_effect=_requests.Timeout()):
             with pytest.raises(WebIngestError, match="[Tt]imeout"):
                 ingest_url("https://example.com/slow")
 
@@ -224,7 +229,7 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit") as mock_commit,
         ):
             ingest_url("https://example.com/xss", no_commit=True)
@@ -244,7 +249,7 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit") as mock_commit,
         ):
             ingest_url("https://example.com/xss")
@@ -262,7 +267,7 @@ class TestIngestUrl:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit") as mock_commit,
         ):
             ingest_url("https://example.com/xss", no_commit=False)
@@ -286,7 +291,7 @@ class TestEmptyContentDetection:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             with pytest.raises(WebIngestError, match="não rendeu conteúdo"):
@@ -307,7 +312,7 @@ class TestEmptyContentDetection:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             with pytest.raises(WebIngestError) as exc_info:
@@ -328,7 +333,7 @@ class TestEmptyContentDetection:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             out = ingest_url("https://example.com/xss-in-depth")
@@ -346,7 +351,7 @@ class TestEmptyContentDetection:
         mock_response.raise_for_status = MagicMock()
 
         with (
-            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest._http_get", return_value=mock_response),
             patch("kb.web_ingest.commit"),
         ):
             out = ingest_url("https://example.com/short")
@@ -451,3 +456,285 @@ class TestSSRFProtection:
     def test_should_reject_no_scheme(self):
         with pytest.raises(WebIngestError, match="Esquema não permitido"):
             ingest_url("example.com/page")
+
+
+def _addrinfo(*addresses):
+    return [(2, 1, 6, "", (addr, 0)) for addr in addresses]
+
+
+class TestSSRFPinning:
+    """F-01: validação de todos os endereços e pinning do IP também em HTTPS."""
+
+    def _capture_session(self, monkeypatch, html=HTML_SAMPLE):
+        captured = {}
+
+        def fake_request(session, method=None, url=None, **kwargs):
+            captured["session"] = session
+            captured["method"] = method
+            captured["url"] = url
+            captured["headers"] = kwargs.get("headers")
+            captured["verify"] = kwargs.get("verify")
+            response = MagicMock()
+            response.status_code = 200
+            response.text = html
+            response.headers = {}
+            response.raise_for_status = MagicMock()
+            return response
+
+        monkeypatch.setattr("requests.sessions.Session.request", fake_request)
+        return captured
+
+    def test_should_reject_when_any_resolved_address_is_private(self, monkeypatch):
+        """Um hostname com A-records [público, loopback] não pode passar."""
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34", "127.0.0.1"),
+        )
+        with pytest.raises(WebIngestError, match="rede interna"):
+            _resolve_and_validate("rebind.example.com")
+
+    def test_should_reject_when_a_later_address_is_private(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34", "8.8.8.8", "169.254.169.254"),
+        )
+        with pytest.raises(WebIngestError, match="rede interna"):
+            _resolve_and_validate("rebind.example.com")
+
+    def test_should_return_validated_address_when_all_are_public(self, monkeypatch):
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34", "8.8.8.8"),
+        )
+        assert _resolve_and_validate("example.com") == ["93.184.216.34", "8.8.8.8"]
+
+    def test_should_pin_validated_ip_on_https(self, tmp_path, monkeypatch):
+        """O request HTTPS vai para o IP validado, não para o hostname."""
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34"),
+        )
+        captured = self._capture_session(monkeypatch)
+
+        ingest_url("https://example.com/xss")
+
+        assert captured["url"] == "https://93.184.216.34/xss"
+        assert captured["headers"]["Host"] == "example.com"
+
+    def test_should_keep_original_hostname_for_sni_and_certificate(
+        self, tmp_path, monkeypatch
+    ):
+        """SNI e verificação de certificado continuam ancorados no hostname."""
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34"),
+        )
+        captured = self._capture_session(monkeypatch)
+
+        ingest_url("https://example.com/xss")
+
+        adapter = captured["session"].get_adapter("https://93.184.216.34/xss")
+        pool_kw = adapter.poolmanager.connection_pool_kw
+        assert pool_kw.get("server_hostname") == "example.com"
+        assert pool_kw.get("assert_hostname") is None
+
+    def test_should_never_disable_certificate_verification(
+        self, tmp_path, monkeypatch
+    ):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34"),
+        )
+        captured = self._capture_session(monkeypatch)
+
+        ingest_url("https://example.com/xss")
+
+        assert captured["verify"] is not False
+        assert captured["session"].verify is not False
+
+    def test_should_pin_validated_ip_on_http(self, tmp_path, monkeypatch):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34"),
+        )
+        captured = self._capture_session(monkeypatch)
+
+        ingest_url("http://example.com/xss")
+
+        assert captured["url"] == "http://93.184.216.34/xss"
+        assert captured["headers"]["Host"] == "example.com"
+
+    def test_should_preserve_port_when_pinning(self, tmp_path, monkeypatch):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: _addrinfo("93.184.216.34"),
+        )
+        captured = self._capture_session(monkeypatch)
+
+        ingest_url("https://example.com:8443/xss")
+
+        assert captured["url"] == "https://93.184.216.34:8443/xss"
+        assert captured["headers"]["Host"] == "example.com:8443"
+
+    def test_should_revalidate_and_pin_each_redirect_hop(self, tmp_path, monkeypatch):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+        resolutions = {
+            "example.com": _addrinfo("93.184.216.34"),
+            "internal.example.com": _addrinfo("10.0.0.7"),
+        }
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda host, *a, **kw: resolutions[host],
+        )
+
+        def fake_request(session, method=None, url=None, **kwargs):
+            response = MagicMock()
+            response.status_code = 302
+            response.headers = {"Location": "https://internal.example.com/secret"}
+            return response
+
+        monkeypatch.setattr("requests.sessions.Session.request", fake_request)
+
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url("https://example.com/start")
+
+
+class TestPinningBehindProxy:
+    """O pinning não pode derrubar a verificação de certificado atrás de proxy."""
+
+    def test_should_propagate_server_hostname_to_proxy_manager(self):
+        """
+        Dado HTTPS_PROXY configurado,
+        Quando o adapter monta o ProxyManager,
+        Então o server_hostname vai junto — sem isso o túnel valida o
+        certificado contra o IP pinado, não contra o hostname
+        """
+        from kb.web_ingest import _PinnedHTTPSAdapter
+
+        adapter = _PinnedHTTPSAdapter("example.com")
+
+        proxy_manager = adapter.proxy_manager_for("http://proxy.corp:8080")
+
+        assert proxy_manager.connection_pool_kw.get("server_hostname") == "example.com"
+
+    def test_should_keep_server_hostname_in_direct_pool(self):
+        from kb.web_ingest import _PinnedHTTPSAdapter
+
+        adapter = _PinnedHTTPSAdapter("example.com")
+
+        assert (
+            adapter.poolmanager.connection_pool_kw.get("server_hostname")
+            == "example.com"
+        )
+
+
+class TestBlockedRangesCoverage:
+    """Encapsulamentos de IPv4 em IPv6 e faixas reservadas."""
+
+    @pytest.mark.parametrize(
+        "endereco",
+        [
+            "64:ff9b::7f00:1",       # NAT64 well-known -> 127.0.0.1
+            "64:ff9b::a9fe:a9fe",    # NAT64 -> 169.254.169.254 (metadata cloud)
+            "2002:7f00:1::",         # 6to4 -> 127.0.0.1
+            "::7f00:1",              # IPv4-compatible deprecado
+            "240.0.0.1",             # reservado
+            "192.0.0.1",
+            "192.0.2.1",
+            "198.51.100.1",
+            "203.0.113.1",
+        ],
+    )
+    def test_should_reject_encapsulated_and_reserved_addresses(
+        self, monkeypatch, endereco
+    ):
+        familia = 30 if ":" in endereco else 2
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [(familia, 1, 6, "", (endereco, 0))],
+        )
+
+        with pytest.raises(WebIngestError, match="rede interna"):
+            ingest_url(f"https://host.test/{endereco}")
+
+
+class TestMultiAddressFallback:
+    def test_should_try_next_validated_address_when_first_refuses(self, monkeypatch):
+        """
+        Dado um host dual-stack cujo primeiro endereço não conecta,
+        Quando a ingestão roda,
+        Então o segundo endereço validado é tentado — pinar só o primeiro
+        perdia o fallback que o urllib3 fazia sozinho
+        """
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [
+                (30, 1, 6, "", ("2001:db8::1", 0)),
+                (2, 1, 6, "", ("93.184.216.34", 0)),
+            ],
+        )
+
+        tentados = []
+
+        def fake_get(url, host_header, server_hostname, scheme):
+            tentados.append(url)
+            if "2001:db8" in url:
+                raise requests.ConnectionError("sem rota")
+            response = MagicMock()
+            response.status_code = 200
+            response.text = HTML_SAMPLE
+            response.raise_for_status = MagicMock()
+            return response
+
+        monkeypatch.setattr("kb.web_ingest._http_get", fake_get)
+
+        with patch("kb.web_ingest.commit"):
+            ingest_url("https://dual.test/artigo")
+
+        assert len(tentados) == 2
+        assert "93.184.216.34" in tentados[1]
+
+    def test_should_not_fall_through_on_tls_error(self, monkeypatch):
+        """
+        Dado erro de TLS no primeiro endereço,
+        Quando a ingestão roda,
+        Então NÃO tenta o próximo — certificado inválido é do servidor certo,
+        e mascarar isso trocaria uma falha de segurança por uma tentativa a mais
+        """
+        monkeypatch.setattr(
+            "kb.web_ingest.socket.getaddrinfo",
+            lambda *a, **kw: [
+                (2, 1, 6, "", ("93.184.216.34", 0)),
+                (2, 1, 6, "", ("93.184.216.35", 0)),
+            ],
+        )
+
+        tentados = []
+
+        def fake_get(url, host_header, server_hostname, scheme):
+            tentados.append(url)
+            raise requests.exceptions.SSLError("hostname mismatch")
+
+        monkeypatch.setattr("kb.web_ingest._http_get", fake_get)
+
+        with pytest.raises(WebIngestError):
+            ingest_url("https://tls.test/artigo")
+
+        assert len(tentados) == 1
