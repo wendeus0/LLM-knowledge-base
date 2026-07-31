@@ -168,3 +168,109 @@ class TestLexicalCorpus:
         monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
 
         assert lexical_corpus(wiki, state) is None
+
+
+class TestStructurallyCorruptIndex:
+    """JSON válido com estrutura errada não pode quebrar a busca."""
+
+    def test_should_ignore_entry_without_length_and_tf(self, tmp_path, monkeypatch):
+        """
+        Dado um índice em JSON válido mas sem os campos que a busca consome,
+        Quando lexical_corpus avalia,
+        Então não serve a entrada — antes estourava KeyError na busca, que é o
+        oposto da promessa de degradar para leitura direta
+        """
+        import json
+
+        from kb.lexical_index import INDEX_FILENAME, INDEX_FORMAT, lexical_corpus
+
+        wiki = tmp_path / "wiki"
+        (wiki / "ai").mkdir(parents=True)
+        artigo = wiki / "ai" / "a.md"
+        artigo.write_text("# A\nresiliencia distribuida\n")
+        info = artigo.stat()
+
+        state = tmp_path / "state"
+        state.mkdir()
+        (state / INDEX_FILENAME).write_text(
+            json.dumps(
+                {
+                    "format": INDEX_FORMAT,
+                    "docs": {"ai/a.md": {"size": info.st_size, "mtime": info.st_mtime_ns}},
+                }
+            )
+        )
+
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+
+        assert lexical_corpus(wiki, state) is None
+
+    def test_should_survive_entry_with_wrong_types(self, tmp_path, monkeypatch):
+        import json
+
+        from kb.lexical_index import INDEX_FILENAME, INDEX_FORMAT, lexical_corpus
+
+        wiki = tmp_path / "wiki"
+        (wiki / "ai").mkdir(parents=True)
+        artigo = wiki / "ai" / "a.md"
+        artigo.write_text("# A\ntexto\n")
+        info = artigo.stat()
+
+        state = tmp_path / "state"
+        state.mkdir()
+        (state / INDEX_FILENAME).write_text(
+            json.dumps(
+                {
+                    "format": INDEX_FORMAT,
+                    "docs": {
+                        "ai/a.md": {
+                            "size": info.st_size,
+                            "mtime": info.st_mtime_ns,
+                            "length": "muitos",
+                            "tf": ["nao", "é", "dict"],
+                        }
+                    },
+                }
+            )
+        )
+
+        monkeypatch.setenv("KB_INDEX_AUTO_REFRESH", "0")
+
+        assert lexical_corpus(wiki, state) is None
+
+
+class TestReadStability:
+    def test_should_not_persist_content_read_while_file_changed(self, tmp_path):
+        """
+        Dado um arquivo reescrito durante a leitura,
+        Quando o índice é construído,
+        Então a entrada não é persistida com o fingerprint novo — senão o
+        conteúdo velho seria servido como fresco, sem nada que detectasse
+        """
+        from kb import lexical_index
+
+        wiki = tmp_path / "wiki"
+        (wiki / "ai").mkdir(parents=True)
+        artigo = wiki / "ai" / "a.md"
+        artigo.write_text("conteudo antigo\n")
+
+        original_read = type(artigo).read_text
+        estado = {"n": 0}
+
+        def read_e_reescreve(self, *args, **kwargs):
+            texto = original_read(self, *args, **kwargs)
+            if self.name == "a.md" and estado["n"] < 5:
+                estado["n"] += 1
+                original = type(self).write_text
+                original(self, "conteudo novo bem mais longo que o anterior\n")
+            return texto
+
+        import pathlib
+
+        pathlib.Path.read_text = read_e_reescreve
+        try:
+            resultado = lexical_index._read_stable(artigo)
+        finally:
+            pathlib.Path.read_text = original_read
+
+        assert resultado is None

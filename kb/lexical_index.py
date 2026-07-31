@@ -62,11 +62,28 @@ def _fingerprint(wiki_dir):
     return signature
 
 
+def _entry_is_usable(entry):
+    """Entrada com a forma que `_build_rankings` consome.
+
+    JSON sintaticamente válido não garante estrutura: um índice truncado ou
+    editado à mão passava no parse e estourava `KeyError` na busca — o oposto
+    da promessa de que índice corrompido degrada para a leitura direta.
+    """
+    return (
+        isinstance(entry, dict)
+        and isinstance(entry.get("length"), int)
+        and isinstance(entry.get("tf"), dict)
+        and isinstance(entry.get("size"), int)
+        and isinstance(entry.get("mtime"), int)
+    )
+
+
 def _matches(docs, fingerprint):
     if set(docs) != set(fingerprint):
         return False
     return all(
-        [entry.get("size"), entry.get("mtime")] == fingerprint[relpath]
+        _entry_is_usable(entry)
+        and [entry["size"], entry["mtime"]] == fingerprint[relpath]
         for relpath, entry in docs.items()
     )
 
@@ -86,15 +103,35 @@ def _read_docs(state_dir):
     return docs if isinstance(docs, dict) else None
 
 
+def _read_stable(md, tentativas=3):
+    """Texto e stat de um artigo que não mudou durante a leitura.
+
+    Com o stat só depois da leitura, um arquivo reescrito no meio gravaria o
+    conteúdo velho carregando o fingerprint novo — e a próxima query serviria
+    dado obsoleto como fresco, sem nada que detectasse. Aqui o stat cerca a
+    leitura; se divergir, relê. Instabilidade persistente devolve None, e o
+    artigo entra na reconstrução seguinte.
+    """
+    for _ in range(tentativas):
+        try:
+            antes = md.stat()
+            text = md.read_text(encoding="utf-8", errors="replace")
+            depois = md.stat()
+        except OSError:
+            return None
+        if (antes.st_size, antes.st_mtime_ns) == (depois.st_size, depois.st_mtime_ns):
+            return text, depois
+    return None
+
+
 def _build_docs(wiki_dir, previous):
     docs = {}
     indexed = 0
     for relpath, md in _iter_articles(wiki_dir):
-        try:
-            text = md.read_text(encoding="utf-8", errors="replace")
-            info = md.stat()
-        except OSError:
+        leitura = _read_stable(md)
+        if leitura is None:
             continue
+        text, info = leitura
         digest = _content_hash(text)
         entry = previous.get(relpath)
         if entry and entry.get("hash") == digest:
@@ -171,5 +208,10 @@ def lexical_corpus(wiki_dir, state_dir):
 
     docs, _ = _build_docs(wiki_dir, stored or {})
     _write_docs(state_dir, docs)
+    if set(docs) != set(fingerprint):
+        # Artigo que não estabilizou na leitura, ou que apareceu/sumiu durante a
+        # construção: servir este índice entregaria um corpus menor que a wiki e
+        # o resultado divergiria do caminho sem índice. Relê desta vez.
+        return None
     _remember(wiki_dir, state_dir, fingerprint, docs)
     return docs
