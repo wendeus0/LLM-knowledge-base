@@ -50,13 +50,38 @@ O cliente LLM valida o modelo solicitado contra a lista de modelos disponíveis 
 - Não há `exec()`, `eval()` ou `subprocess` com input do LLM
 - O código Python do projeto é estático e auditável
 
-### Sanitização de Filenames
+### Caminhos de Arquivo
 
-Todos os caminhos de arquivo são sanitizados antes de uso:
+Nomes derivados de conteúdo (título de EPUB/PDF, título gerado pelo LLM) são
+reduzidos por `slugify` a `[a-z0-9-]`, e assets de EPUB viram basename sanitizado
+sob `images/` — não há como um `../` sobreviver a essa normalização.
 
-- Remoção de path traversal (`../`, `..\\`)
-- Restrição ao diretório de trabalho do projeto
-- Validação de caracteres permitidos
+Caminhos lidos do estado do vault não são sanitizados, e sim **validados por
+containment antes de qualquer escrita ou movimentação**, com a entrada inválida
+descartada e reportada em stderr:
+
+- `article` de `kb_state/manifest.json` precisa resolver dentro de `wiki/`;
+  fora dela, a entrada é ignorada e o artigo vai para o caminho normal
+- `chapters[].file` de `raw/books/*/metadata.json` precisa resolver dentro do
+  diretório do próprio livro; absoluto ou com `..` não vira candidato de `kb noise`
+- o destino de `kb archive` precisa resolver dentro de `archive/`
+
+### Ingestão de URLs (SSRF)
+
+`kb ingest <url>` aceita apenas `http`/`https` e, a cada salto de redirect
+(máximo 5, seguidos manualmente), resolve o hostname uma vez e rejeita o
+hostname inteiro se **qualquer** endereço devolvido cair em rede bloqueada
+(loopback, RFC1918, link-local, CGNAT, ULA e afins, com IPv4-mapped IPv6
+desempacotado).
+
+A conexão é feita direto ao endereço já validado — em `http` e em `https` —, de
+modo que não há segunda resolução de DNS entre a validação e a conexão (janela
+de DNS rebinding / TOCTOU). Em `https` o pinning não enfraquece a autenticação
+do servidor: o SNI e a verificação do certificado continuam usando o hostname
+original, nunca o IP, e a verificação de certificado nunca é desligada.
+
+Não coberto: o conteúdo baixado continua sendo entrada não-confiável para o LLM
+(injeção de prompt é risco conhecido e aceito).
 
 ### Gerenciamento de API Keys
 

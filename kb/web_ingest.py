@@ -13,9 +13,11 @@ from kb.git import commit
 try:
     import html2text as _html2text
     import requests
+    from requests.adapters import HTTPAdapter as _HTTPAdapter
 except ImportError:  # pragma: no cover
     requests = None  # type: ignore[assignment]
     _html2text = None  # type: ignore[assignment]
+    _HTTPAdapter = object  # type: ignore[assignment,misc]
 
 
 class WebIngestError(Exception):
@@ -50,37 +52,82 @@ def _require_deps() -> None:
 
 
 def _resolve_and_validate(hostname: str) -> str:
-    """Resolve hostname, validates IPs against blocked networks, returns first safe IP."""
+    """Resolve o hostname e valida TODOS os endereços contra as redes bloqueadas.
+
+    Um único endereço em rede bloqueada reprova o hostname inteiro: escolher outro
+    endereço da lista deixaria passar um nome que também aponta para dentro da rede.
+    Devolve o primeiro endereço, já validado, para ser pinado na conexão.
+    """
     try:
         resolved = socket.getaddrinfo(
             hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
         )
     except socket.gaierror as exc:
         raise WebIngestError(f"Não foi possível resolver hostname: {hostname}") from exc
+    validated: list[str] = []
     for _fam, _, _, _, sockaddr in resolved:
         addr_str = sockaddr[0]
         try:
             addr = ipaddress.ip_address(addr_str)
-            if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
-                addr = addr.ipv4_mapped
         except ValueError:
             continue
+        if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
+            addr = addr.ipv4_mapped
         for network in _BLOCKED_NETWORKS:
             if addr in network:
                 raise WebIngestError(
                     f"URL aponta para endereço de rede interna ({addr}). Não permitido."
                 )
-        return sockaddr[0]
-    raise WebIngestError(f"Sem endereço validado para {hostname}")
+        validated.append(addr_str)
+    if not validated:
+        raise WebIngestError(f"Sem endereço validado para {hostname}")
+    return validated[0]
+
+
+class _PinnedHTTPSAdapter(_HTTPAdapter):
+    """Adapter que conecta ao IP já validado sem perder o SNI do hostname original.
+
+    O pool é aberto para o IP — nenhuma nova resolução de DNS acontece —, mas
+    `server_hostname` mantém o hostname, que é o nome enviado no SNI e o nome
+    contra o qual o certificado do servidor é verificado.
+    """
+
+    def __init__(self, server_hostname, **kwargs):
+        self._server_hostname = server_hostname
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs["server_hostname"] = self._server_hostname
+        super().init_poolmanager(*args, **kwargs)
+
+
+def _http_get(url: str, host_header: str, server_hostname: str, scheme: str):
+    """GET no IP pinado, mantendo Host, SNI e verificação de certificado."""
+    session = requests.Session()
+    if scheme == "https":
+        session.mount("https://", _PinnedHTTPSAdapter(server_hostname))
+    try:
+        return session.get(
+            url,
+            timeout=15,
+            headers={"User-Agent": "Mozilla/5.0", "Host": host_header},
+            allow_redirects=False,
+        )
+    finally:
+        session.close()
 
 
 def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
-    """Follow redirects manually, pinning resolved IP to prevent DNS rebinding.
+    """Segue redirects manualmente conectando sempre ao endereço já validado.
 
-    This is a partial SSRF mitigation: the hostname is resolved once per hop
-    and the connection is made directly to the resolved IP with the original
-    Host header preserved. This eliminates the classic DNS rebinding attack
-    window between validation and connection.
+    A cada salto o hostname é resolvido uma vez, todos os endereços devolvidos são
+    validados contra as redes bloqueadas e a conexão é feita direto ao endereço
+    aprovado — em http e em https. Como não há segunda resolução de DNS entre a
+    validação e a conexão, a janela de DNS rebinding (TOCTOU) fica fechada.
+
+    O pinning não afeta a autenticidade do servidor: em https o SNI e a verificação
+    do certificado continuam usando o hostname original, nunca o IP, e a verificação
+    nunca é desligada.
     """
     for _ in range(max_hops + 1):
         parsed = urlparse(url)
@@ -91,28 +138,18 @@ def _follow_redirects(url: str, max_hops: int = 5) -> "requests.Response":
         if not parsed.hostname:
             raise WebIngestError("URL sem hostname.")
         resolved_ip = _resolve_and_validate(parsed.hostname)
-        if parsed.scheme == "https":
-            pinned_url = url
-        elif parsed.hostname != resolved_ip:
-            if ":" in resolved_ip and not resolved_ip.startswith("["):
-                ip_for_url = f"[{resolved_ip}]"
-            else:
-                ip_for_url = resolved_ip
-            netloc = ip_for_url
-            if parsed.port:
-                netloc = f"{ip_for_url}:{parsed.port}"
-            pinned_url = urlunparse(parsed._replace(netloc=netloc))
+        if ":" in resolved_ip and not resolved_ip.startswith("["):
+            ip_for_url = f"[{resolved_ip}]"
         else:
-            pinned_url = url
+            ip_for_url = resolved_ip
+        netloc = ip_for_url
+        if parsed.port:
+            netloc = f"{ip_for_url}:{parsed.port}"
+        pinned_url = urlunparse(parsed._replace(netloc=netloc))
         host_header = parsed.hostname
         if parsed.port:
             host_header = f"{parsed.hostname}:{parsed.port}"
-        response = requests.get(
-            pinned_url,
-            timeout=15,
-            headers={"User-Agent": "Mozilla/5.0", "Host": host_header},
-            allow_redirects=False,
-        )
+        response = _http_get(pinned_url, host_header, parsed.hostname, parsed.scheme)
         if response.status_code in (301, 302, 303, 307, 308):
             location = response.headers.get("Location")
             if not location:

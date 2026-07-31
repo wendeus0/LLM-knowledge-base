@@ -303,14 +303,38 @@ def _wiki_path(topic: str, title: str) -> Path:
     return folder / f"{slug}.md"
 
 
+def _article_path_inside_wiki(existing_article: str) -> Path | None:
+    """Aceita o `article` vindo do manifesto só se ele cair dentro da wiki.
+
+    O manifesto é estado do vault e pode ter sido adulterado; sem esta checagem
+    um `article` com `../` ou absoluto vira escrita de arquivo em qualquer lugar.
+    """
+    article_path = Path(existing_article)
+    try:
+        resolved = article_path.resolve()
+        wiki_root = WIKI_DIR.resolve()
+    except OSError:
+        return None
+    if resolved == wiki_root or not resolved.is_relative_to(wiki_root):
+        return None
+    return article_path
+
+
 def _resolve_output_path(raw_path: Path, topic: str, title: str) -> Path:
     existing_entry = find_compiled_entry(raw_path)
     if existing_entry:
         existing_article = existing_entry.get("article")
         if existing_article:
-            article_path = Path(existing_article)
-            article_path.parent.mkdir(parents=True, exist_ok=True)
-            return article_path
+            article_path = _article_path_inside_wiki(existing_article)
+            if article_path is None:
+                print(
+                    f"[kb] aviso: entrada do manifesto ignorada — artigo fora do "
+                    f"diretório da wiki: {existing_article}",
+                    file=sys.stderr,
+                )
+            else:
+                article_path.parent.mkdir(parents=True, exist_ok=True)
+                return article_path
     return _wiki_path(topic, title)
 
 

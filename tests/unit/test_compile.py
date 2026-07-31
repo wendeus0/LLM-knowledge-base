@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 from unittest.mock import patch
@@ -578,3 +579,73 @@ class TestUpdateIndex:
         # RED: falha se _index.md lista a si mesmo
         index_content = (wiki / "_index.md").read_text()
         assert "[[_index]]" not in index_content
+
+
+class TestManifestArticlePathContainment:
+    """F-04: o campo `article` do manifesto é entrada não-confiável."""
+
+    def _artifact(self, raw, name="pwned.md"):
+        return CompileArtifact(
+            raw_path=raw / name,
+            source_name=name,
+            compiled_markdown="---\ntitle: Pwned\ntopic: ai\n---\n\n# Pwned\n\nCorpo.",
+            topic="ai",
+            title="Pwned",
+            summary_text="Corpo.",
+        )
+
+    def _write_manifest(self, raw, source, article):
+        manifest_path = raw.parent / "kb_state" / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "source": source,
+                        "kind": "raw",
+                        "status": "compiled",
+                        "article": article,
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+    def test_should_ignore_manifest_article_outside_the_wiki(
+        self, tmp_raw_wiki, capsys
+    ):
+        raw, wiki = tmp_raw_wiki
+        escaped = wiki.parent / "fora" / "pwned.md"
+        self._write_manifest(raw, "pwned.md", "../fora/pwned.md")
+
+        with patch("kb.compile.commit"):
+            out = persist_artifact(self._artifact(raw))
+
+        assert not escaped.exists()
+        assert not escaped.parent.exists()
+        assert out == wiki / "ai" / "pwned.md"
+        assert out.exists()
+        assert "fora do diretório da wiki" in capsys.readouterr().err
+
+    def test_should_ignore_absolute_manifest_article_outside_the_wiki(
+        self, tmp_raw_wiki
+    ):
+        raw, wiki = tmp_raw_wiki
+        escaped = wiki.parent / "absoluto.md"
+        self._write_manifest(raw, "pwned.md", str(escaped))
+
+        with patch("kb.compile.commit"):
+            out = persist_artifact(self._artifact(raw))
+
+        assert not escaped.exists()
+        assert out == wiki / "ai" / "pwned.md"
+
+    def test_should_keep_manifest_article_inside_the_wiki(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        legit = wiki / "ai" / "legit-name.md"
+        self._write_manifest(raw, "pwned.md", str(legit))
+
+        with patch("kb.compile.commit"):
+            out = persist_artifact(self._artifact(raw))
+
+        assert out == legit
+        assert legit.exists()
