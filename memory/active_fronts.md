@@ -6,6 +6,22 @@ type: project
 
 ## Frente ativa
 
+### Política de corpus — map aberto (2026-07-30)
+
+**Status:** `WAYFINDER_CHARTED` — 8 tickets, 0 resolvidos. Frontier: 001, 002, 003.
+**Artefatos:** `docs/research/2026-07-30-politica-de-corpus/{MAP.md, tickets/}`
+**Destination:** ADR que trava o fundamento do corpus — origem do conhecimento novo, destino dos 1.037 artigos atuais, wiki como produto ou insumo, e superfície de leitura. Gradua o que o map de engenharia reversa deixou em Out of scope.
+
+**Achados do charting que reorientam o projeto:**
+- `raw/` está vazia (dois `.DS_Store`); `kb compile` tem zero alvos. As 869 fontes só existem em `library/`, 185 MB **fora do git**.
+- `manifest.json` nunca foi materializado — um recompile **duplicaria** a wiki em vez de atualizá-la (`kb/state.py:87` × `kb/compile.py:223-231`).
+- O compile produz artigo raso por design e ninguém mediu: prompt sem instrução de profundidade, `_validate_output` aceita três frases, `max_tokens` nunca enviado.
+- Qualidade de resposta do `qa` tem zero medição — o `bench` mede ordenação. O grader de fidelidade segue pendente desde `PENDING_LOG.md:119`.
+- O perfil `article` (`top_k=5`, 8k, traverse — `kb/config.py:88`) existe **sem consumidor**; o `qa` roda `fast` com cap de 4k que corta a cauda de 40% dos artigos.
+- Zero material de recon/OSINT no vault — a pergunta que abriu o esforço não tinha fonte para responder.
+
+**Decisões travadas no grilling:** o produto é o output do `kb qa`, não a densidade do arquivo na wiki; em lacuna de corpus, o kb deve buscar fonte em vez de se abster ou completar com conhecimento paramétrico; a interface própria entra no escopo (era out of scope no map anterior).
+
 ### Retrieval medido — features 014 a 022 (2026-07-30)
 
 **Status:** mergeado em `main` (`f694190`), 16 commits. Servidores locais sobem por LaunchAgent.
