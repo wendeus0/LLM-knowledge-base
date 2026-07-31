@@ -248,25 +248,38 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def semantic_ranking(query: str, index: dict) -> list[tuple[Path, float]]:
-    """Ranking (Path absoluto, similaridade) por cosseno; falha de embed degrada para []."""
+def semantic_ranking(query: str, index: dict, with_headings: bool = False):
+    """Ranking (Path absoluto, similaridade) por cosseno; falha de embed degrada para [].
+
+    Com `with_headings=True`, devolve também o heading do chunk vencedor por
+    artigo — é dele que o snippet do rerank sai quando o candidato só existe
+    no canal semântico.
+    """
     from kb.config import WIKI_DIR
 
     try:
         query_vector = embed_texts([_QUERY_PREFIX + query])[0]
     except Exception:
-        return []
+        return ([], {}) if with_headings else []
 
     scored: list[tuple[Path, float]] = []
+    headings: dict[Path, str] = {}
     for relpath, entry in index["articles"].items():
-        similarities = [
-            _cosine(query_vector, chunk["vector"])
-            for chunk in entry.get("chunks", [])
-            if chunk.get("vector")
-        ]
-        if not similarities:
+        best_score = None
+        best_heading = ""
+        for chunk in entry.get("chunks", []):
+            if not chunk.get("vector"):
+                continue
+            similarity = _cosine(query_vector, chunk["vector"])
+            if best_score is None or similarity > best_score:
+                best_score = similarity
+                best_heading = chunk.get("heading", "")
+        if best_score is None:
             continue
         # Máximo, não soma: artigo longo não deve pontuar mais por ter mais seções.
-        scored.append((Path(WIKI_DIR) / relpath, max(similarities)))
+        path = Path(WIKI_DIR) / relpath
+        scored.append((path, best_score))
+        headings[path] = best_heading
 
-    return sorted(scored, key=lambda item: item[1], reverse=True)
+    ranking = sorted(scored, key=lambda item: item[1], reverse=True)
+    return (ranking, headings) if with_headings else ranking

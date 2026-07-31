@@ -119,19 +119,48 @@ def _warn_semantic_degraded(reason: str) -> None:
     )
 
 
-def _semantic_rank(query: str) -> list[tuple[Path, float]]:
-    """Canal semântico da fusão; sem índice válido, retorna [] (fallback lexical)."""
+def _semantic_rank(query: str) -> tuple[list[tuple[Path, float]], dict[Path, str]]:
+    """Canal semântico da fusão + heading vencedor por artigo.
+
+    Sem índice válido, retorna ([], {}) — fallback lexical. O heading alimenta
+    o snippet de candidato que só o canal semântico recuperou.
+    """
     from kb.config import STATE_DIR
     from kb.embeddings import load_index, semantic_ranking
 
     index = load_index(STATE_DIR)
     if index is None:
         _warn_semantic_degraded("índice ausente ou de outro modelo; rode `kb index build`")
-        return []
-    ranking = semantic_ranking(query, index)
+        return [], {}
+    ranking, headings = semantic_ranking(query, index, with_headings=True)
     if not ranking:
         _warn_semantic_degraded("servidor de embeddings não respondeu; veja `kb index status`")
-    return ranking
+    return ranking, headings
+
+
+def _section_snippet(path: Path, heading: str) -> str:
+    """Primeira linha de texto da seção que venceu no cosseno.
+
+    Índice stale (heading renomeado) cai para o primeiro trecho do corpo —
+    snippet genérico ainda é melhor que o LLM julgar por slug.
+    """
+    from kb.chunking import split_sections, strip_frontmatter
+
+    try:
+        body = strip_frontmatter(path.read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        return ""
+
+    sections = split_sections(body)
+    chosen = next((text for name, text in sections if name == heading), None)
+    if chosen is None:
+        chosen = sections[0][1] if sections else body
+
+    for line in chosen.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            return line
+    return ""
 
 
 def find_relevant(query: str, top_k: int = 5, rerank_depth: int | None = None) -> list[Path]:
@@ -206,13 +235,14 @@ def search(
         ]
 
     rankings = [keyword_rank, density_rank, bm25_rank]
+    semantic_headings: dict[Path, str] = {}
     if mode == "hybrid":
         semantic_query = query
         if expand:
             from kb.query_expansion import expand_query
 
             semantic_query = expand_query(query, expand)
-        semantic_rank = _semantic_rank(semantic_query)
+        semantic_rank, semantic_headings = _semantic_rank(semantic_query)
         if semantic_rank:
             rankings.append(semantic_rank)
 
@@ -238,6 +268,9 @@ def search(
 
     results: list[dict] = []
     for path in ranked_paths[:fetch]:
+        snippet = snippets.get(path, "")
+        if not snippet and path in semantic_headings:
+            snippet = _section_snippet(path, semantic_headings[path])
         results.append(
             {
                 "path": path,
@@ -248,7 +281,7 @@ def search(
                     "density": channel_density.get(path, 0.0),
                     "bm25": channel_bm25.get(path, 0.0),
                 },
-                "snippet": snippets.get(path, ""),
+                "snippet": snippet,
             }
         )
 
