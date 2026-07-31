@@ -226,8 +226,14 @@ def rel_slug(path: Path) -> str:
         return path.with_suffix("").as_posix()
 
 
-def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
-    """Reordena os `depth` primeiros pelo julgamento do LLM, preservando o resto."""
+def _apply_rerank(
+    query: str, results: list[dict], depth: int, want: int | None = None
+) -> list[dict]:
+    """Reordena os `depth` primeiros pelo julgamento do LLM, preservando o resto.
+
+    `want` restringe a pergunta a "quais são os N melhores" — só o que vai ser
+    devolvido precisa estar ordenado, e o resto já vem do RRF.
+    """
     from kb.rerank import rerank as do_rerank
 
     head, tail = results[:depth], results[depth:]
@@ -236,7 +242,11 @@ def _apply_rerank(query: str, results: list[dict], depth: int) -> list[dict]:
         for item in head
     ]
     by_slug = {rel_slug(item["path"]): item for item in head}
-    reordered = [by_slug[c["slug"]] for c in do_rerank(query, candidates) if c["slug"] in by_slug]
+    reordered = [
+        by_slug[c["slug"]]
+        for c in do_rerank(query, candidates, want=want)
+        if c["slug"] in by_slug
+    ]
     return reordered + tail
 
 
@@ -327,6 +337,6 @@ def search(
         )
 
     if rerank_depth and len(results) > 1:
-        results = _apply_rerank(query, results, rerank_depth)
+        results = _apply_rerank(query, results, rerank_depth, want=top_k)
 
     return results[:top_k]

@@ -72,7 +72,7 @@ class TestSemanticOnlySnippet:
 
         captured = {}
 
-        def fake_rerank(question, candidates):
+        def fake_rerank(question, candidates, want=None):
             captured["snippets"] = [c["snippet"] for c in candidates]
             return candidates
 

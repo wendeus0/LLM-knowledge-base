@@ -36,7 +36,7 @@ class TestApplyRerankStemCollision:
         a.write_text("# A\n")
         b.write_text("# B\n")
 
-        monkeypatch.setattr("kb.rerank.rerank", lambda q, cands: list(reversed(cands)))
+        monkeypatch.setattr("kb.rerank.rerank", lambda q, cands, want=None: list(reversed(cands)))
 
         results = _apply_rerank("algebra", [_result(a), _result(b)], depth=2)
 
@@ -59,7 +59,7 @@ class TestApplyRerankStemCollision:
 
         captured = {}
 
-        def fake_rerank(question, candidates):
+        def fake_rerank(question, candidates, want=None):
             captured["slugs"] = [c["slug"] for c in candidates]
             return candidates
 
@@ -79,7 +79,7 @@ class TestApplyRerankStemCollision:
         a = Path("/tmp/topico-a/fora-da-wiki.md")
         b = Path("/tmp/topico-b/fora-da-wiki.md")
 
-        monkeypatch.setattr("kb.rerank.rerank", lambda q, cands: list(reversed(cands)))
+        monkeypatch.setattr("kb.rerank.rerank", lambda q, cands, want=None: list(reversed(cands)))
 
         results = _apply_rerank("x", [_result(a), _result(b)], depth=2)
 

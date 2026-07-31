@@ -29,6 +29,22 @@ _PROMPT = (
 )
 
 
+def _select_prompt(want: int) -> str:
+    """Prompt de seleção — pergunta menor que ordenar a lista inteira.
+
+    A 022 mediu que sampling determinístico corrige omissão mas não alucinação
+    de índice. Escolher os N melhores dá menos margem para inventar número do
+    que ordenar 20 posições, e o que não é escolhido preserva a ordem do RRF,
+    que não é aleatória.
+    """
+    return (
+        "Você seleciona artigos de uma base de conhecimento técnica. Dada uma pergunta "
+        f"e uma lista numerada de candidatos, escolha os {want} mais relevantes, do "
+        "melhor para o pior. Use apenas números que existam na lista. Responda APENAS "
+        "com os números separados por vírgula, sem explicar."
+    )
+
+
 _SEVERE_OMISSION_RATIO = 0.5
 
 _STATS_TEMPLATE = {
@@ -152,7 +168,7 @@ def preflight() -> None:
         ) from exc
 
 
-def _cache_key(question: str, candidates: list[dict]) -> str:
+def _cache_key(question: str, candidates: list[dict], want: int | None = None) -> str:
     """Inclui tudo que muda a resposta: modelo, sampling, slugs e snippets.
 
     O snippet entra no prompt, então entra na chave — sem isso, consertar um
@@ -165,7 +181,7 @@ def _cache_key(question: str, candidates: list[dict]) -> str:
         (candidate.get("snippet") or "")[:_SNIPPET_CHARS] for candidate in candidates
     )
     return hashlib.sha256(
-        f"{model}|{sampling}|{question}|{slugs}|{snippets}".encode()
+        f"{model}|{sampling}|{question}|{slugs}|{snippets}|want={want}".encode()
     ).hexdigest()
 
 
@@ -195,12 +211,20 @@ def _apply_order(candidates: list[dict], order: list[int]) -> list[dict]:
     return ordered + remaining
 
 
-def rerank(question: str, candidates: list[dict]) -> list[dict]:
+def rerank(question: str, candidates: list[dict], want: int | None = None) -> list[dict]:
+    """Reordena candidatos pelo julgamento do LLM.
+
+    Com `want`, pede os N mais relevantes em vez da ordenação completa: os
+    escolhidos sobem e o resto preserva a ordem de entrada.
+    """
     if len(candidates) < 2:
         return candidates
 
+    if want is not None and want >= len(candidates):
+        want = None
+
     cache = _read_cache()
-    key = _cache_key(question, candidates)
+    key = _cache_key(question, candidates, want=want)
     if key in cache:
         _stats["cache_hits"] += 1
         return _apply_order(candidates, cache[key])
@@ -217,7 +241,11 @@ def rerank(question: str, candidates: list[dict]) -> list[dict]:
     try:
         answer = _call_llm(
             [
-                {"role": "system", "content": _PROMPT + untrusted_policy(sentinel)},
+                {
+                    "role": "system",
+                    "content": (_select_prompt(want) if want else _PROMPT)
+                    + untrusted_policy(sentinel),
+                },
                 {
                     "role": "user",
                     "content": (
@@ -233,6 +261,13 @@ def rerank(question: str, candidates: list[dict]) -> list[dict]:
         return candidates
 
     order, call_stats = parse_order_with_stats(answer or "", len(candidates))
+    if want:
+        # Aceitar mais do que foi pedido é a ordenação da lista inteira pela
+        # porta dos fundos — e é justamente ela que produz índice alucinado.
+        order = order[:want]
+        call_stats["requested"] = want
+        call_stats["returned"] = len(order)
+        call_stats["coverage"] = len(order) / want if want else 0.0
 
     _stats["calls"] += 1
     _stats["requested_total"] += call_stats["requested"]
