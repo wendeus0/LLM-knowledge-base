@@ -142,6 +142,203 @@ Conteúdo compilado.
         )
 
 
+class TestDeclaredSectionsAreNotEmpty:
+    """Seção declarada e vazia é o artigo mentindo sobre o que contém.
+
+    Origem: travessia do ticket 002 (docs/research/2026-07-30-politica-de-corpus).
+    Medido no corpus real: 1.035 de 1.037 artigos têm `## Referências` sem um
+    único item, e 14 têm `## Exemplos` vazia.
+    """
+
+    def test_should_raise_when_declared_section_has_no_content(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "empty-section.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: Empty Section
+topic: ai
+---
+
+# Empty Section
+
+## Conceitos centrais
+
+Conteúdo real aqui.
+
+## Referências
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            with pytest.raises(CompileOutputError) as exc:
+                compile_to_artifact(raw_file)
+
+        assert "empty-section.md" in str(exc.value)
+        assert "Referências" in str(exc.value)
+
+    def test_should_raise_when_section_only_has_next_heading(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "heading-only.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: Heading Only
+topic: ai
+---
+
+# Heading Only
+
+## Exemplos
+
+## Limitações e trade-offs
+
+Trade-off documentado.
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            with pytest.raises(CompileOutputError) as exc:
+                compile_to_artifact(raw_file)
+
+        assert "Exemplos" in str(exc.value)
+
+    def test_should_accept_when_all_declared_sections_have_content(
+        self, tmp_raw_wiki
+    ):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "full.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: Full Article
+topic: ai
+---
+
+# Full Article
+
+## Conceitos centrais
+
+Definição precisa.
+
+## Referências
+
+- Fonte original
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            artifact = compile_to_artifact(raw_file)
+
+        assert artifact.title == "Full Article"
+
+
+class TestTemplatePlaceholdersAreSubstituted:
+    """Placeholder do template no output significa que o modelo copiou o molde."""
+
+    def test_should_raise_when_body_keeps_template_placeholder(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "placeholder.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: Placeholder Article
+topic: ai
+---
+
+# Placeholder Article
+
+## Conceitos centrais
+
+<definições precisas; termos técnicos consolidados podem ficar em inglês>
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            with pytest.raises(CompileOutputError) as exc:
+                compile_to_artifact(raw_file)
+
+        assert "placeholder" in str(exc.value).lower()
+
+    def test_should_not_flag_html_or_generics_as_placeholder(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "generics.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: Generics Article
+topic: typescript
+---
+
+# Generics Article
+
+## Conceitos centrais
+
+Use `Array<string>` para tipar listas, e `<div>` no JSX.
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            artifact = compile_to_artifact(raw_file)
+
+        assert artifact.title == "Generics Article"
+
+    def test_should_not_flag_typescript_generics_outside_code_span(
+        self, tmp_raw_wiki
+    ):
+        """Generics com espaço fora de code span não são placeholder do template."""
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "ts-generics.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: Generics Avançados
+topic: typescript
+---
+
+# Generics Avançados
+
+## Conceitos centrais
+
+A assinatura <T extends Base> restringe o parâmetro de tipo, e
+<K extends keyof T> deriva chaves do objeto.
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            artifact = compile_to_artifact(raw_file)
+
+        assert artifact.title == "Generics Avançados"
+
+    def test_should_raise_when_frontmatter_keeps_template_placeholder(
+        self, tmp_raw_wiki
+    ):
+        """Placeholder no frontmatter passava: `title` não-vazio bastava."""
+        raw, wiki = tmp_raw_wiki
+        raw_file = raw / "fm-placeholder.md"
+        raw_file.write_text("# Source\nConteúdo")
+
+        mock_response = """---
+title: <título em português>
+topic: ai
+source: <arquivo original>
+---
+
+# Artigo
+
+## Conceitos centrais
+
+Conteúdo real e substantivo.
+"""
+        with patch("kb.compile.chat") as mock_chat:
+            mock_chat.return_value = mock_response
+
+            with pytest.raises(CompileOutputError) as exc:
+                compile_to_artifact(raw_file)
+
+        assert "placeholder" in str(exc.value).lower()
+
+
 def test_should_compile_without_crash_when_topic_is_bracket_list(tmp_raw_wiki):
     raw, wiki = tmp_raw_wiki
     raw_file = raw / "bracket-topic.md"

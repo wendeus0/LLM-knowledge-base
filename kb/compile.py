@@ -35,7 +35,7 @@ from kb.templates_loader import resolve_template
 def _system_prompt(template_name="article"):
     return f"""Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
 1. Identifica o tópico principal ({topic_prompt_options()})
-2. Extrai e organiza os conceitos-chave COM FIDELIDADE à fonte — não invente conteúdo que não está no material; omita seções do template sem material correspondente
+2. Extrai e organiza os conceitos-chave COM FIDELIDADE à fonte — não invente conteúdo que não está no material; seção do template sem material correspondente deve ser OMITIDA por inteiro (título e corpo), nunca declarada e deixada vazia nem preenchida com conteúdo de outra seção
 3. Gera um artigo wiki em PORTUGUÊS em markdown com frontmatter YAML, seções claras e wikilinks [[conceito]]
 4. O artigo deve ser auto-contido mas referenciar outros conceitos relacionados com [[wikilinks]]
 5. Termos técnicos consolidados (ex: LLM, transformer, gradient descent) podem permanecer em inglês
@@ -61,6 +61,60 @@ def _strip_outer_fence(text: str) -> str:
     return "\n".join(lines).strip() + "\n"
 
 
+def _strip_code(text):
+    without_fences = re.sub(r"```.*?```", "", text, flags=re.S)
+    return re.sub(r"`[^`\n]*`", "", without_fences)
+
+
+def _empty_sections(body):
+    parts = re.split(r"^(#{2,3}\s+.+)$", body, flags=re.M)
+    levels = []
+    for i in range(1, len(parts), 2):
+        raw_heading = parts[i].strip()
+        levels.append(
+            (len(raw_heading) - len(raw_heading.lstrip("#")), raw_heading.strip("# ").strip(), parts[i + 1])
+        )
+
+    empty = []
+    for index, (level, heading, content) in enumerate(levels):
+        if content.strip():
+            continue
+        has_subsection = (
+            index + 1 < len(levels) and levels[index + 1][0] > level
+        )
+        if not has_subsection:
+            empty.append(heading)
+    return empty
+
+
+def _angle_tokens(text):
+    return {w.lower() for w in re.findall(r"\w+", text)}
+
+
+def _template_placeholders(compiled_markdown, template_name="article"):
+    """Marcadores do template que sobreviveram no output.
+
+    Compara contra os placeholders reais do template em vez de adivinhar por
+    formato: `<T extends Base>` e `<div>` não constam do molde e passam, enquanto
+    `<título em português>` — inclusive no frontmatter — é reconhecido mesmo se o
+    modelo truncar a frase.
+    """
+    molde = [
+        (raw, _angle_tokens(raw))
+        for raw in re.findall(r"<[^<>\n]+>", resolve_template(template_name))
+    ]
+    encontrados = []
+    for candidato in re.findall(r"<[^<>\n]+>", _strip_code(compiled_markdown)):
+        alvo = _angle_tokens(candidato)
+        if not alvo:
+            continue
+        for _, tokens_molde in molde:
+            if alvo <= tokens_molde:
+                encontrados.append(candidato)
+                break
+    return encontrados
+
+
 def _validate_output(compiled_markdown, source_name):
     meta, body = parse(compiled_markdown)
     if not meta and body == compiled_markdown:
@@ -72,6 +126,18 @@ def _validate_output(compiled_markdown, source_name):
         raise CompileOutputError(f"{source_name}: frontmatter sem topic")
     if not body.strip():
         raise CompileOutputError(f"{source_name}: corpo vazio após frontmatter")
+
+    empty = _empty_sections(body)
+    if empty:
+        raise CompileOutputError(
+            f"{source_name}: seção declarada e vazia: {', '.join(empty)}"
+        )
+
+    placeholders = _template_placeholders(compiled_markdown)
+    if placeholders:
+        raise CompileOutputError(
+            f"{source_name}: placeholder do template não substituído: {placeholders[0]}"
+        )
 
 
 TEXT_SOURCE_EXTENSIONS = {".md", ".markdown", ".txt", ".rst"}
