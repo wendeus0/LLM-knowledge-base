@@ -30,7 +30,7 @@ class TestSearchModes:
         _seed(tmp_path, monkeypatch)
         calls = []
         monkeypatch.setattr(
-            search_module, "_semantic_rank", lambda query: calls.append(query) or []
+            search_module, "_semantic_rank", lambda query: calls.append(query) or ([], {})
         )
 
         search_module.search("resiliencia", mode="lexical")
@@ -41,7 +41,7 @@ class TestSearchModes:
         _seed(tmp_path, monkeypatch)
         calls = []
         monkeypatch.setattr(
-            search_module, "_semantic_rank", lambda query: calls.append(query) or []
+            search_module, "_semantic_rank", lambda query: calls.append(query) or ([], {})
         )
 
         search_module.search("resiliencia", mode="hybrid")

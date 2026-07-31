@@ -153,11 +153,20 @@ def preflight() -> None:
 
 
 def _cache_key(question: str, candidates: list[dict]) -> str:
-    """Inclui modelo e sampling: os dois mudam a resposta, os dois invalidam."""
+    """Inclui tudo que muda a resposta: modelo, sampling, slugs e snippets.
+
+    O snippet entra no prompt, então entra na chave — sem isso, consertar um
+    snippet reaproveitaria a ordenação feita sobre o snippet errado.
+    """
     model = rerank_model()
     sampling = json.dumps(params("deterministic"), sort_keys=True)
     slugs = "|".join(candidate.get("slug", "") for candidate in candidates)
-    return hashlib.sha256(f"{model}|{sampling}|{question}|{slugs}".encode()).hexdigest()
+    snippets = "|".join(
+        (candidate.get("snippet") or "")[:_SNIPPET_CHARS] for candidate in candidates
+    )
+    return hashlib.sha256(
+        f"{model}|{sampling}|{question}|{slugs}|{snippets}".encode()
+    ).hexdigest()
 
 
 def _read_cache() -> dict:

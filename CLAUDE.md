@@ -118,7 +118,7 @@ KB_MODEL=qwen2.5-coder:7b
 2. **Importação de livros integrada** — `kb import-book` quebra EPUB/PDF textual em capítulos markdown dentro de `raw/books/` e pode compilar tudo com `--compile`
 3. **Stochastic heal** — `kb heal` processa N arquivos aleatórios, corrige links, deleta stubs
 4. **Git automático** — writes no corpus local podem gerar commit (estratégia Pawel Huryn: append/update, nunca rewrite)
-5. **Retrieval medido, não presumido** — `kb bench` mede recall@k e MRR contra um golden set. No vault real (1.033 artigos, 4,2M palavras): lexical dá `recall@5` 0,230; somar o canal semântico leva a 0,414; rerank dos 20 primeiros a temperatura 0 leva a 0,467, com MRR de 0,127 para 0,343. Sem vector store — brute-force em memória basta neste volume
+5. **Retrieval medido, não presumido** — `kb bench` mede recall@k e MRR contra um golden set. No vault real (1.039 artigos, 4,2M palavras): lexical dá `recall@5` 0,230; somar o canal semântico leva a 0,414; rerank dos 20 primeiros a temperatura 0 leva a 0,467; consertar a colisão de slug e o snippet vazio do canal semântico leva a **0,526**, com MRR de 0,127 para **0,352**. Sem vector store — brute-force em memória basta neste volume
 6. **Obsidian oficial** — o frontend recomendado é o Obsidian apontando para `<KB_DATA_DIR>/wiki`
 
 ## Contexto técnico atual

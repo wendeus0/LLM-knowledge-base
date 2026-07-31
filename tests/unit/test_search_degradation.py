@@ -48,7 +48,7 @@ class TestDegradationWarning:
         wiki, _ = _seed(tmp_path, monkeypatch)
         monkeypatch.setattr(
             "kb.search._semantic_rank",
-            lambda query: [(wiki / "artigo.md", 0.9)],
+            lambda query: ([(wiki / "artigo.md", 0.9)], {}),
         )
 
         search_module.search("resiliência")

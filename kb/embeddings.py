@@ -248,25 +248,43 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def semantic_ranking(query: str, index: dict) -> list[tuple[Path, float]]:
-    """Ranking (Path absoluto, similaridade) por cosseno; falha de embed degrada para []."""
+def semantic_ranking(query: str, index: dict) -> tuple[list[tuple[Path, float]], dict[Path, dict]]:
+    """Ranking por cosseno + chunk vencedor por artigo; falha de embed degrada para ([], {}).
+
+    O chunk vencedor (`{path: {"heading", "ordinal", "hash"}}`) alimenta o
+    snippet do rerank quando o candidato só existe no canal semântico. O
+    ordinal aponta o chunk exato (heading repetido e seção dividida não bastam
+    para localizar); o hash permite detectar índice stale na extração.
+    """
     from kb.config import WIKI_DIR
 
     try:
         query_vector = embed_texts([_QUERY_PREFIX + query])[0]
     except Exception:
-        return []
+        return [], {}
 
     scored: list[tuple[Path, float]] = []
+    best_chunks: dict[Path, dict] = {}
     for relpath, entry in index["articles"].items():
-        similarities = [
-            _cosine(query_vector, chunk["vector"])
-            for chunk in entry.get("chunks", [])
-            if chunk.get("vector")
-        ]
-        if not similarities:
+        best_score = None
+        best_chunk: dict = {}
+        for ordinal, chunk in enumerate(entry.get("chunks", [])):
+            if not chunk.get("vector"):
+                continue
+            similarity = _cosine(query_vector, chunk["vector"])
+            if best_score is None or similarity > best_score:
+                best_score = similarity
+                best_chunk = {
+                    "heading": chunk.get("heading", ""),
+                    "ordinal": ordinal,
+                    "hash": entry.get("hash", ""),
+                }
+        if best_score is None:
             continue
         # Máximo, não soma: artigo longo não deve pontuar mais por ter mais seções.
-        scored.append((Path(WIKI_DIR) / relpath, max(similarities)))
+        path = Path(WIKI_DIR) / relpath
+        scored.append((path, best_score))
+        best_chunks[path] = best_chunk
 
-    return sorted(scored, key=lambda item: item[1], reverse=True)
+    ranking = sorted(scored, key=lambda item: item[1], reverse=True)
+    return ranking, best_chunks

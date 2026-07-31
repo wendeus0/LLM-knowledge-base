@@ -113,7 +113,7 @@ class TestSemanticRankingAggregation:
             },
         }
 
-        ranking = embeddings.semantic_ranking("consulta", index)
+        ranking, _ = embeddings.semantic_ranking("consulta", index)
 
         assert ranking[0][0].name == "forte.md"
         assert ranking[0][1] > ranking[1][1]
@@ -135,6 +135,6 @@ class TestSemanticRankingAggregation:
             },
         }
 
-        ranking = embeddings.semantic_ranking("consulta", index)
+        ranking, _ = embeddings.semantic_ranking("consulta", index)
 
         assert ranking[0][0].name == "curto.md"

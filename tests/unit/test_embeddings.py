@@ -129,7 +129,7 @@ def test_should_rank_by_cosine_similarity_with_hand_worked_vectors(tmp_path, fak
     build_index(wiki, state)
     index = load_index(state)
     assert index is not None
-    ranking = semantic_ranking("padrão de resiliencia", index)
+    ranking, _ = semantic_ranking("padrão de resiliencia", index)
     assert ranking[0][0].name == "circuit-breaker.md"
     assert ranking[0][1] == pytest.approx(1.0)
     scores = dict((p.name, s) for p, s in ranking)

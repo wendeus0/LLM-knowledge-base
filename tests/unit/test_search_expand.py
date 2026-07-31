@@ -26,7 +26,7 @@ class TestSearchExpansion:
         lexical_seen = []
 
         monkeypatch.setattr(
-            search_module, "_semantic_rank", lambda q: semantic_seen.append(q) or []
+            search_module, "_semantic_rank", lambda q: semantic_seen.append(q) or ([], {})
         )
         original_build = search_module._build_rankings
         monkeypatch.setattr(
@@ -46,7 +46,7 @@ class TestSearchExpansion:
     def test_should_not_expand_when_flag_absent(self, tmp_path, monkeypatch):
         _seed(tmp_path, monkeypatch)
         calls = []
-        monkeypatch.setattr(search_module, "_semantic_rank", lambda q: calls.append(q) or [])
+        monkeypatch.setattr(search_module, "_semantic_rank", lambda q: calls.append(q) or ([], {}))
         monkeypatch.setattr(
             "kb.query_expansion.expand_query",
             lambda q, s: (_ for _ in ()).throw(AssertionError("não deveria expandir")),
