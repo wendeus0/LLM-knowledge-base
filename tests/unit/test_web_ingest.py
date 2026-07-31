@@ -35,6 +35,52 @@ HTML_NO_TITLE = """
 </html>
 """
 
+_NAV_LINKS = "\n".join(
+    f'<li><a href="/section/{i}">Section {i}</a></li>' for i in range(40)
+)
+
+HTML_JS_SHELL = f"""
+<html>
+<head><title>Google Hacking Database</title></head>
+<body>
+<nav><ul>{_NAV_LINKS}</ul></nav>
+<div id="root">This site requires JavaScript to run.</div>
+<footer><a href="/privacy">Privacy</a><a href="/cookies">Cookies</a></footer>
+</body>
+</html>
+"""
+
+HTML_JS_SHELL_MINIMAL = """
+<html>
+<head><title>App</title></head>
+<body><div id="root">Please enable JavaScript to continue.</div></body>
+</html>
+"""
+
+_PARAGRAPH = (
+    "Cross-site scripting happens when an application takes data controlled by "
+    "the attacker and writes it into the page without escaping, so the browser "
+    "executes it as if it came from the origin itself. The fix is contextual "
+    "output encoding at the point of interpolation, never a blocklist of tags."
+)
+
+HTML_REAL_ARTICLE = f"""
+<html>
+<head><title>XSS In Depth</title></head>
+<body>
+<nav><ul>{_NAV_LINKS}</ul></nav>
+<article><p>{_PARAGRAPH}</p><p>{_PARAGRAPH}</p></article>
+</body>
+</html>
+"""
+
+HTML_SHORT_REAL = f"""
+<html>
+<head><title>Short But Real</title></head>
+<body><p>{_PARAGRAPH[:300]}</p></body>
+</html>
+"""
+
 
 class TestIngestUrl:
     """Testa kb.web_ingest.ingest_url(url)."""
@@ -222,6 +268,123 @@ class TestIngestUrl:
             ingest_url("https://example.com/xss", no_commit=False)
 
         mock_commit.assert_called_once()
+
+
+class TestEmptyContentDetection:
+    """Página que não renderiza conteúdo real não pode ser ingerida em silêncio."""
+
+    def test_should_raise_when_page_is_only_navigation_chrome(
+        self, tmp_path, monkeypatch
+    ):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = HTML_JS_SHELL
+        mock_response.raise_for_status = MagicMock()
+
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
+            with pytest.raises(WebIngestError, match="não rendeu conteúdo"):
+                ingest_url("https://example.com/ghdb")
+
+        assert list(raw_dir.iterdir()) == []
+
+    def test_should_mention_javascript_and_manual_save_in_error(
+        self, tmp_path, monkeypatch
+    ):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = HTML_JS_SHELL_MINIMAL
+        mock_response.raise_for_status = MagicMock()
+
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
+            with pytest.raises(WebIngestError) as exc_info:
+                ingest_url("https://example.com/app")
+
+        message = str(exc_info.value)
+        assert "JavaScript" in message
+        assert "salve" in message.lower()
+
+    def test_should_accept_page_with_real_article(self, tmp_path, monkeypatch):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = HTML_REAL_ARTICLE
+        mock_response.raise_for_status = MagicMock()
+
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
+            out = ingest_url("https://example.com/xss-in-depth")
+
+        assert out.exists()
+
+    def test_should_accept_short_but_real_page(self, tmp_path, monkeypatch):
+        raw_dir = tmp_path / "raw"
+        raw_dir.mkdir()
+        monkeypatch.setattr("kb.config.RAW_DIR", raw_dir)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = HTML_SHORT_REAL
+        mock_response.raise_for_status = MagicMock()
+
+        with (
+            patch("kb.web_ingest.requests.get", return_value=mock_response),
+            patch("kb.web_ingest.commit"),
+        ):
+            out = ingest_url("https://example.com/short")
+
+        assert out.exists()
+
+    def test_should_accept_legitimate_short_line_content(self):
+        """
+        Dado conteúdo real de linha curta (glossário, FAQ, tabela),
+        Quando o gate de conteúdo vazio avalia,
+        Então aceita — o piso por linha derrubava conteúdo legítimo, e quem
+        descarta menu é o link-ratio, não o comprimento da linha
+        """
+        from kb.web_ingest import _reject_empty_content
+
+        glossario = "\n".join(f"- Termo {i}: definição breve." for i in range(30))
+        faq = "\n".join(
+            f"## Como faço a coisa {i}?\n\nVocê usa o comando numero {i} assim."
+            for i in range(15)
+        )
+        tabela = "\n".join(f"| campo{i} | valor{i} | nota{i} |" for i in range(40))
+
+        for body in (glossario, faq, tabela):
+            _reject_empty_content(body, "https://example.com/x")
+
+    def test_should_reject_menu_only_page_without_javascript_notice(self):
+        """
+        Dado uma página que é só barra de navegação, sem aviso de JavaScript,
+        Quando o gate avalia,
+        Então rejeita pelo volume de chrome — o aviso é sinal adicional, não a
+        única evidência
+        """
+        from kb.web_ingest import _reject_empty_content
+
+        so_menu = "\n".join(f"[Categoria numero {i}](/cat/{i})" for i in range(80))
+
+        with pytest.raises(WebIngestError, match="não rendeu conteúdo"):
+            _reject_empty_content(so_menu, "https://example.com/menu")
 
 
 class TestSSRFProtection:

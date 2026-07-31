@@ -39,6 +39,78 @@ def test_execute_compile_command_should_resolve_targets_by_book_name(tmp_path):
     assert result.exit_code == 0
 
 
+def test_execute_compile_command_should_resolve_relative_path_to_absolute(
+    tmp_path, monkeypatch
+):
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    source = raw_dir / "artigo.md"
+    source.write_text("# Artigo")
+    monkeypatch.chdir(tmp_path)
+
+    with (
+        patch("kb.cmds.compile.run.find_book_dirs") as mock_find,
+        patch("kb.cmds.compile.run.compile_file") as mock_compile,
+    ):
+        mock_compile.return_value = tmp_path / "wiki" / "artigo.md"
+
+        result = execute_compile_command(
+            target="raw/artigo.md",
+            update_index=False,
+            workers=1,
+            allow_sensitive=False,
+            no_commit=True,
+            interactive_sensitive=False,
+        )
+
+    assert result.exit_code == 0
+    assert result.targets == [source.resolve()]
+    assert result.targets[0].is_absolute()
+    assert not mock_find.called
+
+
+def test_execute_compile_command_should_report_missing_file_for_path_like_target(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+
+    with patch("kb.cmds.compile.run.find_book_dirs") as mock_find:
+        result = execute_compile_command(
+            target="raw/inexistente.md",
+            update_index=False,
+            workers=1,
+            allow_sensitive=False,
+            no_commit=True,
+            interactive_sensitive=False,
+        )
+
+    assert result.exit_code == 1
+    assert not mock_find.called
+    assert result.message_lines == [
+        "[red]Arquivo não encontrado:[/] raw/inexistente.md"
+    ]
+
+
+def test_execute_compile_command_should_still_treat_plain_name_as_book(tmp_path):
+    with patch("kb.cmds.compile.run.find_book_dirs") as mock_find:
+        mock_find.return_value = []
+
+        result = execute_compile_command(
+            target="Build a Large Language Model",
+            update_index=False,
+            workers=1,
+            allow_sensitive=False,
+            no_commit=True,
+            interactive_sensitive=False,
+        )
+
+    assert result.exit_code == 1
+    mock_find.assert_called_once_with("Build a Large Language Model")
+    assert result.message_lines == [
+        "[red]Nenhum livro encontrado para:[/] Build a Large Language Model"
+    ]
+
+
 def test_cli_compile_should_route_through_cmd_layer():
     fake_out = Path("/tmp/wiki/out.md")
     fake_result = type(
