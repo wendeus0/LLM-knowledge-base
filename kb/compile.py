@@ -21,7 +21,13 @@ from kb.config import (
 from kb.frontmatter import parse
 from kb.fsutil import atomic_write_text
 from kb.git import commit
-from kb.guardrails import assert_safe_for_provider
+from kb.guardrails import (
+    assert_safe_for_provider,
+    new_sentinel,
+    untrusted_policy,
+    warn_on_injection,
+    wrap_untrusted,
+)
 from kb.sampling import params
 from kb.state import (
     extract_summary,
@@ -32,7 +38,8 @@ from kb.state import (
 from kb.templates_loader import resolve_template
 
 
-def _system_prompt(template_name="article"):
+def _system_prompt(template_name="article", sentinel=None):
+    policy = f"\n\n{untrusted_policy(sentinel)}" if sentinel else ""
     return f"""Você é um compilador de knowledge base. Dado um documento bruto (geralmente em inglês), você:
 1. Identifica o tópico principal ({topic_prompt_options()})
 2. Extrai e organiza os conceitos-chave COM FIDELIDADE à fonte — não invente conteúdo que não está no material; seção do template sem material correspondente deve ser OMITIDA por inteiro (título e corpo), nunca declarada e deixada vazia nem preenchida com conteúdo de outra seção
@@ -43,7 +50,7 @@ def _system_prompt(template_name="article"):
 Formato de saída — apenas o markdown bruto, sem explicações e SEM code fences envolvendo o output:
 
 {resolve_template(template_name)}
-"""
+{policy}"""
 
 
 class CompileOutputError(Exception):
@@ -233,10 +240,16 @@ def _prepare_prompt_content(text: str, aggressive: bool = False) -> str:
 
 
 def _build_prompt(
-    raw_path: Path, content: str, aggressive: bool = False, book_context=None
+    raw_path: Path,
+    content: str,
+    aggressive: bool = False,
+    book_context=None,
+    sentinel: str | None = None,
 ) -> str:
     label = "Documento pré-processado" if aggressive else "Documento"
-    prompt = f"{label}: {raw_path.name}\n\n{_prepare_prompt_content(content, aggressive=aggressive)}"
+    prepared = _prepare_prompt_content(content, aggressive=aggressive)
+    body = wrap_untrusted(prepared, sentinel) if sentinel else prepared
+    prompt = f"{label}: {raw_path.name}\n\n{body}"
     if not book_context:
         return prompt
 
@@ -365,9 +378,11 @@ def compile_to_artifact(
     assert_safe_for_provider(
         content, source=f"compile:{raw_path.name}", allow_sensitive=allow_sensitive
     )
+    warn_on_injection(content, source=f"compile:{raw_path.name}")
     book_context = _book_context(raw_path)
     template_name = "chapter" if book_context else "article"
-    system_prompt = _system_prompt(template_name)
+    sentinel = new_sentinel()
+    system_prompt = _system_prompt(template_name, sentinel=sentinel)
 
     try:
         response = chat(
@@ -376,7 +391,7 @@ def compile_to_artifact(
                 {
                     "role": "user",
                     "content": _build_prompt(
-                        raw_path, content, book_context=book_context
+                        raw_path, content, book_context=book_context, sentinel=sentinel
                     ),
                 },
             ],
@@ -402,6 +417,7 @@ def compile_to_artifact(
                         content,
                         aggressive=True,
                         book_context=book_context,
+                        sentinel=sentinel,
                     ),
                 },
             ],
