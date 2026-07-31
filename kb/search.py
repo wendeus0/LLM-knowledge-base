@@ -3,15 +3,11 @@
 from __future__ import annotations
 
 import math
-import re
 import sys
 from pathlib import Path
 
 from kb.config import WIKI_DIR
-
-
-def _tokenize(text: str) -> list[str]:
-    return re.findall(r"\w+", text.lower())
+from kb.lexical_index import tokenize as _tokenize
 
 
 def _extract_snippet(text: str, terms: set[str]) -> str:
@@ -33,43 +29,98 @@ def _iter_docs() -> list[tuple[Path, str, list[str]]]:
     return docs
 
 
-def _build_rankings(query: str) -> tuple[list[tuple[Path, float]], list[tuple[Path, float]], list[tuple[Path, float]], dict[Path, str]]:
+class _Snippets:
+    """Trecho de exibição por artigo, resolvido sob demanda.
+
+    Com índice lexical o texto não está em memória, e extrair o trecho de todos
+    os artigos que casaram exigiria reler o corpus — justamente o que o índice
+    evita. Só os poucos resultados devolvidos leem o arquivo. Artigo fora do
+    conjunto de casamentos devolve o default sem ler nada: o trecho casa por
+    substring e traria trecho onde o ranking lexical não pontuou.
+    """
+
+    def __init__(self, terms: set[str], hits: set[Path], cache: dict[Path, str] | None = None):
+        self._terms = terms
+        self._hits = hits
+        self._cache = cache if cache is not None else {}
+
+    def get(self, path: Path, default: str = "") -> str:
+        if path in self._cache:
+            return self._cache[path]
+        if path not in self._hits:
+            return default
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return default
+        self._cache[path] = _extract_snippet(text, self._terms)
+        return self._cache[path]
+
+
+def _corpus_docs(terms: set[str]) -> list[tuple[Path, int, dict[str, int], str | None]]:
+    """(path, comprimento, frequência dos termos, texto) — do índice ou relendo a wiki.
+
+    O texto vem None quando os números saíram do índice lexical; nesse caminho
+    o trecho de exibição é resolvido depois, artigo a artigo.
+    """
+    from kb.config import STATE_DIR
+    from kb.lexical_index import lexical_corpus
+
+    indexed = lexical_corpus(WIKI_DIR, STATE_DIR)
+    if indexed is not None:
+        return [
+            (
+                WIKI_DIR / relpath,
+                entry["length"],
+                {term: entry["tf"].get(term, 0) for term in terms},
+                None,
+            )
+            for relpath, entry in indexed.items()
+        ]
+
+    docs: list[tuple[Path, int, dict[str, int], str | None]] = []
+    for path, text, tokens in _iter_docs():
+        term_freq = {term: 0 for term in terms}
+        for tok in tokens:
+            if tok in term_freq:
+                term_freq[tok] += 1
+        docs.append((path, len(tokens), term_freq, text))
+    return docs
+
+
+def _build_rankings(query: str) -> tuple[list[tuple[Path, float]], list[tuple[Path, float]], list[tuple[Path, float]], _Snippets]:
     terms = {term for term in _tokenize(query) if len(term) > 1}
     if not terms:
-        return [], [], [], {}
+        return [], [], [], _Snippets(terms, set())
 
-    docs = _iter_docs()
+    docs = _corpus_docs(terms)
     if not docs:
-        return [], [], [], {}
+        return [], [], [], _Snippets(terms, set())
 
-    lengths = {path: max(1, len(tokens)) for path, _, tokens in docs}
+    lengths = {path: max(1, length) for path, length, _, _ in docs}
     avg_len = sum(lengths.values()) / len(lengths)
 
     # DF por termo para BM25
     df: dict[str, int] = {term: 0 for term in terms}
-    for _, _, tokens in docs:
-        token_set = set(tokens)
+    for _, _, term_freq, _ in docs:
         for term in terms:
-            if term in token_set:
+            if term_freq[term] > 0:
                 df[term] += 1
 
     keyword_scores: list[tuple[Path, float]] = []
     density_scores: list[tuple[Path, float]] = []
     bm25_scores: list[tuple[Path, float]] = []
-    snippets: dict[Path, str] = {}
+    hits: set[Path] = set()
+    cache: dict[Path, str] = {}
 
     # BM25 params
     k1 = 1.5
     b = 0.75
     n_docs = len(docs)
 
-    for path, text, tokens in docs:
+    for path, _, term_freq, text in docs:
         tf_total = 0.0
         bm25 = 0.0
-        term_freq = {term: 0 for term in terms}
-        for tok in tokens:
-            if tok in term_freq:
-                term_freq[tok] += 1
 
         for term in terms:
             tf = term_freq[term]
@@ -84,7 +135,9 @@ def _build_rankings(query: str) -> tuple[list[tuple[Path, float]], list[tuple[Pa
         if tf_total <= 0:
             continue
 
-        snippets[path] = _extract_snippet(text, terms)
+        hits.add(path)
+        if text is not None:
+            cache[path] = _extract_snippet(text, terms)
         keyword_scores.append((path, tf_total))
         density_scores.append((path, tf_total / lengths[path]))
         bm25_scores.append((path, bm25))
@@ -93,7 +146,7 @@ def _build_rankings(query: str) -> tuple[list[tuple[Path, float]], list[tuple[Pa
     density_scores.sort(key=lambda item: (item[1], -len(item[0].name), str(item[0])), reverse=True)
     bm25_scores.sort(key=lambda item: (item[1], -len(item[0].name), str(item[0])), reverse=True)
 
-    return keyword_scores, density_scores, bm25_scores, snippets
+    return keyword_scores, density_scores, bm25_scores, _Snippets(terms, hits, cache)
 
 
 def _rrf_fuse(rankings: list[list[tuple[Path, float]]], k: int = 60) -> dict[Path, float]:
