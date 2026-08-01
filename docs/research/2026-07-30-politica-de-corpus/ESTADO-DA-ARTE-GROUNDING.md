@@ -50,6 +50,33 @@ Para nós isso é direto: usamos um modelo de 27B (3,79 GB quantizado a 1 bit) a
 
 O [Auto-GDA](https://arxiv.org/abs/2410.03461) trata o problema seguinte: modelos NLI genéricos sofrem porque *"RAG inputs are more complex than most datasets used for training NLI models and have characteristics specific to the underlying knowledge base"*. A proposta é adaptação de domínio não-supervisionada via dados sintéticos, alcançando performance de LLM a **10% do custo computacional**. Temos corpus para gerar esses dados sintéticos.
 
+## NLI testado — confirmado, e a diferença é extrema
+
+Medido em 2026-08-01 com `MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7` (multilíngue de propósito: o corpus é português técnico traduzido, e NLI monolíngue inglês seria distribuição errada).
+
+Conjunto desenhado para **isolar a diferença**, não repetir a medição anterior: 12 pares em que a afirmação deriva do contexto com **uma** mudança — negação, número trocado, comparação invertida. Seis ancoradas, cada uma pareada com sua deriva.
+
+| | acerto | mediana ancoradas | mediana derivas | separação |
+|---|---:|---:|---:|---:|
+| **NLI (entailment)** | **12/12 (100%)** | **0,993** | **0,001** | quase binária |
+| cosseno (limiar 0,416) | 6/12 (50%) | 0,750 | 0,741 | **0,009** |
+
+O cosseno acertou metade num conjunto metade/metade — não distingue nada. Casos:
+
+| Afirmação (deriva) | Cosseno | NLI |
+|---|---:|---|
+| "O circuit breaker **NÃO** abre após falhas consecutivas" | **0,786** | contradição 0,998 |
+| "O índice torna as escritas mais **rápidas**" (fonte: lentas) | 0,686 | contradição 1,000 |
+| "A prática **massificada** produz retenção superior" (invertido) | **0,757** | contradição 0,995 |
+
+A negação é o caso didático: cosseno 0,786 está **acima** do limiar 0,416 do estudo — passaria como ancorada.
+
+Um caso mostra o NLI hesitando com honestidade: "merge sort tem complexidade O(n²)" deu entailment 0,357 e contradição 0,615. A fonte diz O(n log n) mas não nega O(n²) explicitamente; o modelo ficou dividido e acertou com margem menor. É o comportamento certo para inferência que exige conhecimento externo.
+
+**Consequência:** os 100%/87% do protótipo de cosseno eram contra fabricações grosseiras. Contra deriva sutil — que é o modo de falha real — o cosseno é inútil. A limitação que declaramos era maior do que supúnhamos.
+
+**E os dois são necessários, não alternativos:** o cosseno seleciona a premissa (qual trecho do contexto é relevante), o NLI julga se a afirmação decorre dela. Trocar um pelo outro seria erro de arquitetura.
+
 ## O que isso sugere para o kb, em ordem de custo
 
 1. **Trocar cosseno por NLI no protótipo de grounding.** Modelo NLI pequeno, local, roda no mesmo servidor de embeddings. Mede o que já medimos (100%/87%) e deve pegar a deriva sutil que declaramos como limitação. **Verificar antes:** que um NLI genérico funcione em português sobre nosso corpus — a maioria é treinada em inglês.
