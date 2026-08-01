@@ -23,7 +23,7 @@ type: project
 
 ### P2 — próximo ganho de retrieval
 
-4. **Restringir a saída do rerank:** pedir os N mais relevantes em vez de ordenar 20. É o que resta depois da 022 provar que sampling corrige omissão mas não alucinação de índice. Gate: `kb bench --rerank 20` contra `recall@5 = 0,467 / MRR = 0,343`.
+4. ~~**Restringir a saída do rerank:** pedir os N mais relevantes em vez de ordenar 20~~ — **NEGATIVO MEDIDO (2026-07-31)**. Implementado e medido em `feat/rerank-top-n` (não mergeado). Zerou os índices fora da faixa, que era o alvo, mas **recall@5 caiu de 0,526 para 0,493** (−5 acertos em 152) porque o modelo devolve menos do que se pede: cobertura 0,91, seis omissões severas. MRR subiu (0,352 → 0,364) — acerta em posição melhor, erra mais vezes. Medição limpa (`failed: 0`, `degraded: false`). Reabrir só se o critério do projeto virar MRR, ou com reranker que não omita.
 5. **Índice lexical persistente.** `_iter_docs` relê os 1.033 arquivos por query (~3s); é o gargalo de qualquer medição agora que o rerank tem cache.
 6. **Verificação contínua do provider durante o lote.** O `preflight` cobre só o início; duas medições foram perdidas por falha no meio.
 

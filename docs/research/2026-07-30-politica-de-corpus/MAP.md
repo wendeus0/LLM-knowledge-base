@@ -30,7 +30,8 @@ Levantados na sessão de charting (2026-07-30), sem trabalho novo de ticket.
 
 - `recall@5`: 0,230 lexical → 0,414 com canal semântico → **0,467** com rerank 20 a temp 0. MRR: 0,127 → 0,242 → **0,343**. Golden de 152 casos (50 curados + 102 gerados). `docs/adr/0017-hybrid-retrieval-with-measured-llm-rerank.md:25-31`.
 - Teto de ordenação disponível: `recall@20` = **0,720** (`memory/project_state.md:30`).
-- Negativos registrados para não retentar: chunking por seção (017), `--expand terms` (018), `granite4:tiny-h` como reranker (021/022, pior que não reordenar).
+- Negativos registrados para não retentar: chunking por seção (017), `--expand terms` (018), `granite4:tiny-h` como reranker (021/022, pior que não reordenar), **rerank restrito a top-N (2026-07-31: zerou índice alucinado e mesmo assim derrubou recall@5 de 0,526 para 0,493 — o modelo devolve menos do que se pede)**.
+- **Baseline de retrieval atualizada em 2026-07-31:** `recall@5` 0,467 → **0,526** e MRR 0,343 → **0,352**, após corrigir a colisão de slug (PR #50) e o snippet vazio do candidato só-semântico (PR #51). São +9 acertos em 152.
 - A premissa "busca genérica de fase inicial" descreve o estado **anterior** ao ADR-0017. O ADR-0004 (keyword simples) está superado.
 
 **Corpus — o estado real**
