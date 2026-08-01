@@ -6,11 +6,20 @@ type: project
 
 ## Frente ativa
 
-### Política de corpus — map aberto (2026-07-30)
+### Política de corpus — map FECHADO (2026-07-30 → 2026-07-31)
 
-**Status:** `WAYFINDER_CHARTED` — 8 tickets, 0 resolvidos. Frontier: 001, 002, 003.
-**Artefatos:** `docs/research/2026-07-30-politica-de-corpus/{MAP.md, tickets/}`
-**Destination:** ADR que trava o fundamento do corpus — origem do conhecimento novo, destino dos 1.037 artigos atuais, wiki como produto ou insumo, e superfície de leitura. Gradua o que o map de engenharia reversa deixou em Out of scope.
+**Status:** `WAYFINDER_CLEAR` — 8 de 8 tickets resolvidos. Destination entregue: [ADR-0018](../docs/adr/0018-corpus-policy-theme-articles-over-chapter-articles.md).
+**Artefatos:** `docs/research/2026-07-30-politica-de-corpus/{MAP.md, DOMAIN.md, MAPA-DE-TEMAS.md, MEDICAO-CORPUS.md, tickets/}`
+**Regra de casa do diretório:** toda afirmação estrutural carrega evidência `caminho:linha`; afirmação sem evidência é marcada `UNVERIFIED` e não entra no ADR.
+
+**O que a política travou:** a wiki é produto; o artigo passa a ser de tema e multi-fonte, gerado sob demanda; os 1.037 artigos de capítulo são reagrupados em lote **pela proveniência** e vão para `_chapters/`; a fonte é livro e paper curados pelo usuário, sem web aberta na rotina; **não há detecção automática de lacuna**; a tela própria absorve autoria e leitura, e o Obsidian sai.
+
+**Três decisões foram derrubadas ou reformuladas por medição, não por argumento:**
+- "o corpus é raso" — falso: mediana de 10 headings, 93% com ≥5. O detector original media aderência ao template.
+- "limiar de score detecta lacuna" — falso: acertos (0,0367–0,0641) e erros (0,0361–0,0636) se sobrepõem quase por inteiro. RRF mede concordância entre canais, não confiança.
+- "agrupar por cosseno" — substituído por proveniência: o clustering revelou que o corpus são ~40 livros fatiados, e `raw/books/*/metadata.json` já sabe qual capítulo veio de qual livro.
+
+**Cinco pré-requisitos técnicos bloqueiam a execução** (nenhum existe): rastreabilidade de origem por trecho, `manifest.json` materializado, retrieval sobre `library/`, medição de sobreposição temática, e medida de confiança da resposta. Execução sai pelo `spec-pipeline`.
 
 **Achados do charting que reorientam o projeto:**
 - `raw/` está vazia (dois `.DS_Store`); `kb compile` tem zero alvos. As 869 fontes só existem em `library/`, 185 MB **fora do git**.
