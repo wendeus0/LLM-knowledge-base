@@ -1,0 +1,7 @@
+---
+feature: 023-claim-grounding
+mode: act
+pipeline_state: CONTRACT_VALID
+branch: proto/answer-verification
+last_updated: 2026-08-01
+---
