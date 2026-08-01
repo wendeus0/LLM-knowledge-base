@@ -16,4 +16,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e .[llm,web,pdf,dev]
       - run: ruff check kb tests
+      - run: python -B scripts/appeasement_report.py --src kb --tests tests --baseline .appeasement-baseline.json
       - run: python -m pytest -q --cov=kb --cov-report=term-missing --cov-fail-under=85

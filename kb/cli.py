@@ -488,9 +488,7 @@ def qa(
             args["grounding_enabled"] = False
         result = execute_qa_command(**args)
         response, saved = result
-        from kb import grounding
-
-        grounding_result = getattr(result, "grounding", grounding.GroundingResult())
+        grounding_result = result.grounding
         if json_output:
             typer.echo(
                 json.dumps(

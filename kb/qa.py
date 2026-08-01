@@ -258,7 +258,7 @@ def answer_and_file(
     return QaResult(answer=response, grounding=result.grounding, saved_path=out)
 
 
-class QaResult(tuple):
+class QaResult(tuple):  # appease: allow(TA-2) API pública de answer_and_file() documenta tuple[str, Path | None]; grounding é extensão compatível
     """O par (resposta, caminho) de sempre, com a ancoragem pendurada.
 
     Herda de tuple para que `isinstance(x, tuple)`, desempacotamento, índice e

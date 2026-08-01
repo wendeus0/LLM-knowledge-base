@@ -7,6 +7,12 @@ from kb.cli import app
 runner = CliRunner()
 
 
+def _qa_result(answer, saved_path=None):
+    from kb.grounding import GroundingResult
+    from kb.qa import QaResult
+
+    return QaResult(answer=answer, grounding=GroundingResult(), saved_path=saved_path)
+
 class TestIngestCommand:
     def test_should_ingest_local_file_without_commit_by_default(self, tmp_path):
         source = tmp_path / "source.md"
@@ -486,7 +492,7 @@ class TestQaCommand:
             patch("kb.cli.console.print"),
             patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = ("This is the answer", None)
+            mock_answer.return_value = _qa_result("This is the answer")
 
             result = runner.invoke(app, ["qa", "What is AI?"])
 
@@ -517,7 +523,7 @@ class TestQaCommand:
                     [SensitiveFinding(label="secret", sample="[redacted]")],
                     "qa",
                 ),
-                ("Answer after confirmation", None),
+                _qa_result("Answer after confirmation"),
             ]
             mock_confirm.return_value = True
 
@@ -552,7 +558,7 @@ class TestQaCommand:
             patch("kb.cli.console.print") as mock_print,
             patch("kb.cmds.qa.run.execute_qa_command") as mock_answer_and_file,
         ):
-            mock_answer_and_file.return_value = ("Answer text", tmp_path / "output.md")
+            mock_answer_and_file.return_value = _qa_result("Answer text", tmp_path / "output.md")
 
             result = runner.invoke(
                 app, ["qa", "Question?", "--file-back", "--no-commit"]
@@ -580,7 +586,7 @@ class TestQaCommand:
             patch("kb.cli.console.print"),
             patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = ("Answer", None)
+            mock_answer.return_value = _qa_result("Answer")
 
             result = runner.invoke(app, ["qa", "Question?", "--no-traverse"])
 
@@ -603,7 +609,7 @@ class TestQaCommand:
             patch("kb.cli.console.print"),
             patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = ("Answer", None)
+            mock_answer.return_value = _qa_result("Answer")
 
             result = runner.invoke(app, ["qa", "Question?", "--depth", "3"])
 
@@ -626,7 +632,7 @@ class TestQaCommand:
             patch("kb.cli.console.print"),
             patch("kb.cmds.qa.run.execute_qa_command") as mock_answer,
         ):
-            mock_answer.return_value = ("Answer", None)
+            mock_answer.return_value = _qa_result("Answer")
 
             result = runner.invoke(app, ["qa", "Q?", "--file-back", "--to-wiki"])
 

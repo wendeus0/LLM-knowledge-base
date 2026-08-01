@@ -80,9 +80,13 @@ def test_qa_cli_should_support_allow_sensitive_and_no_commit_for_file_back(tmp_p
         patch("kb.cli.console.print"),
         patch("kb.qa.answer_and_file") as mock_answer_and_file,
     ):
-        mock_answer_and_file.return_value = (
-            "Resposta.",
-            tmp_path / "wiki" / "saved.md",
+        from kb.grounding import GroundingResult
+        from kb.qa import QaResult
+
+        mock_answer_and_file.return_value = QaResult(
+            answer="Resposta.",
+            grounding=GroundingResult(),
+            saved_path=tmp_path / "wiki" / "saved.md",
         )
 
         result = runner.invoke(

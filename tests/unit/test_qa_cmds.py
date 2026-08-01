@@ -10,6 +10,12 @@ from kb.guardrails import SensitiveContentError, SensitiveFinding
 runner = CliRunner()
 
 
+def _qa_result(answer, saved_path=None):
+    from kb.grounding import GroundingResult
+    from kb.qa import QaResult
+
+    return QaResult(answer=answer, grounding=GroundingResult(), saved_path=saved_path)
+
 def test_execute_qa_command_should_call_answer_when_file_back_disabled():
     # A feature 023 trocou o colaborador interno de `answer` para
     # `answer_with_grounding`, que devolve a mesma tupla mais a ancoragem.
@@ -46,7 +52,7 @@ def test_execute_qa_command_should_call_answer_when_file_back_disabled():
 def test_execute_qa_command_should_call_answer_and_file_when_file_back_enabled():
     out = Path("/tmp/out.md")
     with patch("kb.qa.answer_and_file") as mock_file:
-        mock_file.return_value = ("Resposta", out)
+        mock_file.return_value = _qa_result("Resposta", out)
 
         response, saved = execute_qa_command(
             question="Pergunta",
@@ -79,7 +85,7 @@ def test_cli_qa_should_render_markdown_from_cmd_layer():
         patch("kb.cli.console.print") as mock_print,
         patch("kb.cmds.qa.run.execute_qa_command") as mock_execute,
     ):
-        mock_execute.return_value = ("# resposta", None)
+        mock_execute.return_value = _qa_result("# resposta")
 
         result = runner.invoke(app, ["qa", "pergunta teste", "--depth", "2"])
 
@@ -109,7 +115,7 @@ def test_cli_qa_should_retry_when_sensitive_confirmed():
         patch("kb.cmds.qa.run.execute_qa_command") as mock_execute,
         patch("kb.cli.typer.confirm") as mock_confirm,
     ):
-        mock_execute.side_effect = [exc, ("ok", None)]
+        mock_execute.side_effect = [exc, _qa_result("ok")]
         mock_confirm.return_value = True
 
         result = runner.invoke(app, ["qa", "pergunta"])
