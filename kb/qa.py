@@ -1,6 +1,7 @@
 """Q&A contra fontes nativas. Com --file-back, a resposta é arquivada no corpus."""
 
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from kb.claims import find_relevant_claims
@@ -198,3 +199,29 @@ def answer_and_file(
         commit(f"feat(outputs): file back answer — {title[:50]}", [out])
 
     return response, out
+
+
+@dataclass
+class QaResult:
+    answer: str
+    grounding: "GroundingResult"
+    saved_path: Path | None = None
+
+
+_grounding_warned = False
+
+
+def answer_with_grounding(
+    question: str,
+    top_k: int | None = None,
+    allow_sensitive: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
+    profile: str = "fast",
+    rerank_depth: int | None = None,
+    grounding_enabled: bool = True,
+) -> QaResult:
+    """Resposta do qa acompanhada da verificação de ancoragem."""
+    from kb.grounding import GroundingResult
+
+    return QaResult(answer="", grounding=GroundingResult())
