@@ -15,8 +15,8 @@
   tag: AFK
   vertical_slice: spike
   behavior: "O cliente consegue provar, com HTTP simulado, que o serviço local anuncia o modelo NLI e respeita o contrato de classificação."
-  verify: "python -m pytest tests/unit/test_grounding.py -k 'probe or http_contract'"
-  state: not_started
+  verify: "python -m pytest tests/unit/test_grounding.py -k 'probe or httpcontract'"
+  state: passing
   worktree: worktrees/023-claim-grounding/T-001
 ```
 
@@ -34,7 +34,7 @@ Definir e documentar o contrato `GET /v1/models` e `POST /v1/nli`, as variáveis
   vertical_slice: yes
   behavior: "Cada afirmação elegível recebe ancorada, contradita ou sem apoio a partir de três premissas de 12 sentenças sobrepostas."
   verify: "python -m pytest tests/unit/test_grounding.py -k 'windows or verdict or negation'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-002
 ```
 
@@ -50,7 +50,7 @@ Implementar a fatia domínio+teste: extração de afirmações, janelas, seleç�
   vertical_slice: yes
   behavior: "Uma resposta longa executa no máximo 24 julgamentos de pares e declara as afirmações que não couberam no orçamento."
   verify: "python -m pytest tests/unit/test_grounding.py -k 'budget or limit'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-003
 ```
 
@@ -66,7 +66,7 @@ Acrescentar orçamento configurável, arredondamento por grupos de três e metad
   vertical_slice: yes
   behavior: "Falha ou resposta inválida do NLI preserva a resposta de QA e emite um único aviso em stderr."
   verify: "python -m pytest tests/unit/test_grounding.py tests/unit/test_qa.py -k 'grounding and degraded'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-004
 ```
 
@@ -84,7 +84,7 @@ Integrar o resultado em `kb.qa` com degradação não bloqueante e testar timeou
   vertical_slice: yes
   behavior: "O usuário vê os vereditos no terminal, recebe JSON parseável com --json e encontra a anotação no file-back."
   verify: "python -m pytest tests/integration/test_qa_grounding_cli.py -k 'human or json or file_back'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-005
 ```
 
@@ -100,7 +100,7 @@ Conectar o resultado de QA aos três adaptadores de saída, mantendo stdout excl
   vertical_slice: yes
   behavior: "Vereditos negativos permanecem avisos e --no-grounding preserva o QA sem chamar o serviço NLI."
   verify: "python -m pytest tests/integration/test_qa_grounding_cli.py -k 'nonblocking or no_grounding'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-006
 ```
 
@@ -118,10 +118,12 @@ Fechar a compatibilidade observável: nenhuma anotação negativa bloqueia respo
   vertical_slice: yes
   behavior: "A validação manual no servidor local registra os resultados de deriva sutil, fabricação, preservação e latência sem transformar a medição em bloqueio."
   verify: "python -m pytest tests/unit/test_grounding.py tests/integration/test_qa_grounding_cli.py && ruff check kb tests"
-  state: not_started
+  state: blocked
 ```
 
 Executar a amostra medida com o modelo real em ambiente local, comparar com a linha de base do protótipo e registrar limites/latência para a aprovação humana.
+
+**`state: blocked` (2026-08-01):** exige o serviço NLI rodando em `:1235`, que a SPEC coloca fora do pacote — o usuário o provisiona. Não é bloqueio de código: a T-007 é `priority: P2` e o MVP são as `P1`, todas `passing`. Os números do protótipo (5/6 deriva sutil, 12/12 fabricação, 72% preservação) seguem como linha de base medida, e os seis casos do `EVALS.md` já foram executados contra o modelo real: três passaram, duas falharam e seguem documentadas como limites conhecidos (`E-CMP-001`, comparação numérica; `E-SIN-001`, falso alarme confiante), e a sexta (`E-EXT-001`) teve a expectativa corrigida porque contradizia o princípio declarado no próprio documento.
 
 ---
 
@@ -150,7 +152,7 @@ Executar a amostra medida com o modelo real em ambiente local, comparar com a li
   vertical_slice: no
   behavior: "Os chamadores atuais de kb.qa.answer() continuam recebendo o texto da resposta, e a suíte existente passa sem edição de asserção."
   verify: "python -m pytest tests/unit/test_qa_rerank.py tests/unit/test_qa_claims.py tests/unit/test_qa_cmds.py tests/unit/test_untrusted_prompt_boundary.py tests/unit/test_sensitive_execution_controls.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-008
 ```
 

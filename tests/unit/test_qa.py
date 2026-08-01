@@ -109,3 +109,138 @@ Corpo da resposta.
 
         assert out.name != ".md"
         assert "test" in out.name
+
+
+class TestQaGrounding:
+    """Integração da verificação de ancoragem no fluxo do qa (T-004).
+
+    A resposta nunca depende do serviço NLI: sem ele, o texto sai igual e o
+    usuário recebe um aviso, uma vez por execução.
+    """
+
+    def _wiki(self, tmp_raw_wiki):
+        raw, wiki = tmp_raw_wiki
+        (wiki / "cybersecurity" / "xss.md").write_text(
+            "# XSS\nVulnerabilidade web que injeta script na página renderizada."
+        )
+        return wiki
+
+    def test_should_attach_grounding_to_the_structured_answer(self, tmp_raw_wiki, monkeypatch):
+        from kb import grounding, qa
+
+        self._wiki(tmp_raw_wiki)
+        monkeypatch.setattr(
+            grounding,
+            "verify",
+            lambda response, context, max_pairs=None: grounding.GroundingResult(
+                status="verified",
+                claims=[grounding.ClaimVerdict(claim="uma afirmação", verdict="ancorada")],
+            ),
+        )
+
+        with patch("kb.qa.chat") as mock_chat:
+            mock_chat.return_value = "XSS é uma vulnerabilidade de segurança web."
+
+            resultado = qa.answer_with_grounding("Explique XSS")
+
+        assert resultado.answer == "XSS é uma vulnerabilidade de segurança web."
+        assert resultado.grounding.status == "verified"
+        assert resultado.grounding.claims[0].verdict == "ancorada"
+
+    def test_should_keep_the_answer_when_grounding_is_degraded(self, tmp_raw_wiki, monkeypatch):
+        from kb import grounding, qa
+
+        self._wiki(tmp_raw_wiki)
+        monkeypatch.setattr(
+            grounding,
+            "verify",
+            lambda response, context, max_pairs=None: grounding.GroundingResult(status="degraded"),
+        )
+
+        with patch("kb.qa.chat") as mock_chat:
+            mock_chat.return_value = "XSS é uma vulnerabilidade de segurança web."
+
+            resultado = qa.answer_with_grounding("Explique XSS")
+
+        assert resultado.answer == "XSS é uma vulnerabilidade de segurança web."
+        assert resultado.grounding.status == "degraded"
+
+    def test_should_keep_the_answer_when_grounding_raises_unexpectedly(
+        self, tmp_raw_wiki, monkeypatch, capsys
+    ):
+        from kb import grounding, qa
+
+        self._wiki(tmp_raw_wiki)
+
+        def _boom(response, context, max_pairs=None):
+            raise grounding.GroundingUnavailable("serviço fora do ar")
+
+        monkeypatch.setattr(grounding, "verify", _boom)
+
+        with patch("kb.qa.chat") as mock_chat:
+            mock_chat.return_value = "XSS é uma vulnerabilidade de segurança web."
+
+            resultado = qa.answer_with_grounding("Explique XSS")
+
+        assert resultado.answer == "XSS é uma vulnerabilidade de segurança web."
+        assert resultado.grounding.status == "degraded"
+
+    def test_should_warn_once_in_stderr_when_grounding_is_degraded(
+        self, tmp_raw_wiki, monkeypatch, capsys
+    ):
+        from kb import grounding, qa
+
+        self._wiki(tmp_raw_wiki)
+        monkeypatch.setattr(
+            grounding,
+            "verify",
+            lambda response, context, max_pairs=None: grounding.GroundingResult(status="degraded"),
+        )
+        monkeypatch.setattr(qa, "_grounding_warned", False, raising=False)
+
+        with patch("kb.qa.chat") as mock_chat:
+            mock_chat.return_value = "XSS é uma vulnerabilidade de segurança web."
+
+            qa.answer_with_grounding("Explique XSS")
+            qa.answer_with_grounding("Explique XSS de novo")
+
+        erro = capsys.readouterr().err
+        assert erro.lower().count("ancoragem") == 1
+
+    def test_should_skip_grounding_entirely_when_disabled(self, tmp_raw_wiki, monkeypatch):
+        from kb import grounding, qa
+
+        self._wiki(tmp_raw_wiki)
+
+        def _nao_deve_chamar(response, context, max_pairs=None):
+            raise AssertionError("verify não deve ser chamado com grounding desligado")
+
+        monkeypatch.setattr(grounding, "verify", _nao_deve_chamar)
+
+        with patch("kb.qa.chat") as mock_chat:
+            mock_chat.return_value = "XSS é uma vulnerabilidade de segurança web."
+
+            resultado = qa.answer_with_grounding("Explique XSS", grounding_enabled=False)
+
+        assert resultado.answer == "XSS é uma vulnerabilidade de segurança web."
+        assert resultado.grounding.status == "skipped"
+
+    def test_should_keep_answer_returning_plain_text_for_existing_callers(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        from kb import grounding, qa
+
+        self._wiki(tmp_raw_wiki)
+        monkeypatch.setattr(
+            grounding,
+            "verify",
+            lambda response, context, max_pairs=None: grounding.GroundingResult(status="verified"),
+        )
+
+        with patch("kb.qa.chat") as mock_chat:
+            mock_chat.return_value = "XSS é uma vulnerabilidade de segurança web."
+
+            resultado = qa.answer("Explique XSS")
+
+        assert isinstance(resultado, str)
+        assert resultado == "XSS é uma vulnerabilidade de segurança web."

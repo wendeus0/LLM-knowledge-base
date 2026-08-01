@@ -29,7 +29,7 @@ app = typer.Typer(
         "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
-        "  [--allow-sensitive] [--no-commit|--commit]\n\n"
+        "  [--no-grounding] [--json] [--allow-sensitive] [--no-commit|--commit]\n\n"
         "stats [--json]\n\n"
         "search <query>\n\n"
         "diff [--stat] [--since REF]\n\n"
@@ -451,38 +451,99 @@ def qa(
         "--no-rerank",
         help="Desliga a reordenação por LLM (mais rápido, MRR medido cai de 0,343 para 0,242)",
     ),
+    no_grounding: bool = typer.Option(
+        False,
+        "--no-grounding",
+        help="Desliga a verificação de ancoragem da resposta",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Imprime somente o resultado estruturado em JSON",
+    ),
 ):
     """Responde uma pergunta consultando as fontes do kb."""
     from kb.cmds.qa.run import execute_qa_command
     from kb.guardrails import SensitiveContentError, summarize_findings
 
-    console.print("[dim]Pesquisando nas fontes do kb...[/]\n")
+    if json_output:
+        typer.echo("Pesquisando nas fontes do kb...", err=True)
+    else:
+        console.print("[dim]Pesquisando nas fontes do kb...[/]\n")
 
     def _run_qa(allow_sensitive_flag: bool) -> None:
-        response, saved = execute_qa_command(
-            question=question,
-            file_back=file_back,
-            to_wiki=to_wiki,
-            allow_sensitive=allow_sensitive_flag,
-            no_commit=no_commit,
-            no_traverse=no_traverse,
-            depth=depth,
-            profile="deep" if deep else "fast",
-            top_k=top_k,
-            rerank_depth=0 if no_rerank else None,
-        )
-        console.print(Markdown(response))
+        args = {
+            "question": question,
+            "file_back": file_back,
+            "to_wiki": to_wiki,
+            "allow_sensitive": allow_sensitive_flag,
+            "no_commit": no_commit,
+            "no_traverse": no_traverse,
+            "depth": depth,
+            "profile": "deep" if deep else "fast",
+            "top_k": top_k,
+            "rerank_depth": 0 if no_rerank else None,
+        }
+        if no_grounding:
+            args["grounding_enabled"] = False
+        result = execute_qa_command(**args)
+        response, saved = result
+        grounding_result = result.grounding
+        if json_output:
+            typer.echo(
+                json.dumps(
+                    {
+                        "answer": response,
+                        "grounding": {
+                            "status": grounding_result.status,
+                            "checked_claims": grounding_result.checked_claims,
+                            "unverified_due_to_limit": grounding_result.unverified_due_to_limit,
+                            "claims": [
+                                {
+                                    "claim": claim.claim,
+                                    "verdict": claim.verdict,
+                                    "evidence": claim.evidence,
+                                    "scores": claim.scores,
+                                }
+                                for claim in grounding_result.claims
+                            ],
+                        },
+                        "saved_path": str(saved) if saved else None,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            return
+
+        if grounding_result.claims or grounding_result.unverified_due_to_limit:
+            grounding_lines = ["## Verificação de ancoragem"]
+            grounding_lines.extend(
+                f"- **{claim.verdict}** — {' '.join(str(claim.evidence).split())}"
+                for claim in grounding_result.claims
+            )
+            if grounding_result.unverified_due_to_limit:
+                grounding_lines.append(
+                    f"- {grounding_result.unverified_due_to_limit} sem verificação por limite de orçamento"
+                )
+            console.print(Markdown(f"{response}\n\n" + "\n".join(grounding_lines)))
+        else:
+            console.print(Markdown(response))
         if saved:
             console.print(f"\n[dim]Arquivado em:[/] [green]{saved}[/]")
 
     try:
         _run_qa(allow_sensitive)
     except SensitiveContentError as exc:
-        console.print(f"[yellow]{summarize_findings(exc)}[/]")
+        if json_output:
+            typer.echo(summarize_findings(exc), err=True)
+        else:
+            console.print(f"[yellow]{summarize_findings(exc)}[/]")
         if not (
             allow_sensitive
             or typer.confirm(
-                "Continuar mesmo assim e enviar ao provider externo?", default=False
+                "Continuar mesmo assim e enviar ao provider externo?",
+                default=False,
+                err=json_output,
             )
         ):
             raise typer.Exit(code=1) from None

@@ -1,3 +1,4 @@
+import math
 import os
 import re
 from pathlib import Path
@@ -107,3 +108,39 @@ def get_retrieval_profile(name: str) -> dict:
     profile["doc_chars"] = qa_doc_chars(profile["doc_chars"])
     profile["rerank_depth"] = qa_rerank_depth(profile["rerank_depth"])
     return profile
+
+
+GROUNDING_BASE_URL_DEFAULT = "http://localhost:1235/v1"
+GROUNDING_MODEL_DEFAULT = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+GROUNDING_MAX_PAIRS_DEFAULT = 24
+GROUNDING_TIMEOUT_DEFAULT = 15.0
+
+
+def grounding_base_url() -> str:
+    return os.getenv("KB_GROUNDING_BASE_URL", GROUNDING_BASE_URL_DEFAULT)
+
+
+def grounding_model() -> str:
+    return os.getenv("KB_GROUNDING_MODEL", GROUNDING_MODEL_DEFAULT)
+
+
+def grounding_api_key() -> str | None:
+    return os.getenv("KB_GROUNDING_API_KEY") or None
+
+
+def grounding_max_pairs() -> int:
+    try:
+        value = int(os.getenv("KB_GROUNDING_MAX_PAIRS", GROUNDING_MAX_PAIRS_DEFAULT))
+    except ValueError:
+        value = GROUNDING_MAX_PAIRS_DEFAULT
+    return max(0, value - value % 3)
+
+
+def grounding_timeout() -> float:
+    try:
+        value = float(os.getenv("KB_GROUNDING_TIMEOUT", GROUNDING_TIMEOUT_DEFAULT))
+    except ValueError:
+        return GROUNDING_TIMEOUT_DEFAULT
+    if not math.isfinite(value) or value <= 0:
+        return GROUNDING_TIMEOUT_DEFAULT
+    return value
