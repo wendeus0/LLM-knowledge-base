@@ -1,40 +1,39 @@
-# Handoff — 2026-08-01
+# Handoff — 2026-08-01 (fim de sessão)
 
-## Onde parei
+## O que fechou
 
-Feature **023-claim-grounding** com a especificação fechada e **nenhuma linha de código de feature escrita**. Gates emitidos: `SPEC_VALID`, `PLAN_READY`, `ANALYZE_PASS`, `CONTRACT_VALID`, `EVAL_DESIGN_PARTIAL`.
+**Feature 023 — verificação de ancoragem: `DELIVERED`.** 8/8 tasks `passing`. Da SPEC ao serviço rodando: `kb qa` agora classifica cada afirmação em `ancorada`/`contradita`/`sem apoio`, sem nunca bloquear a resposta. PRs #61 e #62 mergeados.
 
-Branch `proto/answer-verification`, dois commits além de `main`, PR **#60** aberto. Suíte em 739 passed, intocada.
+**Serviço NLI em `:1235`** — `local-ai-lab/nli-server.py`, LaunchAgent `com.wendeus.kb-nli` com KeepAlive. Ressurreição provada com `kill -9`. Contrato validado: negação → contradição 0,998.
 
-## O que decide o próximo passo
+**Holdout congelado** — 12 pares artigo→fonte em 6 domínios, cada trecho validado byte a byte. Manifest privado em `.holdout/` (gitignored); `HOLDOUT.md` com hashes no repo. Saiu de zero, que era a limitação mais registrada da feature.
 
-**Dois PRs abertos esperando você**, e eles não são simétricos:
+**Skill `test-appeasement-audit`** no harness — detector AST + julgamento por evidência + gate de CI com ratchet. Reusável em qualquer repo Python: 1 arquivo + 1 linha de CI.
 
-- **#59** trava as decisões da política de corpus (tickets 004–007 + ADR-0018). Enquanto não mergear, o ADR não existe em `main` — a SPEC da 023 teve que recuperá-lo do histórico git para não inventar.
-- **#60** carrega o protótipo medido e toda a especificação da 023.
+**F-03 fechado (PR #63)** — o último P1 do backlog de segurança. Os quatro caminhos de egresso do kb agora ou não podem ser desviados por proxy, ou passam pelo gate de conteúdo sensível.
 
-## Como continuar a 023
+## O que aprendi e vale carregar
 
-Entra por **`test-design`, não `test-red`**. O PLAN marca duas condições binárias de risco: output estrutural estável (`--json` cria schema público) e contrato HTTP entre serviços (`GET /v1/models`, `POST /v1/nli` em `:1235`, porta verificada livre).
+**O guard valida a URL, não o caminho.** Duas vezes, em dois transportes: `urllib` segue redirect carregando o `Authorization`; `httpx` proxia `localhost` se `HTTP_PROXY` estiver setado (medido). Nos dois casos o achado veio de review externo, não meu.
 
-`T-001` é a primeira task elegível: `tag: AFK`, sem dependências, worktree próprio.
+**Código feito para passar em teste é padrão, não acidente.** Quatro ocorrências documentadas no kb. O gate mecânico agora quebra o CI quando reaparece — e o `getattr` que passou por mim, pelo Codex e por 4 revisores automáticos ontem seria exit 1 hoje.
 
-## Três coisas medidas que mudam o desenho
+## Estado
 
-1. **Falso alarme não é uniforme.** Uma síntese fiel recebeu contradição **0,953** — alarme confiante contra conteúdo correto, com a premissa inteira disponível. Os 28% deixam de ser ruído brando. A apresentação precisa separar `contradita` de `sem apoio`.
-2. **Comparação numérica não é detectada.** 70% vs 72% dá 0,377, abaixo do corte. O NLI não faz aritmética; a classe só é pega quando a inversão é lexical.
-3. **O holdout tem zero pares.** Os 8 pares automáticos já calibraram os limiares atuais — todo número existente é teto otimista. Mínimo viável: 12 pares novos, congelados antes de recalibrar.
+- `main` em **869 passed**, zero PRs abertos
+- Backlog de segurança: nenhum P1 aberto (F-06, F-08 seguem P2)
+- Serviços locais: `:1234` embeddings, `:8081` rerank, `:1235` NLI — os três no launchd
 
-## Delegação
+## Próximo passo natural
 
-SPEC, PLAN, TASKS e EVALS foram redigidos pelo GPT 5.6 Terra; gates e review zero-trust ficaram comigo. Rendeu bem — a decisão de pôr o NLI atrás de serviço HTTP em vez de extra opcional foi dele e está certa (mantém `torch` e ~2 GB de pesos fora do caminho de todo usuário do `kb`).
+**Ticket 006 — reagrupamento por tema.** É a maior decisão de produto pendente do map e destrava o estágio 1 da pilha (cobertura por centroide, medido e aprovado, sem SPEC porque depende dessa decisão). Exige grilling interativo — não delegável.
 
-O review pegou duas coisas que a leitura sozinha não pegaria: uma promessa de compatibilidade que não tinha task (virou `T-008`, com 5 arquivos de teste dependentes) e um caso de eval que esperava o veredito oposto ao que o próprio documento defendia. O segundo só apareceu ao **executar** o grader.
+Alternativa se quiser algo mecânico: espalhar o gate de appeasement para outros repos, ou os F-06/F-08 (P2, pisos de dependência com CVE e symlink na wiki).
 
 ## Prompt de retomada
 
 ```
-Retomar o kb. Decidir #59 e #60 primeiro — o #59 trava as decisões da política
-de corpus. Se a 023 seguir, entrar por test-design (não test-red) a partir da
-T-001; o serviço NLI precisa subir em :1235 antes dos testes de contrato.
+Retomar o kb. Feature 023 entregue, F-03 fechado, main em 869 passed sem PRs
+abertos. Próximo: grilling do ticket 006 (reagrupamento por tema) — é decisão
+de produto e destrava o estágio 1 da pilha de verificação.
 ```

@@ -50,3 +50,11 @@ type: project
 
 4. Estágio 1 (cobertura) espera o reagrupamento por tema do ticket 006.
 5. Achados F-03/F-06/F-08 da auditoria de segurança seguem abertos no `PENDING_LOG.md`.
+
+## 2026-08-02 em diante
+
+1. **Ticket 006 — reagrupamento por tema** (interativo). Maior decisão de produto pendente; destrava o estágio 1 da pilha de verificação.
+2. **Rodada do holdout** — configuração congelada, uma execução, publicar taxas e hashes. Reportar a taxa cross-língue à parte (artigos PT, fontes EN).
+3. **F-06 e F-08** (P2) — pisos de dependência com CVE e symlink na wiki lido para o provider.
+4. **Espalhar o gate de appeasement** para outros repos Python (1 arquivo + 1 linha de CI).
+5. **Threading de `--allow-sensitive`** até embeddings/rerank (hoje opt-in por `KB_EGRESS_ALLOW_SENSITIVE`).

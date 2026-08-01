@@ -112,3 +112,11 @@ kb/
 **PRs abertos:** #59 (decisões da política de corpus), #60 (protótipo + spec da 023).
 
 **Suíte:** 739 passed.
+
+## 2026-08-01 (fim)
+
+**Feature 023:** `DELIVERED` — 8/8 tasks. Serviço NLI em `:1235` no launchd; holdout de 12 pares congelado.
+**F-03:** resolvido (PR #63). Nenhum P1 aberto no backlog de segurança.
+**Novo no harness:** skill `test-appeasement-audit` (detector AST + gate de CI com ratchet), aplicada ao kb — baseline vazio.
+**Novo no kb:** `scripts/appeasement_report.py` no CI, `docs/failures/test-appeasement-mock-shaped-production.md`.
+**Suíte:** 869 passed. **PRs abertos:** nenhum.
