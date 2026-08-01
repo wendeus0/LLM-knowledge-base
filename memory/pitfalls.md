@@ -180,3 +180,17 @@ Ao quantizar o KV cache do `llama-server`, o footprint caiu de 9.609 MB para 1.5
 A queda real veio de o processo antigo ter acumulado memória em horas de compile e QA. Comparar "antes" de um processo velho com "depois" de um recém-iniciado mede o reinício, não a mudança.
 
 **Regra:** meça as duas configurações a partir de processos igualmente aquecidos, com a mesma carga. A medição válida foi a seguinte: 16k → 64k com o mesmo KV `q8_0` custou 1.638 MB, batendo com a previsão da fórmula.
+
+### Artefato delegado passa na leitura e falha na execução
+
+O `EVALS.md` da 023 foi redigido pelo GPT 5.6 Terra e lido inteiro antes do aceite. A leitura não pegou nada: os casos eram coerentes, os graders pareciam corretos, o desenho do holdout era honesto sobre não existir.
+
+Executar os seis casos derrubou três. Um deles (`E-EXT-001`) esperava o veredito **oposto** ao que o próprio documento defendia duas frases abaixo, e citava números que não reproduzem. Ler o parágrafo não revela a contradição porque as duas afirmações estão separadas e ambas soam razoáveis isoladamente.
+
+**Regra:** quando um documento delegado afirma que algo é executável, o review zero-trust inclui executá-lo. Documento não é diff — mas um grader dentro dele é código, e código se roda.
+
+### Falso alarme não é uniforme: parte vem com alta confiança
+
+Os 28% de falso alarme do grounding foram tratados como ruído brando até um caso mostrar contradição **0,953** contra uma síntese legítima. A taxa agregada escondia a distribuição: falso alarme que sai como `sem apoio` é um aviso morno; o mesmo erro saindo como `contradita` é a anotação mais forte do sistema, apontada contra conteúdo correto.
+
+**Regra:** para classificador com vereditos de severidade diferente, medir a distribuição do erro entre vereditos, não só a taxa. Uma taxa de erro é uma média, e média esconde a cauda que dói.

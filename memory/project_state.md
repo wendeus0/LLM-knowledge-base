@@ -100,3 +100,15 @@ kb/
 - QA fast: ~1m15s–2m/pergunta (era ~5min); perfis fast/deep/paper/article prontos
 - Vault: 2.059 artigos indexados; 74 artigos-ruído arquivados
 - Watch cloud semanal vigia MLX 1-bit upstream (migração futura GGUF→MLX nativo)
+
+## 2026-08-01
+
+**Feature ativa:** `023-claim-grounding` — especificação completa, código não iniciado. `CONTRACT_VALID` + `EVAL_DESIGN_PARTIAL`. Entra por `test-design`.
+
+**Política de corpus:** `WAYFINDER_CLEAR`, oito tickets fechados, consolidados no ADR-0018 (ainda no PR #59, não em `main`).
+
+**Pilha de verificação de resposta:** três estágios medidos em protótipo throwaway (`prototypes/answer-verification/`, fora de `kb/`). Cobertura por centroide e ancoragem por NLI confirmados; consistência entre gerações não confirmado. Juiz LLM verbalizando confiança reprovado (83% de falso alarme).
+
+**PRs abertos:** #59 (decisões da política de corpus), #60 (protótipo + spec da 023).
+
+**Suíte:** 739 passed.
