@@ -36,28 +36,19 @@ def execute_qa_command(
         }
         if not grounding_enabled:
             args["grounding_enabled"] = False
-        response, saved_path = answer_and_file(question, **args)
-    else:
-        from kb.qa import answer
+        return answer_and_file(question, **args)
 
-        args = {
-            "allow_sensitive": allow_sensitive,
-            "traverse": traverse,
-            "depth": depth,
-            "profile": profile,
-            "top_k": top_k,
-            "rerank_depth": rerank_depth,
-        }
-        if not grounding_enabled:
-            args["grounding_enabled"] = False
-        response = answer(question, **args)
-        saved_path = None
+    from kb.qa import answer_with_grounding
 
-    from kb import grounding
-    from kb.qa import QaResult
 
-    return QaResult(
-        answer=response,
-        grounding=getattr(response, "grounding", grounding.GroundingResult()),
-        saved_path=saved_path,
-    )
+    args = {
+        "allow_sensitive": allow_sensitive,
+        "traverse": traverse,
+        "depth": depth,
+        "profile": profile,
+        "top_k": top_k,
+        "rerank_depth": rerank_depth,
+    }
+    if not grounding_enabled:
+        args["grounding_enabled"] = False
+    return answer_with_grounding(question, **args)

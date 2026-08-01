@@ -11,8 +11,14 @@ runner = CliRunner()
 
 
 def test_execute_qa_command_should_call_answer_when_file_back_disabled():
-    with patch("kb.qa.answer") as mock_answer:
-        mock_answer.return_value = "Resposta"
+    # A feature 023 trocou o colaborador interno de `answer` para
+    # `answer_with_grounding`, que devolve a mesma tupla mais a ancoragem.
+    # O contrato observável — (resposta, caminho) — segue verificado abaixo.
+    with patch("kb.qa.answer_with_grounding") as mock_answer:
+        from kb.grounding import GroundingResult
+        from kb.qa import QaResult
+
+        mock_answer.return_value = QaResult(answer="Resposta", grounding=GroundingResult())
 
         response, saved = execute_qa_command(
             question="Pergunta",
@@ -155,3 +161,39 @@ def test_cli_qa_should_exit_when_sensitive_not_confirmed():
     assert result.exit_code == 1
     mock_execute.assert_called_once()
     assert mock_print.called
+
+
+def test_execute_qa_command_should_stay_indexable_like_the_previous_tuple():
+    """O contrato anterior era tuple[str, Path | None]; `[0]` fazia parte dele."""
+    with patch("kb.qa.answer_with_grounding") as mock_answer:
+        from kb.grounding import GroundingResult
+        from kb.qa import QaResult
+
+        mock_answer.return_value = QaResult(answer="resposta", grounding=GroundingResult())
+
+        resultado = execute_qa_command(
+            question="pergunta",
+            file_back=False,
+            to_wiki=False,
+            allow_sensitive=False,
+            no_commit=True,
+            no_traverse=False,
+            depth=1,
+        )
+
+    assert resultado[0] == "resposta"
+    assert resultado[1] is None
+    assert len(resultado) == 2
+
+
+def test_answer_should_return_a_plain_string_not_a_subclass():
+    """`answer()` não pode contrabandear estado como atributo de str."""
+    with patch("kb.qa.answer_with_grounding") as mock_answer:
+        from kb.grounding import GroundingResult
+        from kb.qa import QaResult, answer
+
+        mock_answer.return_value = QaResult(answer="resposta", grounding=GroundingResult())
+
+        resultado = answer("pergunta")
+
+    assert type(resultado) is str

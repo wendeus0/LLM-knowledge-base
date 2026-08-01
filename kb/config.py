@@ -133,7 +133,7 @@ def grounding_max_pairs() -> int:
         value = int(os.getenv("KB_GROUNDING_MAX_PAIRS", GROUNDING_MAX_PAIRS_DEFAULT))
     except ValueError:
         value = GROUNDING_MAX_PAIRS_DEFAULT
-    return max(3, value - value % 3)
+    return max(0, value - value % 3)
 
 
 def grounding_timeout() -> float:

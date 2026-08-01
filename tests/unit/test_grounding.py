@@ -13,6 +13,12 @@ import pytest
 from kb import config, grounding
 
 
+@pytest.fixture(autouse=True)
+def _modelo_anunciado(monkeypatch):
+    """O probe do modelo é gate de produção; nos testes ele parte de anunciado."""
+    monkeypatch.setattr(grounding, "_probe_cache", True, raising=False)
+
+
 class TestProbe:
     def test_should_report_reachable_with_models_when_service_answers(self, monkeypatch):
         monkeypatch.setattr(
@@ -318,10 +324,10 @@ class TestHttpContractConfig:
 
         assert config.grounding_max_pairs() == 24
 
-    def test_should_floor_max_pairs_at_one_group_of_three(self, monkeypatch):
+    def test_should_not_promote_a_budget_below_one_group_of_three(self, monkeypatch):
         monkeypatch.setenv("KB_GROUNDING_MAX_PAIRS", "2")
 
-        assert config.grounding_max_pairs() == 3
+        assert config.grounding_max_pairs() == 0
 
     def test_should_default_timeout_to_a_finite_number_of_seconds(self, monkeypatch):
         monkeypatch.delenv("KB_GROUNDING_TIMEOUT", raising=False)
@@ -611,3 +617,106 @@ class TestVerdictSelection:
         grounding.verify(afirmacao, contexto)
 
         assert not any("delta" in premissa for premissa in vistos)
+
+
+class TestHttpContractHardening:
+    """Achados do review adversarial (2026-08-01)."""
+
+    def test_should_refuse_non_finite_probability(self, monkeypatch):
+        monkeypatch.setattr(
+            grounding,
+            "_http_post_json",
+            lambda url, payload, timeout, api_key: {
+                "data": [{"entailment": float("nan"), "contradiction": 0.1, "neutral": 0.9}]
+            },
+        )
+
+        with pytest.raises(grounding.GroundingUnavailable):
+            grounding.classify([("p", "h")], model="m", base_url="http://localhost:1235/v1")
+
+    def test_should_refuse_infinite_probability(self, monkeypatch):
+        monkeypatch.setattr(
+            grounding,
+            "_http_post_json",
+            lambda url, payload, timeout, api_key: {
+                "data": [{"entailment": float("inf"), "contradiction": 0.1, "neutral": 0.9}]
+            },
+        )
+
+        with pytest.raises(grounding.GroundingUnavailable):
+            grounding.classify([("p", "h")], model="m", base_url="http://localhost:1235/v1")
+
+    def test_should_refuse_a_redirect_that_would_leak_the_api_key(self):
+        handler = grounding._NoRedirect()
+
+        with pytest.raises(grounding.GroundingUnavailable):
+            handler.redirect_request(
+                None, None, 302, "Found", {}, "http://attacker.invalid/capture"
+            )
+
+
+class TestBudgetFloor:
+    def test_should_round_max_pairs_down_without_promoting_below_one_group(self, monkeypatch):
+        monkeypatch.setenv("KB_GROUNDING_MAX_PAIRS", "2")
+
+        assert config.grounding_max_pairs() == 0
+
+    def test_should_verify_nothing_when_the_budget_is_below_one_group(self, monkeypatch):
+        monkeypatch.setattr(grounding, "_embed_texts", lambda t: [[1.0, 0.0] for _ in t])
+
+        def _nao_deve_chamar(pairs, model, base_url, timeout=15.0, api_key=None):
+            raise AssertionError("orçamento zero não deve chamar o serviço")
+
+        monkeypatch.setattr(grounding, "classify", _nao_deve_chamar)
+
+        resultado = grounding.verify(
+            "Uma afirmação longa o suficiente para ser elegível à verificação.",
+            "Contexto com conteúdo suficiente.",
+            max_pairs=2,
+        )
+
+        assert resultado.claims == []
+        assert resultado.unverified_due_to_limit == 1
+
+
+class TestModelDiscovery:
+    def test_should_degrade_when_the_model_is_not_announced(self, monkeypatch):
+        monkeypatch.setattr(grounding, "_embed_texts", lambda t: [[1.0, 0.0] for _ in t])
+        monkeypatch.setattr(
+            grounding,
+            "probe",
+            lambda base_url, timeout=1.5, api_key=None: grounding.ServerState(
+                reachable=True, models=["outro-modelo"], endpoint=base_url
+            ),
+        )
+        monkeypatch.setattr(grounding, "_probe_cache", None, raising=False)
+
+        def _nao_deve_chamar(pairs, model, base_url, timeout=15.0, api_key=None):
+            raise AssertionError("modelo não anunciado não deve ser classificado")
+
+        monkeypatch.setattr(grounding, "classify", _nao_deve_chamar)
+
+        resultado = grounding.verify(
+            "Uma afirmação longa o suficiente para ser elegível à verificação.",
+            "Contexto com conteúdo suficiente.",
+        )
+
+        assert resultado.status == "degraded"
+
+
+class TestClaimSegmentation:
+    def test_should_split_markdown_list_items_without_terminal_punctuation(self):
+        texto = (
+            "- O cache expira depois de sessenta segundos de inatividade\n"
+            "- O circuito abre depois de cinco falhas consecutivas seguidas"
+        )
+
+        assert len(grounding.split_claims(texto)) == 2
+
+    def test_should_keep_splitting_regular_sentences(self):
+        texto = (
+            "O cache expira depois de sessenta segundos de inatividade. "
+            "O circuito abre depois de cinco falhas consecutivas seguidas."
+        )
+
+        assert len(grounding.split_claims(texto)) == 2

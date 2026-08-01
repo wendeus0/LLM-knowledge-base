@@ -3,7 +3,6 @@
 import os
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 from kb import grounding
@@ -73,7 +72,7 @@ def answer(
         rerank_depth=rerank_depth,
         grounding_enabled=grounding_enabled,
     )
-    return _AnswerText(result.answer, result.grounding)
+    return result.answer
 
 
 def answer_with_grounding(
@@ -202,7 +201,7 @@ def answer_and_file(
         rerank_depth=rerank_depth,
         grounding_enabled=grounding_enabled,
     )
-    response = _AnswerText(result.answer, result.grounding)
+    response = result.answer
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
         source="qa:file_back",
@@ -229,8 +228,12 @@ def answer_and_file(
     )
     grounding_lines = ["## Verificação de ancoragem da resposta"]
     grounding_lines.extend(
-        f"- {claim.verdict}: {claim.evidence}" for claim in result.grounding.claims
+        f"- {claim.verdict}: {_inline(claim.evidence)}" for claim in result.grounding.claims
     )
+    if result.grounding.unverified_due_to_limit:
+        grounding_lines.append(
+            f"- {result.grounding.unverified_due_to_limit} afirmação(ões) sem verificação por limite de orçamento"
+        )
     grounding_section = "\n".join(grounding_lines)
     article = f"{article.rstrip()}\n\n{grounding_section}\n"
 
@@ -264,25 +267,28 @@ def answer_and_file(
     if not no_commit:
         commit(f"feat(outputs): file back answer — {title[:50]}", [out])
 
-    return response, out
+    return QaResult(answer=response, grounding=result.grounding, saved_path=out)
 
 
-@dataclass
-class QaResult:
-    answer: str
-    grounding: object
-    saved_path: Path | None = None
+class QaResult(tuple):
+    """O par (resposta, caminho) de sempre, com a ancoragem pendurada.
 
-    def __iter__(self):
-        yield self.answer
-        yield self.saved_path
+    Herda de tuple para que `isinstance(x, tuple)`, desempacotamento, índice e
+    len() continuem valendo para os chamadores anteriores a esta feature.
+    """
 
+    def __new__(cls, answer, grounding, saved_path=None):
+        instancia = super().__new__(cls, (answer, saved_path))
+        instancia.answer = answer
+        instancia.grounding = grounding
+        instancia.saved_path = saved_path
+        return instancia
 
-class _AnswerText(str):
-    def __new__(cls, answer, grounding_result):
-        value = super().__new__(cls, answer)
-        value.grounding = grounding_result
-        return value
 
 
 _grounding_warned = False
+
+
+def _inline(text: str) -> str:
+    """Achata a evidência em uma linha, para não abrir estrutura no markdown."""
+    return " ".join(str(text).split())

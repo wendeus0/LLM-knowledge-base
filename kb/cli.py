@@ -520,9 +520,13 @@ def qa(
         if grounding_result.claims:
             grounding_lines = ["## Verificação de ancoragem"]
             grounding_lines.extend(
-                f"- **{claim.verdict}** — {claim.evidence}"
+                f"- **{claim.verdict}** — {' '.join(str(claim.evidence).split())}"
                 for claim in grounding_result.claims
             )
+            if grounding_result.unverified_due_to_limit:
+                grounding_lines.append(
+                    f"- {grounding_result.unverified_due_to_limit} sem verificação por limite de orçamento"
+                )
             console.print(Markdown(f"{response}\n\n" + "\n".join(grounding_lines)))
         else:
             console.print(Markdown(response))

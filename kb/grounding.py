@@ -1,12 +1,13 @@
 """Verificação de ancoragem de afirmações contra o contexto (feature 023).
 
-Esqueleto do ciclo RED (T-001): nomes e fronteiras existem, comportamento não.
-`_http_get_json` e `_http_post_json` são as únicas fronteiras de efeito, para
-que o contrato com o serviço NLI local seja testável sem rede.
+O cosseno seleciona a premissa e o NLI julga: similaridade não decide veredito.
+`_http_get_json`, `_http_post_json` e `_embed_texts` são as únicas fronteiras de
+efeito, para que o contrato com o serviço NLI local seja testável sem rede.
 """
 
 import ipaddress
 import json
+import math
 import re
 import urllib.request
 from collections.abc import Mapping
@@ -26,11 +27,20 @@ class ServerState:
     endpoint: str = ""
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise GroundingUnavailable(f"redirect recusado para {newurl}")
+
+
+def _opener():
+    return urllib.request.build_opener(_NoRedirect)
+
+
 def _http_get_json(url: str, timeout: float, api_key: str | None = None) -> dict:
     request = urllib.request.Request(url)
     if api_key:
         request.add_header("Authorization", f"Bearer {api_key}")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with _opener().open(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -40,7 +50,7 @@ def _http_post_json(url: str, payload: dict, timeout: float, api_key: str | None
     request.add_header("Content-Type", "application/json")
     if api_key:
         request.add_header("Authorization", f"Bearer {api_key}")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with _opener().open(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -108,6 +118,8 @@ def classify(
             value = entry.get(probability)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise GroundingUnavailable("resposta NLI fora do contrato")
+            if not math.isfinite(value):
+                raise GroundingUnavailable("resposta NLI fora do contrato")
     return data
 
 
@@ -143,12 +155,21 @@ def _embed_texts(texts):
     return embed_texts(texts)
 
 
+def _split_units(text: str) -> list[str]:
+    unidades = []
+    for linha in text.splitlines():
+        despido = re.sub(r"^\s*(?:[-*+]|\d+[.)])\s+", "", linha).strip()
+        if despido:
+            unidades.extend(re.split(r"(?<=[.!?])\s+", despido))
+    return unidades
+
+
 def split_claims(text: str, minimum: int = MIN_CLAIM_CHARS) -> list[str]:
     """Afirmações elegíveis do texto gerado."""
     return [
-        sentence.strip()
-        for sentence in re.split(r"(?<=[.!?])\s+", text.strip())
-        if len(sentence.strip()) >= minimum
+        unidade.strip()
+        for unidade in _split_units(text)
+        if len(unidade.strip()) >= minimum
     ]
 
 
@@ -201,6 +222,23 @@ def _cosine(left, right) -> float:
     return produto / norma if norma else 0.0
 
 
+_probe_cache = None
+
+
+def _model_ready() -> bool:
+    global _probe_cache
+    from kb import config
+
+    if _probe_cache is None:
+        state = probe(
+            config.grounding_base_url(),
+            timeout=config.grounding_timeout(),
+            api_key=config.grounding_api_key(),
+        )
+        _probe_cache = model_available(state, config.grounding_model())
+    return _probe_cache
+
+
 def verify(response: str, context: str, max_pairs: int | None = None) -> GroundingResult:
     """Verifica a ancoragem de cada afirmação elegível contra o contexto."""
     from kb import config
@@ -212,10 +250,13 @@ def verify(response: str, context: str, max_pairs: int | None = None) -> Groundi
 
     if max_pairs is None:
         max_pairs = config.grounding_max_pairs()
-    checked = claims[:max_pairs // CANDIDATES_PER_CLAIM]
+    checked = claims[:max(0, max_pairs) // CANDIDATES_PER_CLAIM]
     unverified_due_to_limit = len(claims) - len(checked)
     if not checked:
         return GroundingResult(status="verified", unverified_due_to_limit=unverified_due_to_limit)
+
+    if not _model_ready():
+        return GroundingResult(status="degraded")
 
     try:
         claim_vectors = _embed_texts(checked)

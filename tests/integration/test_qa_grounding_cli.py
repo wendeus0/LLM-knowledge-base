@@ -220,3 +220,50 @@ class TestHumanOutputEmptyBlock:
 
         assert resultado.exit_code == 0
         assert "Verificação de ancoragem" not in resultado.stdout
+
+
+class TestLimitReporting:
+    def _com_limite(self):
+        resultado = _resultado()
+        resultado.unverified_due_to_limit = 2
+        return resultado
+
+    def test_should_report_the_omitted_claims_in_human_output(self, tmp_path, monkeypatch):
+        _preparar(tmp_path, monkeypatch, self._com_limite())
+
+        resultado = runner.invoke(app, ["qa", "O que faz o circuit breaker?"])
+
+        assert resultado.exit_code == 0
+        assert "2" in resultado.stdout
+        assert "limite" in resultado.stdout.lower()
+
+    def test_should_report_the_omitted_claims_in_the_file_back(self, tmp_path, monkeypatch):
+        _wiki, outputs = _preparar(tmp_path, monkeypatch, self._com_limite())
+
+        runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--file-back", "--no-commit"])
+
+        conteudo = next(iter(outputs.rglob("*.md"))).read_text()
+        assert "limite" in conteudo.lower()
+
+
+class TestFileBackEscaping:
+    def test_should_not_let_evidence_create_a_heading_in_the_archived_file(
+        self, tmp_path, monkeypatch
+    ):
+        malicioso = grounding.GroundingResult(
+            status="verified",
+            claims=[
+                grounding.ClaimVerdict(
+                    claim="afirmação",
+                    verdict="ancorada",
+                    evidence="Fato ancorado.\n## Seção injetada\nTexto sob a seção falsa.",
+                    scores={"entailment": 0.9, "contradiction": 0.05, "neutral": 0.05},
+                )
+            ],
+        )
+        _wiki, outputs = _preparar(tmp_path, monkeypatch, malicioso)
+
+        runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--file-back", "--no-commit"])
+
+        conteudo = next(iter(outputs.rglob("*.md"))).read_text()
+        assert "\n## Seção injetada" not in conteudo
