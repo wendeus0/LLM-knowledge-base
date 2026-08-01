@@ -1,7 +1,7 @@
 # O ADR da política de corpus
 
 Type: task
-Status: open
+Status: resolved (2026-07-31)
 Blocked by: 004-wiki-produto-ou-insumo, 005-origem-do-conhecimento, 006-destino-dos-artigos-atuais, 007-o-que-a-tela-faz
 
 ## Question
@@ -34,3 +34,18 @@ Emitido via `adr-manager`, com espelho em `memory/stable_decisions.md`.
 ## Answer
 
 <!-- preencher na resolução -->
+
+## Answer
+
+**Entregue: [ADR-0018](../../../adr/0018-corpus-policy-theme-articles-over-chapter-articles.md)** — política de corpus, artigo de tema no lugar de artigo de capítulo.
+
+O ADR responde as quatro perguntas do ticket (wiki produto ou insumo, origem do conhecimento novo, destino do corpus atual, superfície de leitura), declara o efeito sobre os itens V1/V2/V5/V7/V10/V11 do BACKLOG anterior, lista os cinco pré-requisitos técnicos que bloqueiam execução, e registra quatro gatilhos de revisão no formato do ADR-0017.
+
+**Superação verificada, como o ticket exigia:**
+- **ADR-0013** — a Fase 3 ("automação operacional e quality gates") ganha conteúdo concreto: o gate de qualidade passa a ser "não perdeu informação". Não é superado por omissão.
+- **ADR-0011** (externalizar corpus) — intocado. A decisão do ticket 001 manteve o golden no vault, agora com remote privado; a separação engine × corpus segue valendo.
+- **ADR-0017** — reforçado, não superado: a propriedade offline fica preservada como consequência de não haver detecção automática de lacuna.
+
+**O que ficou pendente e por quê** (vai para `PENDING_LOG.md`, não para dentro do ADR): a cardinalidade artigo de tema × artigo-de-capítulo. Decidir sem medir a sobreposição temática seria escolher no escuro, e a medição é barata.
+
+**Fechamento do map:** `WAYFINDER_CLEAR` registrado em `memory/active_fronts.md`.
