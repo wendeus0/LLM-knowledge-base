@@ -1,9 +1,8 @@
 ---
 feature: 023-claim-grounding
 mode: act
-pipeline_state: READY_FOR_COMMIT
+pipeline_state: DELIVERED
 eval_design: EVAL_DESIGN_PARTIAL
-test_design: TEST_DESIGN_BALANCED_READY
-branch: feat/023-claim-grounding
+branch: main
 last_updated: 2026-08-01
 ---

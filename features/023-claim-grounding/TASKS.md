@@ -118,12 +118,12 @@ Fechar a compatibilidade observável: nenhuma anotação negativa bloqueia respo
   vertical_slice: yes
   behavior: "A validação manual no servidor local registra os resultados de deriva sutil, fabricação, preservação e latência sem transformar a medição em bloqueio."
   verify: "python -m pytest tests/unit/test_grounding.py tests/integration/test_qa_grounding_cli.py && ruff check kb tests"
-  state: blocked
+  state: passing
 ```
 
 Executar a amostra medida com o modelo real em ambiente local, comparar com a linha de base do protótipo e registrar limites/latência para a aprovação humana.
 
-**`state: blocked` (2026-08-01):** exige o serviço NLI rodando em `:1235`, que a SPEC coloca fora do pacote — o usuário o provisiona. Não é bloqueio de código: a T-007 é `priority: P2` e o MVP são as `P1`, todas `passing`. Os números do protótipo (5/6 deriva sutil, 12/12 fabricação, 72% preservação) seguem como linha de base medida, e os seis casos do `EVALS.md` já foram executados contra o modelo real: três passaram, duas falharam e seguem documentadas como limites conhecidos (`E-CMP-001`, comparação numérica; `E-SIN-001`, falso alarme confiante), e a sexta (`E-EXT-001`) teve a expectativa corrigida porque contradizia o princípio declarado no próprio documento.
+**`state: passing` (2026-08-01):** serviço NLI provisionado em `:1235` (`local-ai-lab/nli-server.py`, LaunchAgent `com.wendeus.kb-nli` com KeepAlive, ressurreição provada com kill -9). Os seis casos do `EVALS.md` executados pelo caminho real do kb (`grounding.verify` com embeddings `:1234` + NLI `:1235`): reprodução exata da linha de base — E-NEG/E-NUM/E-FAB/E-EXT corretos; E-CMP-001 e E-SIN-001 falham exatamente como os limites documentados. Latência mediana 281ms por afirmação, máximo 2,1s (warm-up). Nenhum número foi promovido a garantia: a medição confirma viabilidade e os limites conhecidos, como as Métricas de sucesso pedem.
 
 ---
 
