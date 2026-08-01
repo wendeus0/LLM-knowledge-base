@@ -272,3 +272,42 @@ class TestFileBackEscaping:
 
         conteudo = next(iter(outputs.rglob("*.md"))).read_text()
         assert "\n## Seção injetada" not in conteudo
+
+
+class TestFileBackEmptyBlock:
+    def test_should_not_write_an_empty_verification_section_when_skipped(
+        self, tmp_path, monkeypatch
+    ):
+        _wiki, outputs = _preparar(
+            tmp_path, monkeypatch, grounding.GroundingResult(status="skipped")
+        )
+
+        runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--file-back", "--no-commit"])
+
+        conteudo = next(iter(outputs.rglob("*.md"))).read_text()
+        assert "Verificação de ancoragem" not in conteudo
+
+    def test_should_not_write_an_empty_verification_section_when_degraded(
+        self, tmp_path, monkeypatch
+    ):
+        _wiki, outputs = _preparar(
+            tmp_path, monkeypatch, grounding.GroundingResult(status="degraded")
+        )
+
+        runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--file-back", "--no-commit"])
+
+        conteudo = next(iter(outputs.rglob("*.md"))).read_text()
+        assert "Verificação de ancoragem" not in conteudo
+
+    def test_should_write_the_section_when_only_the_limit_is_reported(
+        self, tmp_path, monkeypatch
+    ):
+        vazio_com_limite = grounding.GroundingResult(status="verified")
+        vazio_com_limite.unverified_due_to_limit = 3
+        _wiki, outputs = _preparar(tmp_path, monkeypatch, vazio_com_limite)
+
+        runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--file-back", "--no-commit"])
+
+        conteudo = next(iter(outputs.rglob("*.md"))).read_text()
+        assert "Verificação de ancoragem" in conteudo
+        assert "limite" in conteudo.lower()

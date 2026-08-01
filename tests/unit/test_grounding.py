@@ -720,3 +720,88 @@ class TestClaimSegmentation:
         )
 
         assert len(grounding.split_claims(texto)) == 2
+
+
+class TestHttpContractEgress:
+    """O guard de loopback não vale nada se o transporte contornar o host.
+
+    Redirect e proxy são dois caminhos para o mesmo vazamento: a URL é loopback,
+    mas o `Authorization` e o trecho de artigo saem para outro host.
+    """
+
+    def test_should_disable_proxies_that_would_route_the_request_elsewhere(self, monkeypatch):
+        import urllib.request
+
+        monkeypatch.setenv("http_proxy", "http://proxy.invalido:8080")
+        monkeypatch.setenv("https_proxy", "http://proxy.invalido:8080")
+
+        # build_opener com ProxyHandler({}) remove o handler da lista; o default
+        # o inclui carregando http_proxy do ambiente.
+        padrao = [
+            h for h in urllib.request.build_opener().handlers
+            if isinstance(h, urllib.request.ProxyHandler) and h.proxies
+        ]
+        nosso = [
+            h for h in grounding._opener().handlers
+            if isinstance(h, urllib.request.ProxyHandler) and h.proxies
+        ]
+
+        assert padrao, "o ambiente do teste precisa ter proxy configurado"
+        assert not nosso
+
+    @pytest.mark.parametrize(
+        "base_url",
+        ["file://localhost/etc/passwd", "ftp://localhost:1235/v1", "gopher://localhost/v1"],
+    )
+    def test_should_refuse_schemes_other_than_http(self, base_url):
+        assert grounding._is_loopback(base_url) is False
+
+    def test_should_accept_https_on_loopback(self):
+        assert grounding._is_loopback("https://localhost:1235/v1") is True
+
+
+class TestProbabilityRange:
+    @pytest.mark.parametrize("valor", [1.5, -0.2, 42.0])
+    def test_should_refuse_probability_outside_the_unit_interval(self, valor, monkeypatch):
+        monkeypatch.setattr(
+            grounding,
+            "_http_post_json",
+            lambda url, payload, timeout, api_key: {
+                "data": [{"entailment": valor, "contradiction": 0.1, "neutral": 0.1}]
+            },
+        )
+
+        with pytest.raises(grounding.GroundingUnavailable):
+            grounding.classify([("p", "h")], model="m", base_url="http://localhost:1235/v1")
+
+
+class TestGroundingDeadline:
+    def test_should_stop_issuing_calls_after_the_overall_deadline(self, monkeypatch):
+        monkeypatch.setattr(grounding, "_embed_texts", lambda t: [[1.0, 0.0] for _ in t])
+        chamadas = []
+        relogio = {"agora": 0.0}
+        monkeypatch.setattr(grounding.time, "monotonic", lambda: relogio["agora"])
+
+        def _lento(pairs, model, base_url, timeout=15.0, api_key=None):
+            chamadas.append(len(pairs))
+            relogio["agora"] += 30.0
+            return [{"entailment": 0.9, "contradiction": 0.05, "neutral": 0.05} for _ in pairs]
+
+        monkeypatch.setattr(grounding, "classify", _lento)
+
+        resposta = " ".join(
+            f"Esta é a afirmação número {i} com tamanho suficiente para ser elegível."
+            for i in range(1, 7)
+        )
+        resultado = grounding.verify(resposta, "Contexto com conteúdo suficiente.")
+
+        assert len(chamadas) < 6
+        assert resultado.unverified_due_to_limit >= 1
+
+
+class TestConfigTimeout:
+    @pytest.mark.parametrize("valor", ["0", "-5", "0.0"])
+    def test_should_fall_back_when_timeout_is_not_positive(self, valor, monkeypatch):
+        monkeypatch.setenv("KB_GROUNDING_TIMEOUT", valor)
+
+        assert config.grounding_timeout() == config.GROUNDING_TIMEOUT_DEFAULT

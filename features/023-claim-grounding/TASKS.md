@@ -123,7 +123,7 @@ Fechar a compatibilidade observável: nenhuma anotação negativa bloqueia respo
 
 Executar a amostra medida com o modelo real em ambiente local, comparar com a linha de base do protótipo e registrar limites/latência para a aprovação humana.
 
-**`state: blocked` (2026-08-01):** exige o serviço NLI rodando em `:1235`, que a SPEC coloca fora do pacote — o usuário o provisiona. Não é bloqueio de código: a T-007 é `priority: P2` e o MVP são as `P1`, todas `passing`. Os números do protótipo (5/6 deriva sutil, 12/12 fabricação, 72% preservação) seguem como linha de base medida, e os seis casos do `EVALS.md` já foram executados contra o modelo real — três passaram e as duas falhas remanescentes estão documentadas como limites conhecidos.
+**`state: blocked` (2026-08-01):** exige o serviço NLI rodando em `:1235`, que a SPEC coloca fora do pacote — o usuário o provisiona. Não é bloqueio de código: a T-007 é `priority: P2` e o MVP são as `P1`, todas `passing`. Os números do protótipo (5/6 deriva sutil, 12/12 fabricação, 72% preservação) seguem como linha de base medida, e os seis casos do `EVALS.md` já foram executados contra o modelo real: três passaram, duas falharam e seguem documentadas como limites conhecidos (`E-CMP-001`, comparação numérica; `E-SIN-001`, falso alarme confiante), e a sexta (`E-EXT-001`) teve a expectativa corrigida porque contradizia o princípio declarado no próprio documento.
 
 ---
 

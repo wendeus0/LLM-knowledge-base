@@ -517,7 +517,7 @@ def qa(
             )
             return
 
-        if grounding_result.claims:
+        if grounding_result.claims or grounding_result.unverified_due_to_limit:
             grounding_lines = ["## Verificação de ancoragem"]
             grounding_lines.extend(
                 f"- **{claim.verdict}** — {' '.join(str(claim.evidence).split())}"

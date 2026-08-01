@@ -9,6 +9,7 @@ import ipaddress
 import json
 import math
 import re
+import time
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -33,7 +34,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def _opener():
-    return urllib.request.build_opener(_NoRedirect)
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
 
 
 def _http_get_json(url: str, timeout: float, api_key: str | None = None) -> dict:
@@ -55,7 +56,10 @@ def _http_post_json(url: str, payload: dict, timeout: float, api_key: str | None
 
 
 def _is_loopback(base_url: str) -> bool:
-    host = urlparse(base_url).hostname
+    partes = urlparse(base_url)
+    if partes.scheme not in ("http", "https"):
+        return False
+    host = partes.hostname
     if host == "localhost":
         return True
     try:
@@ -118,7 +122,7 @@ def classify(
             value = entry.get(probability)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise GroundingUnavailable("resposta NLI fora do contrato")
-            if not math.isfinite(value):
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
                 raise GroundingUnavailable("resposta NLI fora do contrato")
     return data
 
@@ -128,6 +132,7 @@ WINDOW_STEP = 6
 CANDIDATES_PER_CLAIM = 3
 CONTRADICTION_THRESHOLD = 0.5
 MIN_CLAIM_CHARS = 40
+DEADLINE_FACTOR = 2
 
 
 @dataclass
@@ -258,11 +263,15 @@ def verify(response: str, context: str, max_pairs: int | None = None) -> Groundi
     if not _model_ready():
         return GroundingResult(status="degraded")
 
+    prazo = time.monotonic() + config.grounding_timeout() * DEADLINE_FACTOR
     try:
         claim_vectors = _embed_texts(checked)
         window_vectors = _embed_texts(windows)
         claim_verdicts = []
         for claim, claim_vector in zip(checked, claim_vectors, strict=True):
+            if time.monotonic() >= prazo:
+                unverified_due_to_limit += len(checked) - len(claim_verdicts)
+                break
             candidates = sorted(
                 zip(windows, window_vectors, strict=True),
                 key=lambda item: _cosine(claim_vector, item[1]),

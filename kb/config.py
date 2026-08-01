@@ -141,4 +141,6 @@ def grounding_timeout() -> float:
         value = float(os.getenv("KB_GROUNDING_TIMEOUT", GROUNDING_TIMEOUT_DEFAULT))
     except ValueError:
         return GROUNDING_TIMEOUT_DEFAULT
-    return value if math.isfinite(value) else GROUNDING_TIMEOUT_DEFAULT
+    if not math.isfinite(value) or value <= 0:
+        return GROUNDING_TIMEOUT_DEFAULT
+    return value

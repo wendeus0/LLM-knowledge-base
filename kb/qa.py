@@ -1,6 +1,5 @@
 """Q&A contra fontes nativas. Com --file-back, a resposta é arquivada no corpus."""
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -146,12 +145,6 @@ def answer_with_grounding(
         # Responder com base nos artigos fornecidos, sem extrapolar.
         **params("analytical"),
     )
-    state_dir = os.getenv("KB_STATE_DIR")
-    if state_dir:
-        from kb import state
-
-        state.STATE_DIR = Path(state_dir)
-        state.LEARNINGS_PATH = state.STATE_DIR / "learnings.json"
     add_learning(
         "retrieval", f"Pergunta '{question}' roteada para {decision.route}", source="qa"
     )
@@ -234,8 +227,8 @@ def answer_and_file(
         grounding_lines.append(
             f"- {result.grounding.unverified_due_to_limit} afirmação(ões) sem verificação por limite de orçamento"
         )
-    grounding_section = "\n".join(grounding_lines)
-    article = f"{article.rstrip()}\n\n{grounding_section}\n"
+    if result.grounding.claims or result.grounding.unverified_due_to_limit:
+        article = f"{article.rstrip()}\n\n" + "\n".join(grounding_lines) + "\n"
 
     topic = "general"
     title = question[:50]
@@ -257,11 +250,6 @@ def answer_and_file(
 
         refresh_embeddings_index(enabled=index_refresh_enabled)
     else:
-        outputs_dir = os.getenv("KB_OUTPUTS_DIR")
-        if outputs_dir:
-            from kb import config
-
-            config.OUTPUTS_DIR = Path(outputs_dir)
         _, out = _write_output(question, article, topic, no_commit=True)
 
     if not no_commit:
