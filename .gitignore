@@ -21,3 +21,4 @@ htmlcov/
 
 # Worktrees de agentes (efêmeros)
 .claude/worktrees/
+.holdout/
