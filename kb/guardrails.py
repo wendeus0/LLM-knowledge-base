@@ -116,6 +116,44 @@ def is_loopback(base_url: str) -> bool:
 _remote_egress_warned = False
 
 
+def _proxy_would_route(base_url: str) -> bool:
+    """Um proxy de ambiente tiraria esta requisição da máquina?
+
+    Loopback só dispensa o gate de sensível quando o payload de fato não sai
+    daqui. Medido: com HTTP_PROXY setado e sem NO_PROXY cobrindo o host, o httpx
+    roteia http://localhost:1234 pelo proxy.
+    """
+    parts = urlparse(base_url)
+    host = (parts.hostname or "").lower()
+    proxies = [
+        os.getenv(nome)
+        for nome in ("ALL_PROXY", "all_proxy", f"{parts.scheme.upper()}_PROXY", f"{parts.scheme}_proxy")
+    ]
+    if not any(proxies):
+        return False
+    isentos = [
+        parte.strip().lower().lstrip(".")
+        for parte in (os.getenv("NO_PROXY") or os.getenv("no_proxy") or "").split(",")
+        if parte.strip()
+    ]
+    if "*" in isentos:
+        return False
+    return not any(host == isento or host.endswith("." + isento) for isento in isentos)
+
+
+def local_http_client(base_url: str):
+    """Cliente httpx que ignora proxy de ambiente, para endpoints de loopback.
+
+    Devolve None quando o endpoint é remoto: lá o proxy pode ser legítimo (rede
+    corporativa) e o gate de conteúdo sensível já se aplica.
+    """
+    if not is_loopback(base_url):
+        return None
+    import httpx
+
+    return httpx.Client(trust_env=False)
+
+
 def assert_egress_allowed(
     base_url: str, payload_text: str, source: str, allow_sensitive: bool = False
 ) -> None:
@@ -124,10 +162,11 @@ def assert_egress_allowed(
     parts = urlparse(base_url)
     if parts.scheme not in ("http", "https"):
         raise ValueError(f"endpoint de {source} precisa usar http ou https")
-    if is_loopback(base_url):
+    if is_loopback(base_url) and not _proxy_would_route(base_url):
         return
 
-    assert_safe_for_provider(payload_text, source=source, allow_sensitive=allow_sensitive)
+    autorizado = allow_sensitive or os.getenv("KB_EGRESS_ALLOW_SENSITIVE") == "1"
+    assert_safe_for_provider(payload_text, source=source, allow_sensitive=autorizado)
     if os.getenv("KB_EGRESS_REMOTE_OK") != "1" and not _remote_egress_warned:
         print(
             "[kb] aviso: endpoint remoto em "

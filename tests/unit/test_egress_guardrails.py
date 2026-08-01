@@ -10,6 +10,13 @@ from kb import rerank as rerank_module
 from kb.guardrails import SensitiveContentError
 
 
+@pytest.fixture(autouse=True)
+def _rearma_aviso(monkeypatch):
+    """O aviso de egresso remoto é global ao processo; sem rearmar, a ordem dos
+    testes decide quem vê o aviso."""
+    monkeypatch.setattr(guardrails, "_remote_egress_warned", False, raising=False)
+
+
 @pytest.fixture
 def fake_openai(monkeypatch):
     calls = []
@@ -132,3 +139,76 @@ def test_should_keep_default_loopback_endpoints_silent(fake_openai, monkeypatch,
 
     assert len(calls) == 1
     assert "KB_EGRESS_REMOTE_OK" not in capsys.readouterr().err
+
+
+class TestLoopbackProxyLeak:
+    """Loopback não basta: um proxy de ambiente tira o payload da máquina.
+
+    Medido: com HTTP_PROXY setado, o httpx roteia http://localhost:1234 pelo
+    proxy. A isenção de gate para loopback só é segura se nenhum proxy se
+    aplicar — senão o destino real é remoto.
+    """
+
+    def test_should_gate_loopback_when_a_proxy_would_route_it_away(self, monkeypatch):
+        monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalido:8080")
+        monkeypatch.delenv("NO_PROXY", raising=False)
+        monkeypatch.setattr(guardrails, "_remote_egress_warned", False, raising=False)
+
+        with pytest.raises(SensitiveContentError):
+            guardrails.assert_egress_allowed(
+                "http://localhost:1234/v1",
+                "password: hunter2 no corpo do artigo",
+                source="embeddings",
+            )
+
+    def test_should_keep_exempting_loopback_when_no_proxy_covers_it(self, monkeypatch):
+        monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalido:8080")
+        monkeypatch.setenv("NO_PROXY", "localhost,127.0.0.1")
+        monkeypatch.setattr(guardrails, "_remote_egress_warned", False, raising=False)
+
+        guardrails.assert_egress_allowed(
+            "http://localhost:1234/v1",
+            "password: hunter2 no corpo do artigo",
+            source="embeddings",
+        )
+
+    def test_should_exempt_loopback_when_no_proxy_is_configured(self, monkeypatch):
+        for var in ("HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
+            monkeypatch.delenv(var, raising=False)
+
+        guardrails.assert_egress_allowed(
+            "http://localhost:1234/v1",
+            "password: hunter2 no corpo do artigo",
+            source="embeddings",
+        )
+
+    def test_should_build_a_loopback_client_that_ignores_environment_proxies(self):
+        cliente = guardrails.local_http_client("http://localhost:1234/v1")
+
+        assert cliente is not None
+        assert cliente.trust_env is False
+
+    def test_should_not_force_a_client_for_remote_endpoints(self):
+        assert guardrails.local_http_client("https://api.exemplo.com/v1") is None
+
+
+class TestSensitiveEgressOptIn:
+    """`--allow-sensitive` não chega a embeddings/rerank: a cadeia de chamada
+    (`compile` → `refresh_embeddings_index` → `build_index` → `embed_texts`) não
+    carrega o parâmetro. Até carregar, o opt-in é por env — declarado, não
+    silencioso."""
+
+    def test_should_allow_sensitive_remote_egress_with_explicit_env_opt_in(self, monkeypatch):
+        monkeypatch.setenv("KB_EGRESS_ALLOW_SENSITIVE", "1")
+
+        guardrails.assert_egress_allowed(
+            "https://api.exemplo.com/v1", "password: hunter2", source="embeddings"
+        )
+
+    def test_should_keep_blocking_sensitive_remote_egress_without_the_opt_in(self, monkeypatch):
+        monkeypatch.delenv("KB_EGRESS_ALLOW_SENSITIVE", raising=False)
+
+        with pytest.raises(SensitiveContentError):
+            guardrails.assert_egress_allowed(
+                "https://api.exemplo.com/v1", "password: hunter2", source="embeddings"
+            )

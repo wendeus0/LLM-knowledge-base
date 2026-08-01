@@ -24,10 +24,17 @@ O canal NLI da feature 023 nasceu coberto — gate antes do `verify`, guard de l
 | Endpoint | Comportamento |
 |---|---|
 | Esquema ≠ http/https | recusa sempre (`file://`, `ftp://`) |
-| Loopback | passa sem gate de sensível — o conteúdo não sai da máquina |
+| Loopback **sem proxy aplicável** | passa sem gate — o conteúdo não sai da máquina |
+| Loopback **com proxy que o rotearia** | tratado como remoto (o payload sai) |
 | Remoto | passa por `assert_safe_for_provider`; sem `KB_EGRESS_REMOTE_OK=1`, um aviso por processo |
 
 Loopback não gateia por desenho: o gate de sensível existe contra egresso para provider **externo**. Aplicá-lo a `localhost:1234` bloquearia o uso normal do vault sem proteger nada.
+
+## O P0 que o review pegou
+
+A premissa "loopback não sai da máquina" era **falsa sob proxy**. Medido com httpx: com `HTTP_PROXY` setado e sem `NO_PROXY` cobrindo o host, `http://localhost:1234` é roteado pelo proxy — payload e credencial saem. É a mesma classe do vazamento por redirect corrigido no canal NLI, por outro transporte: **o guard valida a URL, não o caminho**.
+
+Corrigido em duas camadas: `_proxy_would_route()` faz o loopback perder a isenção quando um proxy se aplicaria, e `local_http_client()` constrói os clientes de loopback com `trust_env=False`, para que proxy de ambiente nunca os alcance. Endpoints remotos seguem confiando no env (proxy corporativo é legítimo lá) e já passam pelo gate.
 
 ## Validação
 
@@ -39,5 +46,10 @@ Loopback não gateia por desenho: o gate de sensível existe contra egresso para
 `rerank_base_url()` mudou de `os.getenv("KB_BASE_URL", "")` para cair em `config.BASE_URL`. Parecia escopo extra, mas está correto: a função não alimenta o cliente (o caminho dedicado lê o env direto; sem ele o tráfego vai por `chat()` → `config.BASE_URL`). Gatear contra `""` recusaria o caminho default. A mudança alinha o valor gateado com o endpoint real.
 
 ## Dívida remanescente
+
+`--allow-sensitive` não alcança estes dois canais: a cadeia `compile → refresh_embeddings_index → build_index → embed_texts` não carrega o parâmetro. Até carregar, o opt-in é `KB_EGRESS_ALLOW_SENSITIVE=1` — declarado e testado, não silencioso. Bloqueio sem escapatória seria pior.
+
+`SENSITIVE_PATTERNS` não cobre chave AWS/GitHub/JWT (F-11, aberto desde abril): um teste meu usou `AKIA...` como fixture e passou sem bloquear, expondo o buraco. Trocado por padrão coberto; o F-11 segue no `PENDING_LOG`.
+
 
 `_remote_egress_warned` é global ao processo, como `_grounding_warned` e `_warn_semantic_degraded` — consistente com o padrão do repo, mesma ressalva já registrada no `PENDING_LOG`.

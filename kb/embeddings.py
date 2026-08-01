@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-from kb.guardrails import assert_egress_allowed
+from kb.guardrails import assert_egress_allowed, local_http_client
 
 INDEX_FILENAME = "embeddings.json"
 INDEX_FORMAT = 2
@@ -44,7 +44,12 @@ def embed_texts(
             "Dependência opcional ausente: instale `openai` para usar embeddings."
         ) from exc
 
-    client = OpenAI(api_key=os.getenv("KB_EMBED_API_KEY", "ollama"), base_url=endpoint)
+    http_client = local_http_client(endpoint)
+    client = OpenAI(
+        api_key=os.getenv("KB_EMBED_API_KEY", "ollama"),
+        base_url=endpoint,
+        **({"http_client": http_client} if http_client else {}),
+    )
     response = client.embeddings.create(model=model or _embed_model(), input=texts)
     return [item.embedding for item in response.data]
 
