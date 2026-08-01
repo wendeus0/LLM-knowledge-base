@@ -33,6 +33,21 @@
 12. **O critério de agrupamento é a proveniência** (`raw/books/*/metadata.json`), não cosseno nem LLM. Os dois são aproximação de um dado que o sistema já tem e não usa porque o `manifest.json` nunca ligou artigo à fonte.
 13. **O cosseno tem outro papel:** detectar tema que **atravessa** livros (DDD = dois livros, um tema).
 
+## Decisões fechadas (grilling do 005, 2026-07-31)
+
+14. **Fonte admitida: livros e papers, curados pelo usuário.** Web aberta fica fora da rotina; `discovery` mantém só arXiv, `kb ingest <url>` fica para uso deliberado, auto-commit segue desligado.
+15. **Livro novo sobre tema existente marca o tema como stale** — não reescreve o que já foi lido sem ordem.
+16. **Não há detecção automática de lacuna.** Derrubada por medição (abaixo). O usuário diz quando falta; o kb não sugere leitura e portanto não alucina bibliografia.
+17. **A propriedade offline do ADR-0017 fica preservada** — consequência de 16, não decisão separada.
+
+## O que o score do retrieval não mede
+
+**O score não separa acerto de erro.** Golden de 152 casos, híbrido sem rerank, score do primeiro resultado: acertos ficam entre 0,0367 e 0,0641; erros, entre 0,0361 e 0,0636. Sobreposição quase total. Um limiar que pegue dois terços das lacunas diz "não sei" em 27 perguntas que o sistema sabia responder.
+
+A causa é estrutural: RRF é soma de inversos de posição e mede **concordância entre canais**, não confiança. Um artigo errado que os quatro canais concordam em rankear alto tira score alto.
+
+**Consequência:** detectar lacuna exige uma métrica que o retrieval atual não produz. Vira pré-requisito, não parte da política. Detalhe e tabelas em [`tickets/005`](tickets/005-origem-do-conhecimento.md).
+
 ## O que o corpus é, medido
 
 **Não são 1.037 artigos sobre temas. São ~40 livros fatiados em 1.037 capítulos.** O clustering a 0,88 agrupa 45% do corpus e os grupos reconstroem os livros; os 568 restantes são capítulos do mesmo livro falando de coisas diferentes. Detalhe e mapa proposto em [`MAPA-DE-TEMAS.md`](MAPA-DE-TEMAS.md).

@@ -1,7 +1,7 @@
 # De onde vem o conhecimento novo?
 
 Type: grilling
-Status: open
+Status: resolved (2026-07-31)
 Blocked by: 004-wiki-produto-ou-insumo
 
 ## Question
@@ -53,5 +53,63 @@ Casa também com o que já existe: `kb import-book` já quebra EPUB/PDF em capí
 **Restrição nova a considerar:** o ADR-0017 registra a propriedade offline (embeddings locais). Consultar LLM grande via CLI na lacuna quebra isso. Continua sendo decisão deste ticket — mas agora com um dado a mais: a infra local (`bonsai-27b-1bit` em `:8081`) voltou ao launchd e ressuscita sozinha, então o argumento "o local não é confiável o bastante" ficou mais fraco.
 
 ## Answer
+
+**Livros e papers, curados por você. Sem web aberta, sem detecção automática de lacuna.** Decidido no grilling de 2026-07-31.
+
+### Fonte admitida
+
+**Livros e papers**, pelo caminho que já existe (`kb import-book` → `raw/books/` → compile). PDF de paper entra como livro. **Web aberta fica fora da rotina** — página só entra se você salvar e ingerir deliberadamente.
+
+Isso preserva a virtude que o charting identificou: **o que atravessa a fronteira é escolhido por você**, e a curadoria fica no humano, no ponto em que é barata. O gate de conteúdo não-confiável do PR #54 continua valendo como defesa em profundidade, não como licença para abrir a porta.
+
+**Destino do que já existe:**
+- `discovery` fica, **só com a fonte arXiv** — paper é fonte legítima; Google News sai.
+- `kb ingest <url>` continua existindo para uso deliberado seu, sem job automático.
+- **Auto-commit segue desligado** (`KB_DISCOVERY_AUTOCOMMIT`), confirmando o default defensivo tomado durante a sessão em resposta ao F-02 da auditoria.
+
+### Livro novo sobre tema que já existe
+
+**Avisa que o tema ficou desatualizado.** Os capítulos entram em `_chapters/`, o artigo de tema ganha marca de stale, e você decide quando recompilar. Nada reescreve artigo que você já leu sem você mandar.
+
+Depende do mesmo pré-requisito do [ticket 006](006-destino-dos-artigos-atuais.md): saber a que tema um capítulo novo pertence exige a ligação artigo → fonte que o `manifest.json` nunca materializou.
+
+### Detecção de lacuna: **derrubada por medição**
+
+A decisão inicial do grilling foi "limiar de score no retrieval". **Medi antes de fixar, e o score não separa acerto de erro.**
+
+Golden de 152 casos, modo híbrido sem rerank (o limiar precisa valer no caminho barato, antes de gastar chamada de LLM), score do primeiro resultado:
+
+| | n | mín | p25 | mediana | p75 | máx |
+|---|---:|---:|---:|---:|---:|---:|
+| **acertou** | 63 | 0,0367 | 0,0479 | 0,0532 | 0,0601 | 0,0641 |
+| **errou** | 89 | 0,0361 | 0,0447 | 0,0502 | 0,0547 | 0,0636 |
+
+As faixas se sobrepõem quase por inteiro: o erro de maior score (0,0636) empata com o melhor acerto (0,0641). Qualquer limiar paga caro:
+
+| Limiar | Lacunas detectadas | Falso alarme (sabia e disse que não) |
+|---:|---:|---:|
+| 0,046 | 25 de 89 (28%) | 11 |
+| 0,052 | 58 de 89 (65%) | **27** |
+| 0,058 | 77 de 89 (87%) | **43** |
+
+Para pegar dois terços das lacunas, o sistema diria "não sei" em 27 perguntas que sabia responder.
+
+**A causa é estrutural, não falta de calibração.** O score é RRF — soma de inversos de posição. Ele mede **concordância entre canais**, não confiança na resposta: um artigo errado que os quatro canais concordam em rankear alto tira score alto. RRF não vira medida de confiança com ajuste de limiar; vira com outra métrica.
+
+**Decisão: detectar lacuna automaticamente é pré-requisito medido, não parte desta política.** Exige uma medida de confiança que o retrieval atual não produz — provavelmente o grader de fidelidade pedido em `PENDING_LOG.md:119`. Fica como trabalho próprio, com esta medição como evidência de que o caminho barato foi tentado e não serve.
+
+**Enquanto isso: você diz quando falta.** O kb não sugere leitura, então também não alucina bibliografia — o modo de falha do item 2 da pergunta deste ticket some junto.
+
+### Consequências para as perguntas do ticket
+
+- **Livros apenas, ou web/papers?** Livros e papers. Web fora da rotina.
+- **Aquisição sob demanda ou curada em lote?** Curada por você. Não há aquisição automática na lacuna, porque não há detecção de lacuna.
+- **Como se detecta lacuna?** Hoje, você. Automaticamente, só depois do grader.
+- **O kb sugere referência sem verificar existência?** Não sugere referência nenhuma. A dívida de "referência bibliográfica real" permanece, mas para o artigo compilado (ticket 004), não para recomendação de leitura.
+- **A dependência de LLM grande externa é aceitável?** Não entra. A propriedade offline do ADR-0017 fica preservada — consequência de derrubar a detecção automática, não decisão separada.
+
+### Sobra em aberto
+
+Se algum dia a detecção de lacuna voltar, vale medir dois sinais que esta rodada não testou e que podem separar onde o RRF não separa: **o cosseno do canal semântico puro** e **a margem entre 1º e 2º colocado**. É medição barata com o mesmo golden.
 
 <!-- preencher na resolução -->
