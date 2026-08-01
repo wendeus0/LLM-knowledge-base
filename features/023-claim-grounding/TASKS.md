@@ -15,8 +15,8 @@
   tag: AFK
   vertical_slice: spike
   behavior: "O cliente consegue provar, com HTTP simulado, que o serviço local anuncia o modelo NLI e respeita o contrato de classificação."
-  verify: "python -m pytest tests/unit/test_grounding.py -k 'probe or http_contract'"
-  state: not_started
+  verify: "python -m pytest tests/unit/test_grounding.py -k 'probe or httpcontract'"
+  state: red
   worktree: worktrees/023-claim-grounding/T-001
 ```
 

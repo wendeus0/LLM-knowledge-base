@@ -107,3 +107,29 @@ def get_retrieval_profile(name: str) -> dict:
     profile["doc_chars"] = qa_doc_chars(profile["doc_chars"])
     profile["rerank_depth"] = qa_rerank_depth(profile["rerank_depth"])
     return profile
+
+
+GROUNDING_BASE_URL_DEFAULT = "http://localhost:1235/v1"
+GROUNDING_MODEL_DEFAULT = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+GROUNDING_MAX_PAIRS_DEFAULT = 24
+GROUNDING_TIMEOUT_DEFAULT = 15.0
+
+
+def grounding_base_url() -> str:
+    return ""
+
+
+def grounding_model() -> str:
+    return ""
+
+
+def grounding_api_key() -> str | None:
+    return None
+
+
+def grounding_max_pairs() -> int:
+    return 0
+
+
+def grounding_timeout() -> float:
+    return 0.0

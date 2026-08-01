@@ -1,8 +1,10 @@
 ---
 feature: 023-claim-grounding
 mode: act
-pipeline_state: CONTRACT_VALID
+pipeline_state: RED_OK
 eval_design: EVAL_DESIGN_PARTIAL
-branch: proto/answer-verification
+test_design: TEST_DESIGN_BALANCED_READY
+current_task: T-001
+branch: feat/023-claim-grounding
 last_updated: 2026-08-01
 ---
