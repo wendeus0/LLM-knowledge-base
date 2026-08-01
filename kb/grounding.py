@@ -5,7 +5,6 @@ O cosseno seleciona a premissa e o NLI julga: similaridade não decide veredito.
 efeito, para que o contrato com o serviço NLI local seja testável sem rede.
 """
 
-import ipaddress
 import json
 import math
 import re
@@ -13,7 +12,8 @@ import time
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+
+from kb.guardrails import is_loopback as _is_loopback
 
 
 class GroundingUnavailable(Exception):
@@ -53,19 +53,6 @@ def _http_post_json(url: str, payload: dict, timeout: float, api_key: str | None
         request.add_header("Authorization", f"Bearer {api_key}")
     with _opener().open(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
-
-
-def _is_loopback(base_url: str) -> bool:
-    partes = urlparse(base_url)
-    if partes.scheme not in ("http", "https"):
-        return False
-    host = partes.hostname
-    if host == "localhost":
-        return True
-    try:
-        return bool(host) and ipaddress.ip_address(host).is_loopback
-    except ValueError:
-        return False
 
 
 def probe(base_url: str, timeout: float = 1.5, api_key: str | None = None) -> ServerState:

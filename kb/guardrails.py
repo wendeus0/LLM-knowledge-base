@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import ipaddress
+import os
 import re
 import secrets
 import sys
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 UNTRUSTED_TAG = "untrusted_document"
 
@@ -95,6 +98,43 @@ def assert_safe_for_provider(text: str, source: str, allow_sensitive: bool = Fal
     findings = detect_sensitive_content(text)
     if findings and not allow_sensitive:
         raise SensitiveContentError(findings, source)
+
+
+def is_loopback(base_url: str) -> bool:
+    parts = urlparse(base_url)
+    if parts.scheme not in ("http", "https"):
+        return False
+    host = parts.hostname
+    if host == "localhost":
+        return True
+    try:
+        return bool(host) and ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+_remote_egress_warned = False
+
+
+def assert_egress_allowed(
+    base_url: str, payload_text: str, source: str, allow_sensitive: bool = False
+) -> None:
+    global _remote_egress_warned
+
+    parts = urlparse(base_url)
+    if parts.scheme not in ("http", "https"):
+        raise ValueError(f"endpoint de {source} precisa usar http ou https")
+    if is_loopback(base_url):
+        return
+
+    assert_safe_for_provider(payload_text, source=source, allow_sensitive=allow_sensitive)
+    if os.getenv("KB_EGRESS_REMOTE_OK") != "1" and not _remote_egress_warned:
+        print(
+            "[kb] aviso: endpoint remoto em "
+            f"{source}; defina KB_EGRESS_REMOTE_OK=1 para registrar o opt-in de infra",
+            file=sys.stderr,
+        )
+        _remote_egress_warned = True
 
 
 def new_sentinel() -> str:
