@@ -25,6 +25,18 @@
 7. **Artigo-de-capítulo absorvido vai para `_chapters/`**, saindo da vista e da busca sem sair do disco.
 8. **O retrieval é fundação do app próprio** (ticket 007), não só do `qa`. O investimento do ADR-0017 e dos PRs de 2026-07-31 permanece justificado sob a decisão "wiki é produto".
 
+## Decisões fechadas (grilling do 006, 2026-07-31)
+
+9. **O reagrupamento é lote único**, não convergência sob demanda; os originais em `_chapters/` tornam a operação reversível.
+10. **Todos os 1.037 vão para `_chapters/`**, absorvidos ou não.
+11. **Perder retrievability do detalhe absorvido é aceito** — e em troca o gate de qualidade passa a ser **"não perdeu informação"**, não só "tem referências".
+12. **O critério de agrupamento é a proveniência** (`raw/books/*/metadata.json`), não cosseno nem LLM. Os dois são aproximação de um dado que o sistema já tem e não usa porque o `manifest.json` nunca ligou artigo à fonte.
+13. **O cosseno tem outro papel:** detectar tema que **atravessa** livros (DDD = dois livros, um tema).
+
+## O que o corpus é, medido
+
+**Não são 1.037 artigos sobre temas. São ~40 livros fatiados em 1.037 capítulos.** O clustering a 0,88 agrupa 45% do corpus e os grupos reconstroem os livros; os 568 restantes são capítulos do mesmo livro falando de coisas diferentes. Detalhe e mapa proposto em [`MAPA-DE-TEMAS.md`](MAPA-DE-TEMAS.md).
+
 ## Entidades (deltas)
 
 - **Artigo de tema** — entidade nova. Atributos que a política exige: tema, fontes (N), referências bibliográficas reais, artigos-de-capítulo absorvidos.

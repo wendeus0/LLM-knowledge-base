@@ -1,7 +1,7 @@
 # O destino dos 1.037 artigos atuais
 
 Type: grilling
-Status: open
+Status: resolved (2026-07-31)
 Blocked by: 003-medir-qualidade-corpus, 004-wiki-produto-ou-insumo
 
 ## Question
@@ -46,5 +46,51 @@ Custo, para dimensionar: 1.037 a 2.074 chamadas generativas com documento inteir
 **Sobre arquivar:** as duas políticas de remoção continuam convivendo (`heal.py` faz `unlink`, `archive.py` move com backup). Nada mudou aqui.
 
 ## Answer
+
+**Reagrupar de capítulo para tema, em lote único, pela proveniência.** Decidido no grilling de 2026-07-31; mapa proposto em [`MAPA-DE-TEMAS.md`](../MAPA-DE-TEMAS.md), glossário em [`DOMAIN.md`](../DOMAIN.md).
+
+### A pergunta do ticket mudou
+
+Este ticket perguntava "manter, arquivar ou recompilar". Nenhuma das três: o [ticket 004](004-wiki-produto-ou-insumo.md) decidiu que a wiki é produto e que o artigo passa a costurar várias fontes, o que reposiciona os 1.037 artigos como tendo a **granularidade errada** — são recortes de capítulo, e o produto quer recortes de tema. Não é a mesma coisa mal-feita; é outra coisa.
+
+### O que decidiu
+
+1. **Lote único**, não convergência sob demanda. A wiki fica coerente de imediato; os originais em `_chapters/` tornam a operação reversível.
+2. **Todos os 1.037 vão para `_chapters/` agora**, absorvidos ou não. A convenção `_*` já os exclui do índice e da busca (mesmo mecanismo de `_summaries/` e `_sources/`).
+3. **Perder retrievability do detalhe absorvido é aceito**, com a contrapartida de que **o gate de qualidade passa a ser "não perdeu informação"**, não só "tem referências". Se o detalhe importa, ele está no artigo de tema.
+4. **O critério de agrupamento é a proveniência**, não cosseno nem LLM — ver abaixo.
+
+### Por que proveniência, e não cosseno
+
+A recomendação inicial era "cosseno como esqueleto + LLM para a cauda". A medição derrubou isso, e o motivo é o achado central deste ticket:
+
+**O corpus não é 1.037 artigos sobre temas. São ~40 livros fatiados em 1.037 capítulos.**
+
+O clustering por cosseno a 0,88 agrupa 469 artigos (45%) em 116 grupos — e os grupos **estão reconstruindo os livros**: C1 são 31 capítulos de *Learning DDD* + *Implementing DDD*, C3 são 16 de *PBT with PropEr*, C7 são 11 de *Observability Engineering*. Os 568 sem cluster são o mesmo fenômeno pelo avesso: `circuit-breaker.md`, `fail-fast.md`, `dogpile.md` e `criar-back-pressure.md` são todos do *Release It!*, e o cosseno não os junta porque cada capítulo fala de coisa diferente **dentro** do mesmo livro.
+
+Ou seja: cosseno e LLM são **aproximações de um dado que o sistema já tem**. `raw/books/*/metadata.json` sabe qual capítulo veio de qual livro, e o ticket 001 protegeu essas fontes. Precisamos aproximar só porque o `manifest.json` nunca ligou artigo a fonte — a mesma dívida que bloqueia o recompile e o `kb deepen`.
+
+O cosseno continua útil, mas para outra coisa: **detectar tema que atravessa livros**. DDD é o caso claro — dois livros, um tema.
+
+### Ordem de execução
+
+Da mais barata à mais cara, com verificação em cada etapa:
+
+1. **`kb noise scan` retroativo.** O filtro da 011 nasceu depois do corpus e não pegou o que já estava lá: `dedicatorias.md`, `bolakale-aremu-perfil-do-autor.md`, `beneficios-da-assinatura-packt`, `documento-indeterminado-aviso-de-versao-eletronica`, `guia-para-este-livro.md` e `coruja-de-oma-strix-butleri.md` (exemplo de taxonomia biológica num livro técnico). Reduz o corpus antes de reagrupar.
+2. **Reconstruir a ligação artigo → fonte** a partir de `raw/books/*/metadata.json`. Destrava também recompile e `kb deepen`.
+3. **Agrupar por livro**, usando os clusters de cosseno para achar os temas que atravessam livros.
+4. **LLM nomeia os temas e resolve o que não se encaixa**, com aprovação humana no mapa final.
+
+Isso torna o lote único executável com verificação por etapa, em vez de uma rodada de 1.037 chamadas apostando num limiar — e o limiar é frágil: de 0,88 para 0,85 o maior grupo salta de 31 para 148; em 0,82 vira um caroço de 637 artigos.
+
+### Continua em aberto
+
+**A cardinalidade `Artigo de tema` × `Artigo-de-capítulo`.** Um capítulo sobre autenticação serve a "segurança de APIs" e a "criptografia aplicada". O mapa proposto assume um destino por capítulo, e a medição de sobreposição pode invalidar isso. Fica como primeiro passo da execução, não como decisão deste ticket.
+
+### Fragilidades declaradas do mapa
+
+- A atribuição dos 568 sem cluster é **inferência por título**, não medição.
+- A ordem de grandeza por tema é estimativa; só os números de cluster são exatos.
+- Livros que alimentam dois temas existem (*DDIA* → sistemas de dados **e** motores de banco).
 
 <!-- preencher na resolução -->
