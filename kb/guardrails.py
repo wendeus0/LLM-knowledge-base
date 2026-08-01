@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import ipaddress
+import os
 import re
 import secrets
 import sys
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 UNTRUSTED_TAG = "untrusted_document"
 
@@ -95,6 +98,88 @@ def assert_safe_for_provider(text: str, source: str, allow_sensitive: bool = Fal
     findings = detect_sensitive_content(text)
     if findings and not allow_sensitive:
         raise SensitiveContentError(findings, source)
+
+
+def is_loopback(base_url: str) -> bool:
+    parts = urlparse(base_url)
+    if parts.scheme not in ("http", "https"):
+        return False
+    host = parts.hostname
+    if host == "localhost":
+        return True
+    try:
+        return bool(host) and ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+_remote_egress_warned = False
+
+
+def _proxy_would_route(base_url: str) -> bool:
+    """Um proxy de ambiente tiraria esta requisição da máquina?
+
+    Loopback só dispensa o gate de sensível quando o payload de fato não sai
+    daqui. Medido: com HTTP_PROXY setado e sem NO_PROXY cobrindo o host, o httpx
+    roteia http://localhost:1234 pelo proxy.
+    """
+    parts = urlparse(base_url)
+    host = (parts.hostname or "").lower()
+    proxies = [
+        os.getenv(nome)
+        for nome in ("ALL_PROXY", "all_proxy", f"{parts.scheme.upper()}_PROXY", f"{parts.scheme}_proxy")
+    ]
+    if not any(proxies):
+        return False
+    def _isenta(bruto: str | None) -> bool:
+        entradas = [
+            parte.strip().lower().lstrip(".") for parte in (bruto or "").split(",") if parte.strip()
+        ]
+        if "*" in entradas:
+            return True
+        return any(host == entrada or host.endswith("." + entrada) for entrada in entradas)
+
+    # Qual grafia de NO_PROXY vence depende do transporte; não adivinhamos.
+    # Só dispensa o gate quando as duas isentam — na dúvida, o payload sai.
+    grafias = [os.environ[nome] for nome in ("NO_PROXY", "no_proxy") if nome in os.environ]
+    if not grafias:
+        return True
+    return not all(_isenta(g) for g in grafias)
+
+
+def local_http_client(base_url: str):
+    """Cliente httpx que ignora proxy de ambiente, para endpoints de loopback.
+
+    Devolve None quando o endpoint é remoto: lá o proxy pode ser legítimo (rede
+    corporativa) e o gate de conteúdo sensível já se aplica.
+    """
+    if not is_loopback(base_url):
+        return None
+    import httpx
+
+    return httpx.Client(trust_env=False)
+
+
+def assert_egress_allowed(
+    base_url: str, payload_text: str, source: str, allow_sensitive: bool = False
+) -> None:
+    global _remote_egress_warned
+
+    parts = urlparse(base_url)
+    if parts.scheme not in ("http", "https"):
+        raise ValueError(f"endpoint de {source} precisa usar http ou https")
+    if is_loopback(base_url) and not _proxy_would_route(base_url):
+        return
+
+    autorizado = allow_sensitive or os.getenv("KB_EGRESS_ALLOW_SENSITIVE") == "1"
+    assert_safe_for_provider(payload_text, source=source, allow_sensitive=autorizado)
+    if os.getenv("KB_EGRESS_REMOTE_OK") != "1" and not _remote_egress_warned:
+        print(
+            "[kb] aviso: endpoint remoto em "
+            f"{source}; defina KB_EGRESS_REMOTE_OK=1 para registrar o opt-in de infra",
+            file=sys.stderr,
+        )
+        _remote_egress_warned = True
 
 
 def new_sentinel() -> str:

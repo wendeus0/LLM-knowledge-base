@@ -16,7 +16,13 @@ import sys
 from pathlib import Path
 
 from kb.client import chat
-from kb.guardrails import new_sentinel, untrusted_policy, wrap_untrusted
+from kb.guardrails import (
+    assert_egress_allowed,
+    local_http_client,
+    new_sentinel,
+    untrusted_policy,
+    wrap_untrusted,
+)
 from kb.sampling import params
 
 CACHE_FILENAME = "rerank.json"
@@ -108,7 +114,11 @@ def rerank_model() -> str:
 
 
 def rerank_base_url() -> str:
-    return os.getenv("KB_RERANK_BASE_URL") or os.getenv("KB_BASE_URL", "")
+    from kb.client import BASE_URL
+
+    # Sem URL dedicada o tráfego vai por chat(), que usa kb.client.BASE_URL —
+    # gatear outro valor aprovaria um destino e enviaria para outro.
+    return os.getenv("KB_RERANK_BASE_URL") or BASE_URL
 
 
 def _call_llm(messages: list[dict]) -> str:
@@ -125,8 +135,11 @@ def _call_llm(messages: list[dict]) -> str:
 
     from openai import OpenAI
 
+    http_client = local_http_client(dedicated_url)
     client = OpenAI(
-        api_key=os.getenv("KB_RERANK_API_KEY", "ollama"), base_url=dedicated_url
+        api_key=os.getenv("KB_RERANK_API_KEY", "ollama"),
+        base_url=dedicated_url,
+        **({"http_client": http_client} if http_client else {}),
     )
     response = client.chat.completions.create(
         model=rerank_model(), messages=messages, **sampling
@@ -142,6 +155,7 @@ def preflight() -> None:
     e o resultado final foi idêntico à baseline — 18 minutos para produzir um
     número que parecia válido e não media nada.
     """
+    assert_egress_allowed(rerank_base_url(), "probe", source="rerank")
     try:
         _call_llm([{"role": "user", "content": "Responda apenas: 1"}])
     except Exception as exc:
@@ -215,6 +229,11 @@ def rerank(question: str, candidates: list[dict]) -> list[dict]:
     # controlaria a ordenação do retrieval.
     sentinel = new_sentinel()
     try:
+        assert_egress_allowed(
+            rerank_base_url(),
+            f"Pergunta: {question}\n\nCandidatos:\n{listing}",
+            source="rerank",
+        )
         answer = _call_llm(
             [
                 {"role": "system", "content": _PROMPT + untrusted_policy(sentinel)},

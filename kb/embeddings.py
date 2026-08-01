@@ -13,6 +13,8 @@ import os
 import sys
 from pathlib import Path
 
+from kb.guardrails import assert_egress_allowed, local_http_client
+
 INDEX_FILENAME = "embeddings.json"
 INDEX_FORMAT = 2
 _QUERY_PREFIX = "search_query: "
@@ -29,8 +31,12 @@ def _embed_base_url() -> str:
     return os.getenv("KB_EMBED_BASE_URL", DEFAULT_BASE_URL)
 
 
-def embed_texts(texts: list[str], model: str | None = None, base_url: str | None = None) -> list[list[float]]:
+def embed_texts(
+    texts: list[str], model: str | None = None, base_url: str | None = None
+) -> list[list[float]]:
     """Fronteira de rede: gera embeddings via endpoint OpenAI-compat local."""
+    endpoint = base_url or _embed_base_url()
+    assert_egress_allowed(endpoint, "\n".join(texts), source="embeddings")
     try:
         from openai import OpenAI
     except ImportError as exc:
@@ -38,7 +44,12 @@ def embed_texts(texts: list[str], model: str | None = None, base_url: str | None
             "Dependência opcional ausente: instale `openai` para usar embeddings."
         ) from exc
 
-    client = OpenAI(api_key=os.getenv("KB_EMBED_API_KEY", "ollama"), base_url=base_url or _embed_base_url())
+    http_client = local_http_client(endpoint)
+    client = OpenAI(
+        api_key=os.getenv("KB_EMBED_API_KEY", "ollama"),
+        base_url=endpoint,
+        **({"http_client": http_client} if http_client else {}),
+    )
     response = client.embeddings.create(model=model or _embed_model(), input=texts)
     return [item.embedding for item in response.data]
 
