@@ -1,7 +1,7 @@
 # O que a tela faz que o Obsidian não faz?
 
 Type: prototype
-Status: open
+Status: resolved (2026-07-31)
 Blocked by: 004-wiki-produto-ou-insumo
 
 ## Question
@@ -42,5 +42,42 @@ Candidatos de trabalho que o Obsidian não faz, a validar com o usuário:
 **Método continua o mesmo:** resolver com `prototype` (mock estático basta para separar "quero isso" de "achei bonito"), com o usuário trazendo as inspirações. A saída do ticket é decidir, não construir.
 
 ## Answer
+
+**A tela é a superfície de autoria e leitura: você pede o tema e lê o artigo ali mesmo. Ela absorve a leitura — o Obsidian sai.** Decidido no grilling de 2026-07-31.
+
+### A pergunta do ticket mudou
+
+Este ticket perguntava "o que a tela faz que o Obsidian não faz", supondo que a resposta dependia de a wiki ser produto ou insumo. O [004](004-wiki-produto-ou-insumo.md) decidiu produto **e** que o app próprio é o destino — então o ônus da prova já não estava em construir.
+
+O que mudou de verdade foi o **trabalho a fazer**: os três grillings criaram operações que não existiam quando o ticket foi escrito.
+
+- **Pedir um tema** (004): o artigo de tema é gerado sob demanda. Isso não é leitura, é autoria — o módulo que a `011/DOMAIN.md` desenhou e nunca foi construído.
+- **Aprovar o mapa de reagrupamento** (006): o LLM propõe, o humano aprova. É revisão de ~30 temas contra 1.037 artigos.
+- **Ver tema stale** (005): livro novo marca o tema como desatualizado; a fila precisa de superfície.
+- **Navegar proveniência** (006): com `_chapters/` fora da busca, "de quais capítulos este tema veio" só existe se a tela mostrar.
+
+Em compensação, a lista original do ticket perdeu força: ver score por canal e acompanhar jobs pressupunha "wiki como insumo".
+
+### O que decidiu
+
+1. **Primeiro trabalho: pedir tema e ver o artigo nascer** — fontes que ele vai costurar, acompanhamento, aprovação.
+2. **A tela absorve a leitura.** O Obsidian sai da divisão de trabalho; a decisão 1 da `011/DOMAIN.md` (app próprio como superfície única) volta a valer integralmente.
+3. **v1 já lê.** O ciclo fecha no primeiro dia: tema pedido, tema lido. Não há fase em que o produto dependa de outra ferramenta para ser útil.
+
+### Um argumento que apareceu na medição
+
+**O Obsidian não honra a convenção `_*`** — ela exclui do índice do `kb`, não do Obsidian, que mostra todo `.md` do vault. Depois da migração do 006, o Obsidian exibiria os ~30 artigos de tema **misturados com os 1.037 capítulos** de `_chapters/`. Dá para configurar exclusão manual em Options → Files & Links, mas o default piora a experiência em vez de melhorar.
+
+Ou seja: a política do 006 degrada o Obsidian como leitor. Isso não decidiu a questão sozinho, mas remove o argumento "o Obsidian já faz bem" que o ticket usava como ônus da prova.
+
+### O que isso custa, declarado
+
+Absorver a leitura significa competir com um produto maduro em wikilinks, grafo, busca e mobile. A `011/DOMAIN.md` falava em Swift nativo (decisão 1) com engine servida por API HTTP em terceiro servidor (decisões 6 e 9) — é o item mais caro de tudo que este map decidiu, e por larga margem.
+
+O que reduz o custo: **o corpus visível encolhe de 1.037 para ~30**. Ler 30 artigos de tema é problema de outra ordem que navegar mil capítulos.
+
+### Restrição preservada
+
+Decidir, não construir. A implementação sai pelo `spec-pipeline`, e a skill `prototype` continua sendo o caminho certo para separar "quero isso" de "achei bonito" antes de qualquer código de UI — agora com o escopo já definido: pedir tema, acompanhar geração, ler o resultado.
 
 <!-- preencher na resolução -->

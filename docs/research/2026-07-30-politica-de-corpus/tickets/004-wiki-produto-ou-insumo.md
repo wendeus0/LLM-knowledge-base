@@ -1,7 +1,7 @@
 # A wiki é produto ou insumo?
 
 Type: grilling
-Status: open
+Status: resolved (2026-07-31)
 Blocked by: 002-atravessar-google-dorking, 003-medir-qualidade-corpus
 
 ## Question
@@ -57,4 +57,33 @@ Esta é a decisão central do map. Todas as outras derivam dela, e o projeto hoj
 
 ## Answer
 
-<!-- preencher na resolução -->
+**A wiki é produto.** Decidido no grilling de 2026-07-31 (`grill-with-docs`); glossário, entidades e invariantes em [`DOMAIN.md`](../DOMAIN.md).
+
+O usuário abre a wiki no Obsidian e lê o artigo. Isso fecha a pergunta central do map — mas a conversa expôs que **produto vs insumo não era o eixo mais importante**, e sim a **granularidade**.
+
+### O que decidiu
+
+1. **Artigo raso é bug**, não design. Os achados do 002 (seção "Exemplos" sem exemplos, *Information Leakage* traduzido como "Desconhecimento") são defeitos a pagar.
+2. **O min-refs 5 da decisão 10 da 011 vale**, e os 1.035 artigos sem referência são dívida — não isentos.
+3. **O compile passa a ser muitos→um.** Isto saiu de uma impossibilidade estrutural que o grilling encontrou: o compile é 1 documento → 1 artigo, então um artigo vindo de um capítulo tem **exatamente uma** fonte bibliográfica. Exigir cinco dele é impossível por construção, não por esforço do modelo. Ou o min-refs cai, ou o artigo costura várias fontes — e a escolha foi costurar.
+4. **Os 1.037 artigos atuais têm a granularidade errada**, não só profundidade insuficiente. São recortes de capítulo; o produto quer recortes de tema. Absorvidos por um artigo de tema, vão para `_chapters/` — fora do índice e da busca pela convenção `_*` que o vault já usa, sem sair do disco.
+5. **O artigo de tema é gerado sob demanda**, quando o usuário pede o tema. Não é job automático — é o módulo de autoria que a 011 desenhou e nunca construiu.
+6. **Melhorar artigo vira comando próprio.** `heal` continua proibido de alterar conteúdo substantivo (`kb/heal.py:17-25`); aprofundar é operação nova e explícita.
+7. **A superfície de leitura é o Obsidian hoje, o app próprio é o destino** — reafirma a decisão 1 da 011 e resolve a contradição com o `CLAUDE.md`, que declarava o Obsidian como frontend oficial sem dizer que era provisório.
+8. **O retrieval é fundação do app**, não só do `qa`. O ADR-0017 e os consertos de 2026-07-31 (recall@5 0,467 → 0,526) seguem justificados sob "wiki é produto".
+
+### O que ficou em aberto, e para onde vai
+
+**Cardinalidade `Artigo de tema` × `Artigo-de-capítulo`.** Um capítulo sobre autenticação serve a "segurança de APIs" e a "criptografia aplicada". Se a relação é N:N, capítulo nunca é "consumido" e o critério de arquivamento por absorção cai. **Decisão adiada de propósito: medir a sobreposição temática no corpus antes de fechar** → ticket 006.
+
+### Efeito nos outros tickets
+
+- **006** muda de pergunta. Não é mais "manter, arquivar ou recompilar" — é **como reagrupar de capítulo para tema**, com a medição de sobreposição como primeiro passo. Os 59 pares com cosseno ≥ 0,95 deixam de ser só duplicação e viram evidência de que o recorte por capítulo fragmenta temas.
+- **005** ganha restrição: o compile multi-fonte precisa de retrieval sobre `library/`, que não existe. A pergunta "de onde vem conhecimento novo" passa a conviver com "como o conhecimento que já está no vault é encontrado para costurar".
+- **007** deixa de ser "construir ou não" e vira "o que a tela faz primeiro" — a decisão 7 já assume que ela vem.
+
+### Pré-requisitos que a decisão expõe
+
+Nenhum existe hoje, e todos bloqueiam a execução (detalhe em [`DOMAIN.md`](../DOMAIN.md)): rastreabilidade de origem por trecho, `manifest.json` materializado, retrieval sobre `library/`, e a medição de sobreposição temática.
+
+O mais incômodo é o primeiro: sem proveniência por trecho, o gate de referências consegue contar linhas numa seção e **conta linha inventada igual**. A decisão 3 da 011 previa isso e nunca foi implementada.
