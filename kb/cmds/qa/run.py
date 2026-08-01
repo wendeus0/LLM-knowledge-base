@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 
 def execute_qa_command(
     *,
@@ -18,34 +16,48 @@ def execute_qa_command(
     top_k: int | None = None,
     index_refresh_enabled: bool = True,
     rerank_depth: int | None = None,
-) -> tuple[str, Path | None]:
+    grounding_enabled: bool = True,
+):
     traverse = not no_traverse
 
     if file_back:
         from kb.qa import answer_and_file
 
-        return answer_and_file(
-            question,
-            allow_sensitive=allow_sensitive,
-            no_commit=no_commit,
-            to_wiki=to_wiki,
-            traverse=traverse,
-            depth=depth,
-            profile=profile,
-            top_k=top_k,
-            index_refresh_enabled=index_refresh_enabled,
-            rerank_depth=rerank_depth,
-        )
+        args = {
+            "allow_sensitive": allow_sensitive,
+            "no_commit": no_commit,
+            "to_wiki": to_wiki,
+            "traverse": traverse,
+            "depth": depth,
+            "profile": profile,
+            "top_k": top_k,
+            "index_refresh_enabled": index_refresh_enabled,
+            "rerank_depth": rerank_depth,
+        }
+        if not grounding_enabled:
+            args["grounding_enabled"] = False
+        response, saved_path = answer_and_file(question, **args)
+    else:
+        from kb.qa import answer
 
-    from kb.qa import answer
+        args = {
+            "allow_sensitive": allow_sensitive,
+            "traverse": traverse,
+            "depth": depth,
+            "profile": profile,
+            "top_k": top_k,
+            "rerank_depth": rerank_depth,
+        }
+        if not grounding_enabled:
+            args["grounding_enabled"] = False
+        response = answer(question, **args)
+        saved_path = None
 
-    response = answer(
-        question,
-        allow_sensitive=allow_sensitive,
-        traverse=traverse,
-        depth=depth,
-        profile=profile,
-        top_k=top_k,
-        rerank_depth=rerank_depth,
+    from kb import grounding
+    from kb.qa import QaResult
+
+    return QaResult(
+        answer=response,
+        grounding=getattr(response, "grounding", grounding.GroundingResult()),
+        saved_path=saved_path,
     )
-    return response, None

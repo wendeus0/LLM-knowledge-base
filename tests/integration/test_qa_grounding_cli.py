@@ -202,3 +202,21 @@ class TestNoGrounding:
 
         assert resultado.exit_code == 0
         assert json.loads(resultado.stdout)["grounding"]["status"] == "skipped"
+
+
+class TestHumanOutputEmptyBlock:
+    def test_should_not_print_an_empty_human_block_without_claims(self, tmp_path, monkeypatch):
+        _preparar(tmp_path, monkeypatch, grounding.GroundingResult(status="skipped"))
+
+        resultado = runner.invoke(app, ["qa", "O que faz o circuit breaker?"])
+
+        assert resultado.exit_code == 0
+        assert "Verificação de ancoragem" not in resultado.stdout
+
+    def test_should_not_print_an_empty_human_block_when_degraded(self, tmp_path, monkeypatch):
+        _preparar(tmp_path, monkeypatch, grounding.GroundingResult(status="degraded"))
+
+        resultado = runner.invoke(app, ["qa", "O que faz o circuit breaker?"])
+
+        assert resultado.exit_code == 0
+        assert "Verificação de ancoragem" not in resultado.stdout

@@ -1,9 +1,12 @@
 """Q&A contra fontes nativas. Com --file-back, a resposta é arquivada no corpus."""
 
+import os
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from kb import grounding
 from kb.claims import find_relevant_claims
 from kb.client import chat
 from kb.config import WIKI_DIR as CONFIG_WIKI_DIR
@@ -58,7 +61,31 @@ def answer(
     depth: int | None = None,
     profile: str = "fast",
     rerank_depth: int | None = None,
+    grounding_enabled: bool = True,
 ) -> str:
+    result = answer_with_grounding(
+        question,
+        top_k=top_k,
+        allow_sensitive=allow_sensitive,
+        traverse=traverse,
+        depth=depth,
+        profile=profile,
+        rerank_depth=rerank_depth,
+        grounding_enabled=grounding_enabled,
+    )
+    return _AnswerText(result.answer, result.grounding)
+
+
+def answer_with_grounding(
+    question: str,
+    top_k: int | None = None,
+    allow_sensitive: bool = False,
+    traverse: bool = True,
+    depth: int | None = None,
+    profile: str = "fast",
+    rerank_depth: int | None = None,
+    grounding_enabled: bool = True,
+) -> "QaResult":
     from kb.config import get_retrieval_profile
 
     resolved = get_retrieval_profile(profile)
@@ -76,7 +103,10 @@ def answer(
     )
 
     if not context_parts:
-        return "Nenhum contexto relevante encontrado. Use `kb compile` para adicionar conteúdo ou registre learnings/knowledge."
+        return QaResult(
+            answer="Nenhum contexto relevante encontrado. Use `kb compile` para adicionar conteúdo ou registre learnings/knowledge.",
+            grounding=grounding.GroundingResult(),
+        )
 
     context = "\n\n---\n\n".join(context_parts)
     claims = find_relevant_claims(question, top_k=3)
@@ -117,10 +147,32 @@ def answer(
         # Responder com base nos artigos fornecidos, sem extrapolar.
         **params("analytical"),
     )
+    state_dir = os.getenv("KB_STATE_DIR")
+    if state_dir:
+        from kb import state
+
+        state.STATE_DIR = Path(state_dir)
+        state.LEARNINGS_PATH = state.STATE_DIR / "learnings.json"
     add_learning(
         "retrieval", f"Pergunta '{question}' roteada para {decision.route}", source="qa"
     )
-    return response
+    if not grounding_enabled:
+        grounding_result = grounding.GroundingResult()
+    else:
+        try:
+            grounding_result = grounding.verify(response, full_context)
+        except Exception:
+            grounding_result = grounding.GroundingResult(status="degraded")
+
+    global _grounding_warned
+    if grounding_result.status == "degraded" and not _grounding_warned:
+        print(
+            "aviso: verificação de ancoragem indisponível — resposta exibida sem verificação",
+            file=sys.stderr,
+        )
+        _grounding_warned = True
+
+    return QaResult(answer=response, grounding=grounding_result)
 
 
 def answer_and_file(
@@ -134,12 +186,13 @@ def answer_and_file(
     profile: str = "fast",
     index_refresh_enabled: bool = True,
     rerank_depth: int | None = None,
+    grounding_enabled: bool = True,
 ) -> tuple[str, Path | None]:
     """Responde e arquiva a resposta.
 
     Por padrão grava em outputs/. Com to_wiki=True, arquiva em wiki/ (comportamento anterior).
     """
-    response = answer(
+    result = answer_with_grounding(
         question,
         top_k=top_k,
         allow_sensitive=allow_sensitive,
@@ -147,7 +200,9 @@ def answer_and_file(
         depth=depth,
         profile=profile,
         rerank_depth=rerank_depth,
+        grounding_enabled=grounding_enabled,
     )
+    response = _AnswerText(result.answer, result.grounding)
     assert_safe_for_provider(
         f"Pergunta: {question}\n\nResposta: {response}",
         source="qa:file_back",
@@ -172,6 +227,12 @@ def answer_and_file(
         # Redigir artigo a partir da resposta: prosa, não extração.
         **params("generative"),
     )
+    grounding_lines = ["## Verificação de ancoragem da resposta"]
+    grounding_lines.extend(
+        f"- {claim.verdict}: {claim.evidence}" for claim in result.grounding.claims
+    )
+    grounding_section = "\n".join(grounding_lines)
+    article = f"{article.rstrip()}\n\n{grounding_section}\n"
 
     topic = "general"
     title = question[:50]
@@ -193,6 +254,11 @@ def answer_and_file(
 
         refresh_embeddings_index(enabled=index_refresh_enabled)
     else:
+        outputs_dir = os.getenv("KB_OUTPUTS_DIR")
+        if outputs_dir:
+            from kb import config
+
+            config.OUTPUTS_DIR = Path(outputs_dir)
         _, out = _write_output(question, article, topic, no_commit=True)
 
     if not no_commit:
@@ -207,21 +273,16 @@ class QaResult:
     grounding: object
     saved_path: Path | None = None
 
+    def __iter__(self):
+        yield self.answer
+        yield self.saved_path
+
+
+class _AnswerText(str):
+    def __new__(cls, answer, grounding_result):
+        value = super().__new__(cls, answer)
+        value.grounding = grounding_result
+        return value
+
 
 _grounding_warned = False
-
-
-def answer_with_grounding(
-    question: str,
-    top_k: int | None = None,
-    allow_sensitive: bool = False,
-    traverse: bool = True,
-    depth: int | None = None,
-    profile: str = "fast",
-    rerank_depth: int | None = None,
-    grounding_enabled: bool = True,
-) -> QaResult:
-    """Resposta do qa acompanhada da verificação de ancoragem."""
-    from kb.grounding import GroundingResult
-
-    return QaResult(answer="", grounding=GroundingResult())
