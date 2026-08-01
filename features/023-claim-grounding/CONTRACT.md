@@ -36,6 +36,8 @@ Checklist de premissas técnicas e de produto entre planejamento e execução. C
 | Risco | Mitigação acordada |
 |---|---|
 | **28% de falso alarme** | Anotação não-bloqueante em todas as superfícies; revisão humana decide |
+| **Parte do falso alarme é contradição de alta confiança**, não hesitação — medido em `EVALS.md` (E-SIN-001: síntese fiel recebeu contradição 0,953) | A apresentação separa visualmente `contradita` de `sem apoio`; o holdout mede a distribuição do falso alarme entre os dois vereditos, não só a taxa |
+| **Comparação numérica não é detectada** — 70% vs 72% fica em contradição 0,377, abaixo do corte (E-CMP-001) | Buraco de cobertura declarado: a classe só é pega quando a inversão é lexical. Não prometer detecção aritmética |
 | **Limiares ajustados nos dados de avaliação**, sem validação separada | Declarado na SPEC e no PLAN; corrigir limiar com holdout está em `## Fora de escopo` desta feature |
 | **8 pares artigo↔fonte na medição**, quase todos IA/LLM | Aceito para MVP; ampliar a amostra é trabalho posterior |
 | **Dependência operacional** do serviço local | Degradação por stderr, uma vez por execução; a resposta nunca depende dele |
