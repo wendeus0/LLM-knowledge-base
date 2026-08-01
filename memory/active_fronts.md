@@ -143,3 +143,11 @@ Ver "Open questions" no plano (`docs/superpowers/plans/2026-07-09-core-robustnes
 | 3 — consistência entre gerações | as gerações concordam? | **não confirmado**, sem sinal em amostra de 4 |
 
 Juiz LLM verbalizando confiança foi medido e reprovado (83% de falso alarme) — é o pior método da literatura de incerteza, não um problema do modelo escolhido.
+
+## 2026-08-01 (fim) — frentes fechadas
+
+- **023-claim-grounding** — `DELIVERED`, PRs #61/#62.
+- **024-f03-guardrail-egress** — `DONE`, PR #63. Último P1 de segurança.
+- **Política de corpus** — `WAYFINDER_CLEAR` desde a manhã; ADR-0018 em `main`.
+
+Nenhuma feature ativa. Próxima frente natural: ticket 006 (decisão de produto, exige grilling).

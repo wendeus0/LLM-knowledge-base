@@ -194,3 +194,20 @@ Executar os seis casos derrubou três. Um deles (`E-EXT-001`) esperava o veredit
 Os 28% de falso alarme do grounding foram tratados como ruído brando até um caso mostrar contradição **0,953** contra uma síntese legítima. A taxa agregada escondia a distribuição: falso alarme que sai como `sem apoio` é um aviso morno; o mesmo erro saindo como `contradita` é a anotação mais forte do sistema, apontada contra conteúdo correto.
 
 **Regra:** para classificador com vereditos de severidade diferente, medir a distribuição do erro entre vereditos, não só a taxa. Uma taxa de erro é uma média, e média esconde a cauda que dói.
+
+### O guard valida a URL, não o caminho
+
+Duas vezes no mesmo dia, em dois transportes diferentes, a mesma premissa falhou: **loopback na URL não garante que o payload fique na máquina**.
+
+- `urllib` segue redirect e leva o header `Authorization` junto: um serviço local comprometido respondendo `302` recebe a credencial num host externo.
+- `httpx` honra `HTTP_PROXY` mesmo para `localhost` (medido) — a requisição sai pelo proxy.
+
+Validar o host da URL não cobre nenhum dos dois, porque o desvio acontece no **transporte**, depois da validação. O fix estrutural é configurar o cliente para não desviar (`ProxyHandler({})`, sem redirect, `trust_env=False`), e a política de conteúdo só dispensar a checagem quando nenhum desvio se aplica.
+
+**Regra:** ao gatear egresso, pergunte "para onde os bytes vão", não "o que diz a URL". Se o transporte pode redirecionar, o guard tem de desligar a redireção — não confiar nela.
+
+### Suíte verde e lint limpo não provam que a linha executa
+
+Um edit programático inseriu uma chamada de gate **dentro da docstring** da função: inerte, invisível ao `pytest` e ao `ruff`. Outro produziu `base_url=x ** {...}` por falta de vírgula — sintaxe válida (operador de potência), erro só em runtime, num caminho que a suíte não cobre.
+
+**Regra:** depois de edit programático em código de produção, leia o trecho alterado e execute o caminho. Verde é ausência de evidência de falha, não evidência de execução.
