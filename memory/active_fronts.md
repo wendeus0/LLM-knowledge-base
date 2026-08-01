@@ -123,3 +123,23 @@ Ver "Open questions" no plano (`docs/superpowers/plans/2026-07-09-core-robustnes
 
 1. **014 — kb bench + golden set** (próxima; gate do Bonsai 8B — anotação do dono)
 2. Chunking + re-rank (SPEC própria) · 3. Tensor API → PR fork · 4. Módulos paper/artigo → API/app (roadmap DOMAIN 011)
+
+## 2026-08-01 — verificação de resposta
+
+**023-claim-grounding** — `CONTRACT_VALID` + `EVAL_DESIGN_PARTIAL`. Especificação fechada (SPEC/PLAN/TASKS/CONTRACT/EVALS), nenhum código de feature escrito. Próximo passo é `test-design`, não `test-red`: o PLAN marca duas condições binárias de risco (output estrutural estável pelo `--json`, contrato HTTP entre serviços). SPEC, PLAN, TASKS e EVALS redigidos pelo GPT 5.6 Terra; gates e review zero-trust do orquestrador.
+
+**PRs abertos aguardando decisão do usuário:**
+- **#59** — tickets 004/005/006/007 do map da política de corpus + ADR-0018. Trava decisões; a 023 saiu de `main` e não enxerga o ADR.
+- **#60** — protótipo medido da pilha de verificação + toda a especificação da 023.
+
+**Política de corpus** — `WAYFINDER_CLEAR`. Os oito tickets foram fechados; o ADR-0018 consolidou.
+
+### O que a pilha de verificação mede, e o que não mede
+
+| Estágio | Pergunta | Veredito |
+|---|---|---|
+| 1 — cobertura por centroide de tema | o acervo tem material? | **confirmado**, sem SPEC (depende do ticket 006) |
+| 2 — ancoragem (cosseno seleciona, NLI julga) | a afirmação decorre do contexto? | **confirmado** → feature 023 |
+| 3 — consistência entre gerações | as gerações concordam? | **não confirmado**, sem sinal em amostra de 4 |
+
+Juiz LLM verbalizando confiança foi medido e reprovado (83% de falso alarme) — é o pior método da literatura de incerteza, não um problema do modelo escolhido.
