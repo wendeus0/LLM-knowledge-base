@@ -204,7 +204,7 @@ def answer_and_file(
 @dataclass
 class QaResult:
     answer: str
-    grounding: "GroundingResult"
+    grounding: object
     saved_path: Path | None = None
 
 

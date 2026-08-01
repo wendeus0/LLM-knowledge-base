@@ -88,6 +88,7 @@ class TestJsonOutput:
         _preparar(tmp_path, monkeypatch)
 
         resultado = runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--json"])
+        assert resultado.exit_code == 0
         payload = json.loads(resultado.stdout)
 
         assert set(payload) >= {"answer", "grounding", "saved_path"}
@@ -107,6 +108,7 @@ class TestJsonOutput:
 
         resultado = runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--json"])
 
+        assert resultado.exit_code == 0
         assert json.loads(resultado.stdout)["saved_path"] is None
 
     def test_should_keep_stdout_free_of_progress_text_in_json_mode(self, tmp_path, monkeypatch):
@@ -114,6 +116,7 @@ class TestJsonOutput:
 
         resultado = runner.invoke(app, ["qa", "O que faz o circuit breaker?", "--json"])
 
+        assert resultado.exit_code == 0
         json.loads(resultado.stdout)
 
 
@@ -197,4 +200,5 @@ class TestNoGrounding:
             app, ["qa", "O que faz o circuit breaker?", "--no-grounding", "--json"]
         )
 
+        assert resultado.exit_code == 0
         assert json.loads(resultado.stdout)["grounding"]["status"] == "skipped"
