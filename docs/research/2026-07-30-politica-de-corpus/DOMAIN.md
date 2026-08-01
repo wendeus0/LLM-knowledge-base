@@ -40,6 +40,16 @@
 16. **Não há detecção automática de lacuna.** Derrubada por medição (abaixo). O usuário diz quando falta; o kb não sugere leitura e portanto não alucina bibliografia.
 17. **A propriedade offline do ADR-0017 fica preservada** — consequência de 16, não decisão separada.
 
+## Decisões fechadas (grilling do 007, 2026-07-31)
+
+18. **A tela é superfície de autoria e leitura.** Primeiro trabalho: pedir o tema e ver o artigo nascer.
+19. **A tela absorve a leitura; o Obsidian sai.** A decisão 1 da `011/DOMAIN.md` (app próprio como superfície única) volta a valer integralmente.
+20. **v1 já lê** — o ciclo fecha no primeiro dia, sem fase dependente de outra ferramenta.
+
+Argumento que apareceu na verificação: **o Obsidian não honra a convenção `_*`** (ela exclui do índice do `kb`, não do Obsidian). Depois da migração do 006 ele mostraria ~30 temas misturados com 1.037 capítulos, a menos que se configure exclusão manual. A política do 006 degrada o Obsidian como leitor.
+
+Custo declarado: é o item mais caro de todo o map. O que o reduz é o corpus visível encolher de 1.037 para ~30.
+
 ## O que o score do retrieval não mede
 
 **O score não separa acerto de erro.** Golden de 152 casos, híbrido sem rerank, score do primeiro resultado: acertos ficam entre 0,0367 e 0,0641; erros, entre 0,0361 e 0,0636. Sobreposição quase total. Um limiar que pegue dois terços das lacunas diz "não sei" em 27 perguntas que o sistema sabia responder.
