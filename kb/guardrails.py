@@ -131,14 +131,20 @@ def _proxy_would_route(base_url: str) -> bool:
     ]
     if not any(proxies):
         return False
-    isentos = [
-        parte.strip().lower().lstrip(".")
-        for parte in (os.getenv("NO_PROXY") or os.getenv("no_proxy") or "").split(",")
-        if parte.strip()
-    ]
-    if "*" in isentos:
-        return False
-    return not any(host == isento or host.endswith("." + isento) for isento in isentos)
+    def _isenta(bruto: str | None) -> bool:
+        entradas = [
+            parte.strip().lower().lstrip(".") for parte in (bruto or "").split(",") if parte.strip()
+        ]
+        if "*" in entradas:
+            return True
+        return any(host == entrada or host.endswith("." + entrada) for entrada in entradas)
+
+    # Qual grafia de NO_PROXY vence depende do transporte; não adivinhamos.
+    # Só dispensa o gate quando as duas isentam — na dúvida, o payload sai.
+    grafias = [os.environ[nome] for nome in ("NO_PROXY", "no_proxy") if nome in os.environ]
+    if not grafias:
+        return True
+    return not all(_isenta(g) for g in grafias)
 
 
 def local_http_client(base_url: str):

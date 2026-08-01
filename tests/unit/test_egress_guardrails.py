@@ -212,3 +212,38 @@ class TestSensitiveEgressOptIn:
             guardrails.assert_egress_allowed(
                 "https://api.exemplo.com/v1", "password: hunter2", source="embeddings"
             )
+
+
+class TestNoProxyCasing:
+    """`NO_PROXY` e `no_proxy` com valores conflitantes: qual vence depende do
+    transporte. A política não tenta adivinhar — falha em segurança e só isenta
+    quando as duas grafias isentam."""
+
+    def test_should_gate_when_only_the_uppercase_casing_exempts(self, monkeypatch):
+        monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalido:8080")
+        monkeypatch.setenv("NO_PROXY", "localhost")
+        monkeypatch.setenv("no_proxy", "")
+
+        with pytest.raises(SensitiveContentError):
+            guardrails.assert_egress_allowed(
+                "http://localhost:1234/v1", "password: hunter2", source="embeddings"
+            )
+
+    def test_should_gate_when_only_the_lowercase_casing_exempts(self, monkeypatch):
+        monkeypatch.setenv("http_proxy", "http://proxy.invalido:8080")
+        monkeypatch.setenv("no_proxy", "localhost")
+        monkeypatch.setenv("NO_PROXY", "outra-coisa")
+
+        with pytest.raises(SensitiveContentError):
+            guardrails.assert_egress_allowed(
+                "http://localhost:1234/v1", "password: hunter2", source="embeddings"
+            )
+
+    def test_should_exempt_when_both_casings_agree(self, monkeypatch):
+        monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalido:8080")
+        monkeypatch.setenv("NO_PROXY", "localhost")
+        monkeypatch.setenv("no_proxy", "localhost")
+
+        guardrails.assert_egress_allowed(
+            "http://localhost:1234/v1", "password: hunter2", source="embeddings"
+        )
