@@ -43,7 +43,12 @@ def _preparar(tmp_path, monkeypatch, resultado=None):
     (wiki / "cybersecurity" / "circuit-breaker.md").write_text(
         "# Circuit breaker\nApós falhas consecutivas, o circuit breaker abre."
     )
-    monkeypatch.setenv("KB_WIKI_DIR", str(wiki))
+    # WIKI_DIR e STATE_DIR são lidos no import; setenv sozinho não isola nada e a
+    # busca cairia no vault real do usuário.
+    monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
+    monkeypatch.setattr("kb.config.STATE_DIR", state)
+    monkeypatch.setattr("kb.config.OUTPUTS_DIR", outputs)
+    monkeypatch.setattr("kb.search.WIKI_DIR", wiki)
     monkeypatch.setenv("KB_OUTPUTS_DIR", str(outputs))
     monkeypatch.setenv("KB_STATE_DIR", str(state))
     monkeypatch.setattr("kb.qa.chat", lambda **kwargs: RESPOSTA)
