@@ -2,6 +2,7 @@
 
 import sys
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -247,3 +248,34 @@ class TestNoProxyCasing:
         guardrails.assert_egress_allowed(
             "http://localhost:1234/v1", "password: hunter2", source="embeddings"
         )
+
+
+class TestGateMatchesActualDestination:
+    """O gate tem de olhar o endpoint que o tráfego usa, não outro parecido."""
+
+    def test_rerank_fallback_should_gate_the_url_that_chat_actually_uses(self, monkeypatch):
+        import kb.client as client_module
+
+        monkeypatch.delenv("KB_RERANK_BASE_URL", raising=False)
+        monkeypatch.setenv("KB_BASE_URL", "http://localhost:8081/v1")
+        monkeypatch.setattr(client_module, "BASE_URL", "https://provider-remoto.exemplo/v1")
+
+        assert rerank_module.rerank_base_url() == "https://provider-remoto.exemplo/v1"
+
+    def test_shared_client_should_be_proxy_free_on_loopback(self, monkeypatch):
+        import kb.client as client_module
+
+        monkeypatch.setattr(client_module, "BASE_URL", "http://localhost:8081/v1")
+        with patch("openai.OpenAI") as mock:
+            client_module.get_client()
+        kwargs = mock.call_args.kwargs
+        assert kwargs.get("http_client") is not None
+        assert kwargs["http_client"].trust_env is False
+
+    def test_shared_client_should_trust_env_on_remote(self, monkeypatch):
+        import kb.client as client_module
+
+        monkeypatch.setattr(client_module, "BASE_URL", "https://api.exemplo.com/v1")
+        with patch("openai.OpenAI") as mock:
+            client_module.get_client()
+        assert "http_client" not in mock.call_args.kwargs

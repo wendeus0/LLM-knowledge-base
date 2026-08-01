@@ -81,7 +81,14 @@ def get_client():
             "Dependência opcional ausente: instale `openai` para usar compile/qa/heal/lint."
         ) from exc
 
-    return OpenAI(api_key=API_KEY, base_url=BASE_URL)
+    from kb.guardrails import local_http_client
+
+    http_client = local_http_client(BASE_URL)
+    return OpenAI(
+        api_key=API_KEY,
+        base_url=BASE_URL,
+        **({"http_client": http_client} if http_client else {}),
+    )
 
 
 def chat(messages: list[dict], model: str | None = None, **kwargs) -> str:

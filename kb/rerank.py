@@ -114,9 +114,11 @@ def rerank_model() -> str:
 
 
 def rerank_base_url() -> str:
-    from kb.config import BASE_URL
+    from kb.client import BASE_URL
 
-    return os.getenv("KB_RERANK_BASE_URL") or os.getenv("KB_BASE_URL") or BASE_URL
+    # Sem URL dedicada o tráfego vai por chat(), que usa kb.client.BASE_URL —
+    # gatear outro valor aprovaria um destino e enviaria para outro.
+    return os.getenv("KB_RERANK_BASE_URL") or BASE_URL
 
 
 def _call_llm(messages: list[dict]) -> str:
