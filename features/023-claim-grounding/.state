@@ -1,10 +1,9 @@
 ---
 feature: 023-claim-grounding
 mode: act
-pipeline_state: GREEN
+pipeline_state: READY_FOR_COMMIT
 eval_design: EVAL_DESIGN_PARTIAL
 test_design: TEST_DESIGN_BALANCED_READY
-current_task: T-007 (blocked, P2)
 branch: feat/023-claim-grounding
 last_updated: 2026-08-01
 ---

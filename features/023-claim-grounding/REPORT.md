@@ -27,9 +27,9 @@ O trabalho saiu de um protótipo medido (PR #60). O que ele estabeleceu e esta f
 
 | Gate | Resultado |
 |---|---|
-| Suíte | **819 passed** (era 739 antes da feature) |
+| Suíte | **832 passed** (era 739 antes da feature) |
 | `ruff check kb tests` | limpo |
-| Cobertura | `kb/grounding.py` 94%, `kb/qa.py` 100% |
+| Cobertura | `kb/grounding.py` 93%, `kb/qa.py` 100% |
 | T-008 (compatibilidade) | 32 passed nos cinco arquivos dependentes |
 | Smoke real da CLI | `--json` parseável com o schema do PLAN; modo humano com veredito negativo sai em exit 0 |
 
@@ -39,11 +39,24 @@ O trabalho saiu de um protótipo medido (PR #60). O que ele estabeleceu e esta f
 
 ## O que o review pegou
 
-Três defeitos corrigidos com teste antes da correção:
+Onze defeitos, todos com teste antes da correção. Três achados por mim durante o ciclo:
 
 1. **Seleção por produto escalar em vez de cosseno.** Sem normalizar, uma janela de vetor grande e direção errada vence uma janela alinhada. O teste constrói o caso: `delta` tem produto 5,0 e cosseno 0,447; `alfa` tem produto 1,0 e cosseno 1,0.
 2. **Evidência incoerente com o veredito.** A evidência era sempre a candidata de maior entailment, inclusive em `contradita` — o usuário veria o rótulo negativo ao lado de pontuações mostrando entailment alto.
 3. **Bloco humano vazio.** O cabeçalho "Verificação de ancoragem" era impresso mesmo sem afirmação alguma; resposta sem contexto ou serviço degradado exibia seção vazia. Pego pelo smoke da CLI, não pelos testes.
+
+E oito pelo review adversarial do Codex GPT 5.6 Terra, sobre o diff completo:
+
+4. **Vazamento de credencial por redirect** — o mais grave. `urlopen` segue redirect por padrão e o handler carrega o header `Authorization` adiante. Um serviço local comprometido respondendo `302` receberia a api key e o trecho de artigo num host externo, sem o guard de loopback ver nada: a URL inicial era loopback.
+5. **`NaN`/infinito aceitos como probabilidade** — passavam por serem `float`, e `json.dumps` emite `NaN` literal, quebrando o contrato do `--json` para parser estrito.
+6. **Orçamento promovido acima do pedido** — `KB_GROUNDING_MAX_PAIRS=2` virava 3. Era interpretação minha ("piso de um grupo"); nunca exceder o orçamento pedido vence.
+7. **`probe`/`model_available` nunca chamados em produção** — existiam, tinham teste, e um modelo não anunciado seguia sendo classificado.
+8. **`unverified_due_to_limit` só no JSON** — a RF-03 exige informar as omitidas; faltava no modo humano e no file-back.
+9. **Evidência sem escape no file-back** — trecho de artigo contendo `## ` abria seção arbitrária no artefato.
+10. **Listas markdown não segmentadas** — item sem pontuação terminal virava uma afirmação só, e resposta de LLM é cheia de bullet.
+11. **`_AnswerText(str)`** — o grounding vinha pendurado como atributo de string. Removido; `QaResult` herda de `tuple`.
+
+Dois achados foram registrados sem correção no `PENDING_LOG.md`: a ordem da resposta NLI é confiada e não verificável sem id por par (mudança de SPEC), e o escopo por processo do aviso único.
 
 ## Riscos e dívida
 
