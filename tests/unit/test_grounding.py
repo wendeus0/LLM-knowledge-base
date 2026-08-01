@@ -343,21 +343,21 @@ class TestWindows:
         janelas = grounding.context_windows(self._contexto(18))
 
         assert len(janelas) >= 2
-        assert "Sentença número 1." in janelas[0]
-        assert "Sentença número 7." in janelas[1]
+        assert "Sentença número 1 do contexto." in janelas[0]
+        assert "Sentença número 7 do contexto." in janelas[1]
 
     def test_should_overlap_consecutive_windows(self):
         janelas = grounding.context_windows(self._contexto(18))
 
         assert len(janelas) >= 2
-        assert "Sentença número 12." in janelas[0]
-        assert "Sentença número 12." in janelas[1]
+        assert "Sentença número 12 do contexto." in janelas[0]
+        assert "Sentença número 12 do contexto." in janelas[1]
 
     def test_should_keep_the_tail_sentences_in_the_last_window(self):
         janelas = grounding.context_windows(self._contexto(20))
 
         assert janelas
-        assert "Sentença número 20." in janelas[-1]
+        assert "Sentença número 20 do contexto." in janelas[-1]
 
     def test_should_return_one_window_when_context_is_shorter_than_the_window(self):
         janelas = grounding.context_windows("Uma frase só. E outra.")
@@ -552,3 +552,62 @@ class TestBudgetLimit:
 
         assert resultado.status == "degraded"
         assert resultado.claims == []
+
+
+class TestVerdictEvidence:
+    """A evidência mostrada precisa ser a que produziu o veredito.
+
+    Um veredito `contradita` acompanhado das pontuações da candidata de maior
+    entailment mostra ao usuário números que contradizem o próprio rótulo.
+    """
+
+    def test_should_pick_the_contradicting_candidate_as_evidence(self):
+        candidatas = [
+            ("janela neutra", {"entailment": 0.30, "contradiction": 0.20, "neutral": 0.50}),
+            ("janela que contradiz", {"entailment": 0.10, "contradiction": 0.85, "neutral": 0.05}),
+        ]
+
+        indice = grounding.evidence_index([s for _, s in candidatas], "contradita")
+
+        assert candidatas[indice][0] == "janela que contradiz"
+
+    def test_should_pick_the_entailing_candidate_as_evidence_when_anchored(self):
+        candidatas = [
+            {"entailment": 0.20, "contradiction": 0.10, "neutral": 0.70},
+            {"entailment": 0.92, "contradiction": 0.04, "neutral": 0.04},
+        ]
+
+        assert grounding.evidence_index(candidatas, "ancorada") == 1
+
+    def test_should_return_zero_for_evidence_index_without_candidates(self):
+        assert grounding.evidence_index([], "sem apoio") == 0
+
+
+class TestVerdictSelection:
+    def test_should_select_candidates_by_cosine_not_by_dot_product(self, monkeypatch):
+        afirmacao = "Uma afirmação longa o suficiente para passar do mínimo de caracteres."
+        janelas = {
+            "Janela alfa com texto suficiente para virar uma sentença inteira.": [1.0, 0.0],
+            "Janela beta com texto suficiente para virar uma sentença inteira.": [0.9, 0.1],
+            "Janela gama com texto suficiente para virar uma sentença inteira.": [0.8, 0.2],
+            "Janela delta com texto suficiente para virar uma sentença inteira.": [5.0, 10.0],
+        }
+        contexto = " ".join(janelas)
+
+        monkeypatch.setattr(
+            grounding,
+            "_embed_texts",
+            lambda textos: [janelas.get(t.strip(), [1.0, 0.0]) for t in textos],
+        )
+        vistos = []
+
+        def _classify(pairs, model, base_url, timeout=15.0, api_key=None):
+            vistos.extend(premise for premise, _ in pairs)
+            return [{"entailment": 0.9, "contradiction": 0.05, "neutral": 0.05} for _ in pairs]
+
+        monkeypatch.setattr(grounding, "classify", _classify)
+        monkeypatch.setattr(grounding, "context_windows", lambda ctx, **kw: list(janelas))
+
+        grounding.verify(afirmacao, contexto)
+
+        assert not any("delta" in premissa for premissa in vistos)

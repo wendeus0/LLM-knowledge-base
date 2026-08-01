@@ -7,6 +7,7 @@ que o contrato com o serviço NLI local seja testável sem rede.
 
 import ipaddress
 import json
+import re
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -144,7 +145,11 @@ def _embed_texts(texts):
 
 def split_claims(text: str, minimum: int = MIN_CLAIM_CHARS) -> list[str]:
     """Afirmações elegíveis do texto gerado."""
-    return []
+    return [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", text.strip())
+        if len(sentence.strip()) >= minimum
+    ]
 
 
 def context_windows(
@@ -153,14 +158,97 @@ def context_windows(
     step: int = WINDOW_STEP,
 ) -> list[str]:
     """Janelas deslizantes de sentenças usadas como premissa."""
-    return []
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", context.strip())
+        if sentence.strip()
+    ]
+    if not sentences:
+        return []
+    if len(sentences) <= per_window:
+        return [" ".join(sentences)]
+
+    last_start = len(sentences) - per_window
+    starts = list(range(0, last_start + 1, step))
+    if starts[-1] != last_start:
+        starts.append(last_start)
+    return [" ".join(sentences[start:start + per_window]) for start in starts]
 
 
 def verdict_from_scores(candidates) -> str:
     """Mapeia as pontuações das candidatas em um dos três vereditos (RT-04)."""
-    return ""
+    if any(
+        candidate["entailment"] > max(candidate["contradiction"], candidate["neutral"])
+        for candidate in candidates
+    ):
+        return "ancorada"
+    if any(candidate["contradiction"] > CONTRADICTION_THRESHOLD for candidate in candidates):
+        return "contradita"
+    return "sem apoio"
+
+
+def evidence_index(scores, verdict: str) -> int:
+    """Índice da candidata que produziu o veredito, para evidência coerente."""
+    if not scores:
+        return 0
+    rotulo = "contradiction" if verdict == "contradita" else "entailment"
+    return max(range(len(scores)), key=lambda index: scores[index][rotulo])
+
+
+def _cosine(left, right) -> float:
+    produto = sum(a * b for a, b in zip(left, right, strict=True))
+    norma = (sum(a * a for a in left) ** 0.5) * (sum(b * b for b in right) ** 0.5)
+    return produto / norma if norma else 0.0
 
 
 def verify(response: str, context: str, max_pairs: int | None = None) -> GroundingResult:
     """Verifica a ancoragem de cada afirmação elegível contra o contexto."""
-    return GroundingResult()
+    from kb import config
+
+    claims = split_claims(response)
+    windows = context_windows(context)
+    if not claims or not windows:
+        return GroundingResult()
+
+    if max_pairs is None:
+        max_pairs = config.grounding_max_pairs()
+    checked = claims[:max_pairs // CANDIDATES_PER_CLAIM]
+    unverified_due_to_limit = len(claims) - len(checked)
+    if not checked:
+        return GroundingResult(status="verified", unverified_due_to_limit=unverified_due_to_limit)
+
+    try:
+        claim_vectors = _embed_texts(checked)
+        window_vectors = _embed_texts(windows)
+        claim_verdicts = []
+        for claim, claim_vector in zip(checked, claim_vectors, strict=True):
+            candidates = sorted(
+                zip(windows, window_vectors, strict=True),
+                key=lambda item: _cosine(claim_vector, item[1]),
+                reverse=True,
+            )[:CANDIDATES_PER_CLAIM]
+            scores = classify(
+                [(window, claim) for window, _ in candidates],
+                model=config.grounding_model(),
+                base_url=config.grounding_base_url(),
+                timeout=config.grounding_timeout(),
+                api_key=config.grounding_api_key(),
+            )
+            verdict = verdict_from_scores(scores)
+            best_index = evidence_index(scores, verdict)
+            claim_verdicts.append(
+                ClaimVerdict(
+                    claim=claim,
+                    verdict=verdict,
+                    evidence=candidates[best_index][0],
+                    scores=scores[best_index],
+                )
+            )
+    except GroundingUnavailable:
+        return GroundingResult(status="degraded")
+
+    return GroundingResult(
+        status="verified",
+        claims=claim_verdicts,
+        unverified_due_to_limit=unverified_due_to_limit,
+    )

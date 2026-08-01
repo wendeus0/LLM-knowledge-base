@@ -34,7 +34,7 @@ Definir e documentar o contrato `GET /v1/models` e `POST /v1/nli`, as variáveis
   vertical_slice: yes
   behavior: "Cada afirmação elegível recebe ancorada, contradita ou sem apoio a partir de três premissas de 12 sentenças sobrepostas."
   verify: "python -m pytest tests/unit/test_grounding.py -k 'windows or verdict or negation'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-002
 ```
 
@@ -50,7 +50,7 @@ Implementar a fatia domínio+teste: extração de afirmações, janelas, seleç�
   vertical_slice: yes
   behavior: "Uma resposta longa executa no máximo 24 julgamentos de pares e declara as afirmações que não couberam no orçamento."
   verify: "python -m pytest tests/unit/test_grounding.py -k 'budget or limit'"
-  state: not_started
+  state: passing
   worktree: worktrees/023-claim-grounding/T-003
 ```
 
