@@ -108,3 +108,59 @@ def classify(
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise GroundingUnavailable("resposta NLI fora do contrato")
     return data
+
+
+SENTENCES_PER_WINDOW = 12
+WINDOW_STEP = 6
+CANDIDATES_PER_CLAIM = 3
+CONTRADICTION_THRESHOLD = 0.5
+MIN_CLAIM_CHARS = 40
+
+
+@dataclass
+class ClaimVerdict:
+    claim: str
+    verdict: str
+    evidence: str = ""
+    scores: dict = field(default_factory=dict)
+
+
+@dataclass
+class GroundingResult:
+    status: str = "skipped"
+    claims: list = field(default_factory=list)
+    unverified_due_to_limit: int = 0
+
+    @property
+    def checked_claims(self) -> int:
+        return len(self.claims)
+
+
+def _embed_texts(texts):
+    from kb.embeddings import embed_texts
+
+    return embed_texts(texts)
+
+
+def split_claims(text: str, minimum: int = MIN_CLAIM_CHARS) -> list[str]:
+    """Afirmações elegíveis do texto gerado."""
+    return []
+
+
+def context_windows(
+    context: str,
+    per_window: int = SENTENCES_PER_WINDOW,
+    step: int = WINDOW_STEP,
+) -> list[str]:
+    """Janelas deslizantes de sentenças usadas como premissa."""
+    return []
+
+
+def verdict_from_scores(candidates) -> str:
+    """Mapeia as pontuações das candidatas em um dos três vereditos (RT-04)."""
+    return ""
+
+
+def verify(response: str, context: str, max_pairs: int | None = None) -> GroundingResult:
+    """Verifica a ancoragem de cada afirmação elegível contra o contexto."""
+    return GroundingResult()

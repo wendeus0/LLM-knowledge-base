@@ -327,3 +327,228 @@ class TestHttpContractConfig:
         monkeypatch.delenv("KB_GROUNDING_TIMEOUT", raising=False)
 
         assert 0 < config.grounding_timeout() < 120
+
+
+class TestWindows:
+    def _contexto(self, n):
+        return " ".join(f"Sentença número {i} do contexto." for i in range(1, n + 1))
+
+    def test_should_group_twelve_sentences_per_window(self):
+        janelas = grounding.context_windows(self._contexto(12))
+
+        assert len(janelas) == 1
+        assert janelas[0].count("Sentença número") == 12
+
+    def test_should_advance_six_sentences_between_windows(self):
+        janelas = grounding.context_windows(self._contexto(18))
+
+        assert len(janelas) >= 2
+        assert "Sentença número 1." in janelas[0]
+        assert "Sentença número 7." in janelas[1]
+
+    def test_should_overlap_consecutive_windows(self):
+        janelas = grounding.context_windows(self._contexto(18))
+
+        assert len(janelas) >= 2
+        assert "Sentença número 12." in janelas[0]
+        assert "Sentença número 12." in janelas[1]
+
+    def test_should_keep_the_tail_sentences_in_the_last_window(self):
+        janelas = grounding.context_windows(self._contexto(20))
+
+        assert janelas
+        assert "Sentença número 20." in janelas[-1]
+
+    def test_should_return_one_window_when_context_is_shorter_than_the_window(self):
+        janelas = grounding.context_windows("Uma frase só. E outra.")
+
+        assert len(janelas) == 1
+
+    def test_should_return_no_windows_when_context_is_empty(self):
+        assert grounding.context_windows("   ") == []
+
+
+class TestVerdict:
+    def _s(self, entailment, contradiction, neutral):
+        return {"entailment": entailment, "contradiction": contradiction, "neutral": neutral}
+
+    def test_should_return_ancorada_when_entailment_dominates(self):
+        candidatas = [self._s(0.90, 0.03, 0.07), self._s(0.20, 0.10, 0.70)]
+
+        assert grounding.verdict_from_scores(candidatas) == "ancorada"
+
+    def test_should_return_contradita_when_contradiction_passes_the_threshold(self):
+        candidatas = [self._s(0.02, 0.95, 0.03), self._s(0.10, 0.20, 0.70)]
+
+        assert grounding.verdict_from_scores(candidatas) == "contradita"
+
+    def test_should_return_sem_apoio_when_every_candidate_is_neutral(self):
+        candidatas = [self._s(0.05, 0.05, 0.90), self._s(0.10, 0.10, 0.80)]
+
+        assert grounding.verdict_from_scores(candidatas) == "sem apoio"
+
+    def test_should_prefer_ancorada_when_one_candidate_entails_and_another_contradicts(self):
+        candidatas = [self._s(0.92, 0.04, 0.04), self._s(0.05, 0.85, 0.10)]
+
+        assert grounding.verdict_from_scores(candidatas) == "ancorada"
+
+    def test_should_return_sem_apoio_when_contradiction_stays_below_the_threshold(self):
+        candidatas = [self._s(0.30, 0.38, 0.32)]
+
+        assert grounding.verdict_from_scores(candidatas) == "sem apoio"
+
+    def test_should_return_sem_apoio_when_there_is_no_candidate(self):
+        assert grounding.verdict_from_scores([]) == "sem apoio"
+
+
+class TestNegation:
+    """O caso didático: cosseno alto e contradição alta na mesma afirmação.
+
+    Prova que o cosseno seleciona a premissa mas não decide o veredito. Medido no
+    protótipo: "o circuit breaker NÃO abre" tem cosseno 0,786 e contradição 0,998.
+    """
+
+    def test_should_mark_negated_claim_as_contradita_despite_high_cosine(self, monkeypatch):
+        contexto = (
+            "Após falhas consecutivas, o circuit breaker abre e interrompe novas chamadas. "
+            "Depois de um intervalo de recuperação, ele permite uma chamada de teste."
+        )
+        afirmacao = "O circuit breaker NÃO abre após falhas consecutivas e mantém as chamadas."
+
+        monkeypatch.setattr(
+            grounding, "_embed_texts", lambda textos: [[1.0, 0.0] for _ in textos]
+        )
+        monkeypatch.setattr(
+            grounding,
+            "classify",
+            lambda pairs, model, base_url, timeout=15.0, api_key=None: [
+                {"entailment": 0.001, "contradiction": 0.998, "neutral": 0.001} for _ in pairs
+            ],
+        )
+
+        resultado = grounding.verify(afirmacao, contexto)
+
+        assert resultado.claims
+        assert resultado.claims[0].verdict == "contradita"
+
+    def test_should_not_let_cosine_alone_produce_a_verdict(self, monkeypatch):
+        monkeypatch.setattr(
+            grounding, "_embed_texts", lambda textos: [[1.0, 0.0] for _ in textos]
+        )
+        chamou = {"nli": False}
+
+        def _classify(pairs, model, base_url, timeout=15.0, api_key=None):
+            chamou["nli"] = True
+            return [{"entailment": 0.9, "contradiction": 0.05, "neutral": 0.05} for _ in pairs]
+
+        monkeypatch.setattr(grounding, "classify", _classify)
+
+        grounding.verify(
+            "Uma afirmação suficientemente longa para ser elegível à verificação.",
+            "Um contexto qualquer com conteúdo suficiente para gerar uma janela.",
+        )
+
+        assert chamou["nli"] is True
+
+
+class TestBudgetLimit:
+    def _preparar(self, monkeypatch, capturados):
+        monkeypatch.setattr(
+            grounding, "_embed_texts", lambda textos: [[1.0, 0.0] for _ in textos]
+        )
+
+        def _classify(pairs, model, base_url, timeout=15.0, api_key=None):
+            capturados.append(len(pairs))
+            return [{"entailment": 0.9, "contradiction": 0.05, "neutral": 0.05} for _ in pairs]
+
+        monkeypatch.setattr(grounding, "classify", _classify)
+
+    def _resposta(self, n):
+        return " ".join(
+            f"Esta é a afirmação número {i} e ela tem tamanho suficiente para ser elegível."
+            for i in range(1, n + 1)
+        )
+
+    def test_should_verify_at_most_eight_claims_within_the_default_budget(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        resultado = grounding.verify(self._resposta(9), "Contexto com conteúdo suficiente.")
+
+        assert len(resultado.claims) == 8
+
+    def test_should_report_the_claims_left_out_by_the_limit(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        resultado = grounding.verify(self._resposta(9), "Contexto com conteúdo suficiente.")
+
+        assert resultado.unverified_due_to_limit == 1
+
+    def test_should_never_send_more_pairs_than_the_budget(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        grounding.verify(self._resposta(9), "Contexto com conteúdo suficiente.")
+
+        assert sum(capturados) <= 24
+
+    def test_should_not_label_omitted_claims_as_sem_apoio(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        resultado = grounding.verify(self._resposta(9), "Contexto com conteúdo suficiente.")
+
+        assert all(c.verdict != "sem apoio" for c in resultado.claims)
+        assert resultado.unverified_due_to_limit == 1
+
+    def test_should_honour_a_reduced_budget_from_the_environment(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+        monkeypatch.setenv("KB_GROUNDING_MAX_PAIRS", "6")
+
+        resultado = grounding.verify(self._resposta(5), "Contexto com conteúdo suficiente.")
+
+        assert len(resultado.claims) == 2
+        assert resultado.unverified_due_to_limit == 3
+
+    def test_should_report_zero_unverified_when_every_claim_fits(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        resultado = grounding.verify(self._resposta(3), "Contexto com conteúdo suficiente.")
+
+        assert resultado.unverified_due_to_limit == 0
+        assert len(resultado.claims) == 3
+
+    def test_should_skip_when_the_context_has_no_window(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        resultado = grounding.verify(self._resposta(2), "   ")
+
+        assert resultado.status == "skipped"
+        assert resultado.claims == []
+
+    def test_should_skip_when_there_is_no_eligible_claim(self, monkeypatch):
+        capturados = []
+        self._preparar(monkeypatch, capturados)
+
+        resultado = grounding.verify("Curto.", "Contexto com conteúdo suficiente.")
+
+        assert resultado.status == "skipped"
+
+    def test_should_degrade_when_the_service_is_unavailable(self, monkeypatch):
+        monkeypatch.setattr(
+            grounding, "_embed_texts", lambda textos: [[1.0, 0.0] for _ in textos]
+        )
+
+        def _boom(pairs, model, base_url, timeout=15.0, api_key=None):
+            raise grounding.GroundingUnavailable("serviço fora do ar")
+
+        monkeypatch.setattr(grounding, "classify", _boom)
+
+        resultado = grounding.verify(self._resposta(2), "Contexto com conteúdo suficiente.")
+
+        assert resultado.status == "degraded"
+        assert resultado.claims == []
