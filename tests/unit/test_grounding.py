@@ -258,6 +258,17 @@ class TestHttpContractLoopback:
 
         assert grounding.classify([("p", "h")], model="m", base_url=base_url)
 
+    def test_should_refuse_probe_outside_loopback_without_leaking_the_api_key(self, monkeypatch):
+        def _nao_deve_chamar(url, timeout, api_key):
+            raise AssertionError("probe não deve alcançar host fora de loopback")
+
+        monkeypatch.setattr(grounding, "_http_get_json", _nao_deve_chamar)
+
+        state = grounding.probe("http://exemplo.invalido:1235/v1", timeout=1, api_key="segredo")
+
+        assert state.reachable is False
+        assert "loopback" in (state.error or "")
+
     @pytest.mark.parametrize(
         "base_url",
         [

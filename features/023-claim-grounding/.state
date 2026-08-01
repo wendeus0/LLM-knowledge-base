@@ -1,7 +1,7 @@
 ---
 feature: 023-claim-grounding
 mode: act
-pipeline_state: RED_OK
+pipeline_state: GREEN
 eval_design: EVAL_DESIGN_PARTIAL
 test_design: TEST_DESIGN_BALANCED_READY
 current_task: T-001

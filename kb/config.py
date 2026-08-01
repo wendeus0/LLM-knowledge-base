@@ -1,3 +1,4 @@
+import math
 import os
 import re
 from pathlib import Path
@@ -116,20 +117,28 @@ GROUNDING_TIMEOUT_DEFAULT = 15.0
 
 
 def grounding_base_url() -> str:
-    return ""
+    return os.getenv("KB_GROUNDING_BASE_URL", GROUNDING_BASE_URL_DEFAULT)
 
 
 def grounding_model() -> str:
-    return ""
+    return os.getenv("KB_GROUNDING_MODEL", GROUNDING_MODEL_DEFAULT)
 
 
 def grounding_api_key() -> str | None:
-    return None
+    return os.getenv("KB_GROUNDING_API_KEY") or None
 
 
 def grounding_max_pairs() -> int:
-    return 0
+    try:
+        value = int(os.getenv("KB_GROUNDING_MAX_PAIRS", GROUNDING_MAX_PAIRS_DEFAULT))
+    except ValueError:
+        value = GROUNDING_MAX_PAIRS_DEFAULT
+    return max(3, value - value % 3)
 
 
 def grounding_timeout() -> float:
-    return 0.0
+    try:
+        value = float(os.getenv("KB_GROUNDING_TIMEOUT", GROUNDING_TIMEOUT_DEFAULT))
+    except ValueError:
+        return GROUNDING_TIMEOUT_DEFAULT
+    return value if math.isfinite(value) else GROUNDING_TIMEOUT_DEFAULT
