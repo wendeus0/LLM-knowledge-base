@@ -60,7 +60,7 @@ Bege `#efe7da` / escuro `#191715`, laranja `#f07a32`. Sem fonte display, sem pix
 
 ### B — Moldura lúdica, leitura sóbria (recomendação da pesquisa)
 
-Mesma base bege/laranja e mesmo corpo de texto. Acrescenta na **moldura**: uma fonte pixelada só para números e títulos de trilha (~15 KB), botão que afunda 4px, toast de conquista, cor por tópico.
+Mesma base bege/laranja e mesmo corpo de texto. Acrescenta na **moldura**: uma fonte pixelada só para números e títulos de trilha (~15 KB), botão que afunda 4px, toast de conquista, e os dois sistemas ortogonais do roadmap.sh para estrutura e estado.
 
 **Aposta:** o achado central — personalidade na moldura, silêncio na leitura. Ganha a atmosfera sem pagar o custo medido em retenção.
 **Risco:** dois vocabulários tipográficos exigem disciplina para não vazar um no outro.
