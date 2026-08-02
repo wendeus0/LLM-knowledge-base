@@ -1,6 +1,8 @@
 # Direção visual — plataforma de estudos
 
-> Referência enviada pelo usuário em 2026-08-02: "Ensina Dev". Instrução explícita: **foca no visual, não no conteúdo**.
+> Referência enviada pelo usuário em 2026-08-02: "Ensina Dev". Duas instruções dele, nesta ordem: **foca no visual, não no conteúdo** — e depois: **não se apega à paleta deles**.
+>
+> **O que a referência é:** norte de *arquitetura de informação* — onde ficam os temas e o artigo dentro de uma trilha. Não é norte de pele.
 
 ## Layout
 
@@ -26,17 +28,20 @@
 - **Conteúdo em cartão branco** sobre o fundo, com respiro generoso. Breadcrumb acima do H1; H1 com filete abaixo.
 - **Bloco de código com cromo de janela** (três pontos coloridos). Código inline em pílula clara.
 
-## Paleta e tipografia
+## Paleta — direção do usuário, não da referência
 
-| Elemento | Direção |
-|---|---|
-| Fundo | creme/bege quente — leitura longa, não branco puro |
-| Superfície | cartão branco, sombra sutil |
-| Acento | azul, usado com parcimônia (link, item atual, marca) |
-| Estado | verde só para "concluído" |
-| Tipografia | sans arredondada, entrelinha generosa, medida curta |
+**Dois temas, ambos obrigatórios.** O usuário declarou preferência por **dark com laranja**, e que no claro **bege é melhor que branco**.
 
-Sem dark mode agressivo. A sensação é de material didático calmo, não de dashboard.
+| | Claro | Escuro |
+|---|---|---|
+| Fundo | bege — não branco puro | escuro |
+| Superfície | um degrau acima do fundo | um degrau acima do fundo |
+| Acento | a definir | **laranja** |
+| Estado | verde só para "concluído" | idem |
+
+O azul da referência **não se aplica** — era a marca deles. A tipografia (sans arredondada, entrelinha generosa, medida curta) e a sensação de material didático calmo permanecem, porque são sobre legibilidade em leitura longa, não sobre identidade.
+
+O front pode divergir bastante da referência. O que se preserva dela é o **layout**: sidebar de trilha com progresso à esquerda, artigo como superfície de leitura à direita.
 
 ## O que isso decide no produto
 
