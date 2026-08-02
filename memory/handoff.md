@@ -1,39 +1,35 @@
-# Handoff — 2026-08-01 (fim de sessão)
+# Handoff — 2026-08-02
 
-## O que fechou
+## O que existe agora
 
-**Feature 023 — verificação de ancoragem: `DELIVERED`.** 8/8 tasks `passing`. Da SPEC ao serviço rodando: `kb qa` agora classifica cada afirmação em `ancorada`/`contradita`/`sem apoio`, sem nunca bloquear a resposta. PRs #61 e #62 mergeados.
+**A plataforma de estudos roda.** `uvicorn kb.api.app:app --port 8000` e `uvicorn study.web:app --port 8001`. Leitor com dois temas (bege no claro, laranja no escuro), busca híbrida do kb, pergunta com ancoragem, notas, destaques, flashcards verificados por NLI e revisão por FSRS. **928 passed**, PR #66 aberto.
 
-**Serviço NLI em `:1235`** — `local-ai-lab/nli-server.py`, LaunchAgent `com.wendeus.kb-nli` com KeepAlive. Ressurreição provada com `kill -9`. Contrato validado: negação → contradição 0,998.
+**A geração saiu do bonsai local para o Codex Luna.** Shim OpenAI-compatible em `:1236` (`local-ai-lab/codex-shim.py`, launchd). `kb qa` caiu de timeout para 45s; `compile` faz 5 artigos em 39s.
 
-**Holdout congelado** — 12 pares artigo→fonte em 6 domínios, cada trecho validado byte a byte. Manifest privado em `.holdout/` (gitignored); `HOLDOUT.md` com hashes no repo. Saiu de zero, que era a limitação mais registrada da feature.
+**Ementa de 271 títulos** em `docs/research/2026-08-02-ementa-bibliografica/`, duas trilhas, zero repetição do acervo.
 
-**Skill `test-appeasement-audit`** no harness — detector AST + julgamento por evidência + gate de CI com ratchet. Reusável em qualquer repo Python: 1 arquivo + 1 linha de CI.
+## Três decisões pendentes do usuário
 
-**F-03 fechado (PR #63)** — o último P1 do backlog de segurança. Os quatro caminhos de egresso do kb agora ou não podem ser desviados por proxy, ou passam pelo gate de conteúdo sensível.
+1. **Direção visual** — `DESIGN.md` oferece A, B, B2 ou C. Nada avança na aparência sem isso.
+2. **PR #66** — a fase 1 inteira da plataforma.
+3. **O que da ementa vira ingestão** — a entrega foi só a lista, por decisão dele.
 
-## O que aprendi e vale carregar
+## O que eu errei e vale carregar
 
-**O guard valida a URL, não o caminho.** Duas vezes, em dois transportes: `urllib` segue redirect carregando o `Authorization`; `httpx` proxia `localhost` se `HTTP_PROXY` estiver setado (medido). Nos dois casos o achado veio de review externo, não meu.
+**Tratei um desabafo como ordem de serviço.** Ele disse que dois dias de correção não o deixaram usar a ferramenta; eu troquei o modelo, compilei artigos e entreguei uma resposta que ninguém pediu. Ele corrigiu: queria aprimorar antes de usar. Dor descreve estado, pedido descreve resultado — e os dois pedem respostas diferentes.
 
-**Código feito para passar em teste é padrão, não acidente.** Quatro ocorrências documentadas no kb. O gate mecânico agora quebra o CI quando reaparece — e o `getattr` que passou por mim, pelo Codex e por 4 revisores automáticos ontem seria exit 1 hoje.
+**O Codex me barrou três vezes na mesma feature e estava certo nas três.** `RED_BLOCKED` por SPEC ausente; a SPEC dele exigiu ADR e levantou duas clarificações reais; recusou implementar sem rota de listagem em vez de furar o ADR-0019. Delegar a ele não é só economia de token — é ter quem recusa o atalho.
 
 ## Estado
 
-- `main` em **869 passed**, zero PRs abertos
-- Backlog de segurança: nenhum P1 aberto (F-06, F-08 seguem P2)
-- Serviços locais: `:1234` embeddings, `:8081` rerank, `:1235` NLI — os três no launchd
-
-## Próximo passo natural
-
-**Ticket 006 — reagrupamento por tema.** É a maior decisão de produto pendente do map e destrava o estágio 1 da pilha (cobertura por centroide, medido e aprovado, sem SPEC porque depende dessa decisão). Exige grilling interativo — não delegável.
-
-Alternativa se quiser algo mecânico: espalhar o gate de appeasement para outros repos, ou os F-06/F-08 (P2, pisos de dependência com CVE e symlink na wiki).
+- `main` com F0 mergeada; branch `feat/026-plataforma-estudos` com a fase 1
+- Serviços: `:1234` embeddings · `:1235` NLI · `:1236` Codex Luna · `:8081` rerank (o gargalo que sobrou)
+- Nenhum P1 aberto no backlog de segurança
 
 ## Prompt de retomada
 
 ```
-Retomar o kb. Feature 023 entregue, F-03 fechado, main em 869 passed sem PRs
-abertos. Próximo: grilling do ticket 006 (reagrupamento por tema) — é decisão
-de produto e destrava o estágio 1 da pilha de verificação.
+Retomar o kb. A plataforma de estudos roda (PR #66). Pendente: escolher a direção
+visual no DESIGN.md, decidir o PR, e o que da ementa de 271 títulos vira ingestão.
+O rerank ainda é o gargalo — todo comando pede --no-rerank.
 ```
