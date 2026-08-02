@@ -10,6 +10,15 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from kb.guardrails import SensitiveContentError
+from study.cards import (
+    accept_card,
+    cards_for_article,
+    discard_card,
+    edit_card,
+    generate_cards,
+    get_card,
+)
 from study.highlights import (
     active_highlights,
     create_highlight,
@@ -18,6 +27,7 @@ from study.highlights import (
 )
 from study.notes import delete_note, get_note, save_note
 from study.render import render_markdown
+from study.review import due_card, review_card, review_queue
 from study.sources import buscar_fontes
 
 _ROOT = Path(__file__).parent
@@ -83,6 +93,7 @@ def article(request: Request, slug: str):
         article_html=render_markdown(data["content"], data["wikilinks"], highlights),
         sidebar=sidebar["results"],
         note=get_note(slug),
+        cards=cards_for_article(slug),
         orphaned_highlights=orphaned_highlights(slug),
     )
 
@@ -141,3 +152,91 @@ async def save_article_highlight(request: Request, slug: str):
 def sources(request: Request, termo: str = ""):
     """Exibe fontes locais encontradas para um wikilink sem artigo."""
     return _render(request, "partials/sources.html", sources=buscar_fontes(termo))
+
+
+@app.post("/a/{slug:path}/cards/generate", response_class=HTMLResponse)
+def generate_article_cards(request: Request, slug: str):
+    """Gera cartões candidatos e mostra o grounding antes de qualquer aceitação."""
+    article = api_request("GET", f"/article/{slug}")
+    try:
+        cards = generate_cards(slug, article["content"])
+    except SensitiveContentError as exc:
+        raise HTTPException(status_code=409, detail="Conteúdo sensível requer autorização.") from exc
+    return _render(request, "partials/cards.html", slug=slug, cards=cards)
+
+
+@app.post("/cards/{card_id}/accept", response_class=HTMLResponse)
+def accept_article_card(request: Request, card_id: int):
+    """Aceita um candidato somente quando a verificação o ancorou."""
+    try:
+        card = accept_card(card_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _render(
+        request,
+        "partials/cards.html",
+        slug=card["slug"],
+        cards=cards_for_article(card["slug"]),
+    )
+
+
+@app.post("/cards/{card_id}/edit", response_class=HTMLResponse)
+async def edit_article_card(request: Request, card_id: int):
+    """Edita e verifica de novo um cartão antes de deixá-lo em curadoria."""
+    card = get_card(card_id)
+    if card is None:
+        raise HTTPException(status_code=404, detail="Cartão não encontrado.")
+    article = api_request("GET", f"/article/{card['slug']}")
+    try:
+        updated = edit_card(
+            card_id,
+            (await _form_value(request, "front")).strip(),
+            (await _form_value(request, "back")).strip(),
+            article["content"],
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _render(
+        request,
+        "partials/cards.html",
+        slug=updated["slug"],
+        cards=cards_for_article(updated["slug"]),
+    )
+
+
+@app.post("/cards/{card_id}/discard", response_class=HTMLResponse)
+def discard_article_card(request: Request, card_id: int):
+    """Descarta um cartão da curadoria sem tocar no artigo compilado."""
+    try:
+        card = discard_card(card_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _render(
+        request,
+        "partials/cards.html",
+        slug=card["slug"],
+        cards=cards_for_article(card["slug"]),
+    )
+
+
+@app.get("/revisar", response_class=HTMLResponse)
+def review(request: Request):
+    """Mostra o próximo cartão devido e a agenda derivada pelo FSRS."""
+    return _render(request, "review.html", card=due_card(), queue=review_queue())
+
+
+@app.post("/revisar/{card_id}", response_class=HTMLResponse)
+async def submit_review(request: Request, card_id: int):
+    """Registra um dos quatro ratings FSRS e recalcula a data devida."""
+    try:
+        rating = int(await _form_value(request, "rating"))
+        review_card(card_id, rating)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Rating de revisão inválido.") from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _render(request, "review.html", card=due_card(), queue=review_queue())

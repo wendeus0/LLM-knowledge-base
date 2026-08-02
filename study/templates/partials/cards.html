@@ -1,0 +1,23 @@
+<section id="cards" class="cards-panel">
+  <h2>Flashcards</h2>
+  <p>Todo cartão começa em curadoria e só entra na revisão quando estiver ancorado no artigo.</p>
+  <button type="button" hx-post="/a/{{ slug }}/cards/generate" hx-target="#cards" hx-swap="outerHTML">Gerar cards</button>
+  {% for card in cards %}
+    <article class="card-candidate card-{{ card.state }}">
+      <p class="card-state">{{ card.state }} · grounding: <strong>{{ card.verdict }}</strong></p>
+      <h3>{{ card.front }}</h3>
+      <p>{{ card.back }}</p>
+      {% if card.evidence %}<blockquote><strong>Evidência:</strong> {{ card.evidence }}</blockquote>{% endif %}
+      {% if card.state == "curadoria" and card.verdict != "ancorada" %}
+        <p class="grounding-block">{% if card.verdict in ["degraded", "skipped"] %}Verificação indisponível ou incompleta; este card não pode ser aceito.{% else %}O grounding não ancorou este card; ele não pode ser aceito.{% endif %}</p>
+      {% endif %}
+      {% if card.state == "curadoria" %}
+        <div class="card-actions">
+          {% if card.verdict == "ancorada" %}<button type="button" hx-post="/cards/{{ card.id }}/accept" hx-target="#cards" hx-swap="outerHTML">Aceitar</button>{% endif %}
+          <button type="button" class="secondary-button" hx-post="/cards/{{ card.id }}/discard" hx-target="#cards" hx-swap="outerHTML">Descartar</button>
+        </div>
+        <details><summary>Editar card</summary><form hx-post="/cards/{{ card.id }}/edit" hx-target="#cards" hx-swap="outerHTML"><label>Pergunta<input name="front" value="{{ card.front }}" required></label><label>Resposta<textarea name="back" required>{{ card.back }}</textarea></label><button type="submit">Salvar e verificar</button></form></details>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>

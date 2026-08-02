@@ -1,9 +1,10 @@
 from fastapi.testclient import TestClient
 
 
-def test_should_render_article_sidebar_wikilinks_and_backlinks(monkeypatch):
+def test_should_render_article_sidebar_wikilinks_and_backlinks(tmp_path, monkeypatch):
     from study.web import app
 
+    monkeypatch.setattr("kb.config.DATA_DIR", tmp_path)
     calls = []
 
     def api_request(method, path, **kwargs):
