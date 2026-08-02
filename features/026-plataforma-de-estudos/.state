@@ -1,7 +1,7 @@
 ---
 feature: 026-plataforma-de-estudos
 mode: act
-pipeline_state: CONTRACT_VALID
+pipeline_state: READY_FOR_COMMIT
 branch: feat/026-plataforma-estudos
 last_updated: 2026-08-02
 ---

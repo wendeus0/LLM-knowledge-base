@@ -26,7 +26,8 @@ def generate_cards(slug: str, content: str) -> list[dict]:
                 "content": (
                     "Gere no máximo cinco flashcards curtos, autocontidos e úteis para "
                     "revisão. Responda somente com um array JSON de objetos `front` e `back`. "
-                    "Cada resposta deve poder ser verificada somente contra o artigo."
+                    "Cada `back` deve ser uma frase declarativa de 40 a 240 caracteres, "
+                    "verificável somente contra o artigo."
                 ),
             },
             {"role": "system", "content": untrusted_policy(sentinel)},

@@ -16,7 +16,7 @@
   vertical_slice: spike
   behavior: "A identidade rel_slug e a resolução determinística de wikilinks, inclusive stems duplicados, estão provadas antes de expor URLs do leitor."
   verify: "python3 -m pytest tests/unit/test_article_identity.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-001
 ```
 
@@ -32,7 +32,7 @@ F0 já possui testes na branch; esta task é o gate de regressão. Se falhar, a 
   vertical_slice: spike
   behavior: "A aplicação FastAPI inicia em loopback e health responde sucesso sem serializar configuração nem paths locais."
   verify: "python3 -m pytest tests/integration/test_api_health.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-002
 ```
 
@@ -50,7 +50,7 @@ Criar a fundação mínima de `kb/api/`, schemas serializáveis e fixtures que i
   vertical_slice: yes
   behavior: "GET /article/{slug:path} devolve artigo e metadados por rel_slug, rejeita traversal com 400 e responde 404 sem vazar Path."
   verify: "python3 -m pytest tests/integration/test_api_article.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-003
 ```
 
@@ -66,7 +66,7 @@ Esta fatia inclui validação de slug, adaptação segura do artigo e teste de s
   vertical_slice: yes
   behavior: "GET /search preserva a ordenação da busca híbrida e do rerank da engine e identifica cada resultado por rel_slug."
   verify: "python3 -m pytest tests/integration/test_api_search.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-004
 ```
 
@@ -82,7 +82,7 @@ O teste compara API e engine com a mesma consulta/configuração, sem criar cana
   vertical_slice: yes
   behavior: "POST /qa devolve literalmente o schema de kb qa --json com saved_path nulo e converte conteúdo sensível em HTTP 409 sem prompt."
   verify: "python3 -m pytest tests/integration/test_api_qa.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-005
 ```
 
@@ -98,7 +98,7 @@ O contrato de resposta é comparado campo a campo, incluindo grounding, e a fron
   vertical_slice: yes
   behavior: "GET /stats devolve somente métricas agregadas que a engine já expõe e não altera corpus ou estado."
   verify: "python3 -m pytest tests/integration/test_api_stats.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-006
 ```
 
@@ -114,7 +114,7 @@ O contrato de resposta é comparado campo a campo, incluindo grounding, e a fron
   vertical_slice: yes
   behavior: "O renderer do leitor transforma Markdown e wikilinks qualificados para URLs por rel_slug, expõe backlinks e não escolhe destino para stem ambíguo."
   verify: "python3 -m pytest tests/unit/test_study_render.py tests/integration/test_study_article.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-007
 ```
 
@@ -130,7 +130,7 @@ O cliente de `study/` consulta `kb/api/` por HTTP; templates não importam `kb.s
   vertical_slice: yes
   behavior: "As caixas do leitor exibem resultados de busca e resposta de QA da API, incluindo o estado e os avisos de grounding."
   verify: "python3 -m pytest tests/integration/test_study_queries.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-008
 ```
 
@@ -177,7 +177,7 @@ O checkpoint HITL exige evidência de browser real: aparência não é provada p
   delivery: posterior
   behavior: "Uma nota e um destaque ligados por rel_slug reaparecem no artigo sem modificar o Markdown compilado; âncora perdida vira orphaned preservado."
   verify: "python3 -m pytest tests/integration/test_study_annotations.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-011
 ```
 
@@ -194,7 +194,7 @@ F3 é posterior ao MVP F1+F2. Esta fatia introduz `study/state.py` e SQLite no p
   delivery: posterior
   behavior: "Cartões gerados ficam em curadoria e só podem ser aceitos, editados ou descartados quando grounding.status permitir ancorada."
   verify: "python3 -m pytest tests/integration/test_study_flashcards.py -q"
-  state: not_started
+  state: passing
   worktree: worktrees/026-plataforma-de-estudos/T-012
 ```
 
@@ -211,7 +211,7 @@ F4 é posterior e reutiliza provider/grounding da engine; `contradita`, `sem apo
   delivery: posterior
   behavior: "Registrar rating 1–4 calcula a próxima data com FSRS, persiste revisão e mostra a fila devida sem campo de agendamento manual."
   verify: "python3 -m pytest tests/integration/test_study_reviews.py -q"
-  state: not_started
+  state: passing
 ```
 
 F5 é posterior. O comportamento de calendário e atalhos 1–4 requer prova renderizada e revisão humana, além do teste offline de cálculo e persistência.

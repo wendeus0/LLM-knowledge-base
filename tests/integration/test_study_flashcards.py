@@ -104,13 +104,17 @@ def test_should_block_acceptance_when_grounding_is_not_anchored(
 
 
 def test_should_keep_card_in_curation_when_grounding_is_unavailable(tmp_path, monkeypatch):
+    from kb.grounding import GroundingUnavailable
     from study.cards import get_card
     from study.web import app
 
     _isolated_vault(tmp_path, monkeypatch)
     monkeypatch.setattr("study.web.api_request", _article_api("Atenção relaciona tokens."))
     monkeypatch.setattr("kb.client.chat", lambda *args, **kwargs: _cards("O que a atenção relaciona?"))
-    monkeypatch.setattr("kb.grounding.verify", lambda *args: _verified("degraded"))
+    monkeypatch.setattr(
+        "kb.grounding.verify",
+        lambda *args: (_ for _ in ()).throw(GroundingUnavailable("NLI indisponível")),
+    )
 
     response = TestClient(app).post("/a/ai/transformers/cards/generate")
 
