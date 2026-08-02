@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} · Estudos{% endblock %}
+{% block page_class %}reader-page{% endblock %}
+{% block sidebar %}
+  <aside class="trail" aria-label="Trilha do tópico {{ article.topic }}">
+    <p class="eyebrow">Trilha</p>
+    <h2>{{ article.topic }}</h2>
+    <div class="progress"><span></span></div><p class="progress-label">Progresso <strong>0%</strong></p>
+    <p class="module-label">Artigos</p>
+    <ol>{% for item in sidebar %}<li class="{% if item.slug == article.slug %}is-current{% endif %}"><a href="/a/{{ item.slug }}"><i></i>{{ item.title }}</a></li>{% endfor %}</ol>
+  </aside>
+{% endblock %}
+{% block content %}
+  <article class="reading-card">
+    <p class="breadcrumb"><a href="/">Início</a> / {{ article.topic }}</p>
+    <h1>{{ article.title }}</h1>
+    {% if article.tags %}<p class="tags">{% for tag in article.tags %}<span>{{ tag }}</span>{% endfor %}</p>{% endif %}
+    <div class="markdown">{{ article_html | safe }}</div>
+    <div id="wikilink-ambiguous" class="ambiguous-note">Links ambíguos precisam ser qualificados no corpus antes de navegar.</div>
+    {% if article.backlinks %}<section class="backlinks"><h2>Referenciado por</h2>{% for backlink in article.backlinks %}<a href="/a/{{ backlink }}">{{ backlink }}</a>{% endfor %}</section>{% endif %}
+  </article>
+  <aside class="study-tools">
+    <form class="query-form" hx-post="/buscar" hx-target="#search-results" hx-swap="innerHTML"><label for="search">Pesquisar</label><input id="search" name="q" type="search" required><button type="submit">Buscar</button></form>
+    <div id="search-results"></div>
+    <form class="query-form" hx-post="/perguntar" hx-target="#answer" hx-swap="innerHTML"><label for="question">Perguntar à base</label><textarea id="question" name="question" required></textarea><button type="submit">Perguntar</button></form>
+    <div id="answer"></div>
+  </aside>
+{% endblock %}

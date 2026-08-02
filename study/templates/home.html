@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Estudos{% endblock %}
+{% block page_class %}home-page{% endblock %}
+{% block content %}
+  <section class="hero">
+    <p class="eyebrow">Knowledge base pessoal</p>
+    <h1>Estude a partir do seu corpus.</h1>
+  </section>
+  <form class="query-form" hx-post="/buscar" hx-target="#search-results" hx-swap="innerHTML">
+    <label for="search">Pesquisar artigos</label>
+    <div><input id="search" name="q" type="search" required><button type="submit">Buscar</button></div>
+  </form>
+  <div id="search-results"></div>
+  <section class="article-list">
+    <h2>Últimos artigos</h2>
+    {% for item in articles %}<a href="/a/{{ item.slug }}"><span>{{ item.title }}</span><small>{{ item.topic }}</small></a>{% else %}<p>Nenhum artigo encontrado.</p>{% endfor %}
+  </section>
+{% endblock %}
