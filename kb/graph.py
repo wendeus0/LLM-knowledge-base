@@ -16,13 +16,61 @@ def extract_wikilinks(content: str) -> list[str]:
     return seen
 
 
-def resolve_wikilink(link: str, wiki_dir: Path) -> Path | None:
-    """Resolve um wikilink para o Path do arquivo em wiki/."""
-    slug = re.sub(r"\s+", "-", link.lower())
-    for candidate in wiki_dir.rglob("*.md"):
-        if candidate.stem == slug or candidate.stem == link:
-            return candidate
-    return None
+def _slugify_link(link: str) -> str:
+    return re.sub(r"\s+", "-", link.strip().lower())
+
+
+def _e_artigo(path: Path, wiki_dir: Path) -> bool:
+    """Derivados (`_summaries/`, `_sources/`, `_index.md`) não são artigos.
+
+    Mesma convenção que `kb.search` já aplica ao indexar.
+    """
+    return not any(part.startswith(("_", ".")) for part in path.relative_to(wiki_dir).parts)
+
+
+def build_link_index(wiki_dir: Path) -> dict:
+    """Índice de resolução de wikilink, construído uma vez.
+
+    Sem isto, resolver N links em M artigos custa N varreduras do disco — o
+    vault de 1.040 artigos travou o lint na primeira execução real.
+    """
+    por_stem: dict[str, list[Path]] = {}
+    por_slug: dict[str, Path] = {}
+    for path in sorted(
+        (p for p in wiki_dir.rglob("*.md") if not p.is_symlink() and _e_artigo(p, wiki_dir)),
+        key=lambda p: p.relative_to(wiki_dir).as_posix(),
+    ):
+        por_stem.setdefault(path.stem.lower(), []).append(path)
+        por_slug[path.relative_to(wiki_dir).with_suffix("").as_posix()] = path
+    return {"por_stem": por_stem, "por_slug": por_slug}
+
+
+def resolve_wikilink_all(link: str, wiki_dir: Path, index: dict | None = None) -> list[Path]:
+    """Todos os artigos que um wikilink pode designar, em ordem estável.
+
+    `[[topic/slug]]` designa exatamente um. `[[slug]]` designa todos os artigos
+    com aquele stem — o vault tem 4 stems duplicados, e quem chama precisa
+    saber disso em vez de receber um dos dois em ordem de sistema de arquivos.
+
+    Passe `index` de `build_link_index` ao resolver muitos links seguidos.
+    """
+    idx = index or build_link_index(wiki_dir)
+    alvo = _slugify_link(link)
+    if "/" in alvo:
+        achado = idx["por_slug"].get(alvo)
+        return [achado] if achado else []
+    return list(idx["por_stem"].get(alvo, []))
+
+
+def resolve_wikilink(link: str, wiki_dir: Path, index: dict | None = None) -> Path | None:
+    """Resolve um wikilink para o Path do arquivo em wiki/.
+
+    Ambíguo devolve o primeiro em ordem estável — nunca em ordem de `rglob`,
+    que o sistema de arquivos não garante e que fazia a mesma wiki resolver
+    diferente entre execuções.
+    """
+    candidatos = resolve_wikilink_all(link, wiki_dir, index)
+    return candidatos[0] if candidatos else None
 
 
 def load_frontmatter(path: Path) -> dict:

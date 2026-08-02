@@ -266,7 +266,7 @@ def find_relevant(query: str, top_k: int = 5, rerank_depth: int | None = None) -
 SEARCH_MODES = ("hybrid", "lexical", "keyword")
 
 
-def rel_slug(path: Path) -> str:
+def rel_slug(path: Path, wiki_dir: Path | None = None) -> str:
     """Identidade única do artigo: path relativo à wiki sem extensão.
 
     O stem sozinho colide — o vault tem 4 stems duplicados em topics
@@ -274,7 +274,7 @@ def rel_slug(path: Path) -> str:
     Fora da wiki (ramo defensivo), o path completo mantém a unicidade.
     """
     try:
-        return path.relative_to(WIKI_DIR).with_suffix("").as_posix()
+        return path.relative_to(wiki_dir or WIKI_DIR).with_suffix("").as_posix()
     except ValueError:
         return path.with_suffix("").as_posix()
 

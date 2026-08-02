@@ -1,6 +1,7 @@
 """Health checks LLM sobre a wiki."""
 
 import re
+from pathlib import Path
 
 from kb.client import chat
 from kb.config import WIKI_DIR
@@ -16,6 +17,36 @@ SYSTEM = """Você é um auditor de knowledge base. Analise os artigos fornecidos
 
 Formato de saída em markdown com seções para cada categoria.
 """
+
+
+def find_ambiguous_wikilinks(wiki_dir: Path) -> list[str]:
+    """Wikilinks que designam mais de um artigo.
+
+    O link `[[honeycomb]]` não diz qual honeycomb; o vault tem 4 stems
+    duplicados. Qualificar por topic (`[[cybersecurity/honeycomb]]`) resolve, e
+    é isso que este check pede ao autor.
+    """
+    from kb.graph import build_link_index, resolve_wikilink_all
+
+    index = build_link_index(wiki_dir)
+    achados: list[str] = []
+    for md in sorted(wiki_dir.rglob("*.md"), key=lambda p: p.as_posix()):
+        if md.is_symlink():
+            continue
+        text = md.read_text(encoding="utf-8", errors="replace")
+        vistos: set[str] = set()
+        for link in re.findall(r"\[\[([^\]]+)\]\]", text):
+            chave = link.strip().lower()
+            if chave in vistos:
+                continue
+            vistos.add(chave)
+            candidatos = resolve_wikilink_all(link, wiki_dir, index)
+            if len(candidatos) > 1:
+                alvos = ", ".join(
+                    c.relative_to(wiki_dir).with_suffix("").as_posix() for c in candidatos
+                )
+                achados.append(f"  - `{md.name}` → [[{link}]] designa {len(candidatos)}: {alvos}")
+    return achados
 
 
 def lint_wiki(allow_sensitive: bool = False) -> str:
@@ -49,8 +80,16 @@ def lint_wiki(allow_sensitive: bool = False) -> str:
         **params("analytical"),
     )
 
+    ambiguos = find_ambiguous_wikilinks(WIKI_DIR)
+
     if broken:
         broken_section = "\n## Wikilinks Quebrados (detectados localmente)\n\n" + "\n".join(broken)
         response += broken_section
+    if ambiguos:
+        response += (
+            "\n\n## Wikilinks Ambíguos (designam mais de um artigo)\n\n"
+            + "\n".join(ambiguos)
+            + "\n\nQualifique por topic: `[[cybersecurity/honeycomb]]`."
+        )
 
     return response
