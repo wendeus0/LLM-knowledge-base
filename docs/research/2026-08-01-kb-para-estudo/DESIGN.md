@@ -39,9 +39,11 @@ As três micro-interações que valem copiar, todas classificadas como **orienta
 
 **Hierarquia** — o olho vai para: (1) o que estudar agora, (2) onde estou na trilha, (3) o conteúdo, (4) as ferramentas. Hoje a sidebar disputa com o artigo; ela precisa recuar quando a leitura começa.
 
-**Densidade** — baixa por projeto, não por falta de conteúdo. Memória de trabalho é o recurso escasso. Critério por elemento: *isto ajuda a aprender esta coisa agora?* Se serve a outra pergunta, vai para outra tela.
+**Densidade** — **baixa no passo, não no produto.** Esta formulação corrige a minha primeira versão. A Khan Academy **aumentou** densidade em 11–26% e justificou por **equidade**: *"users who need our services the most are on low-cost, older hardware and low-density screens"*. Tela arejada demais obriga a rolar, e rolar em máquina fraca com tela pequena é custo. O que fica baixo é a carga do **passo atual**; o produto pode ser denso.
 
-**Cor** — sinal e **categoria de assunto**. A família educação usa cor para o segundo propósito, que as outras três não usam: o tópico tem cor, e ela ajuda a orientar num acervo de 1.040 artigos.
+**Cor** — **sinal e estado, não assunto.** Esta também corrige a minha primeira versão, onde eu recomendei cor por tópico. A Khan **abandonou** exatamente isso: reduziu de 58 para 18 cores e trocou codificação por assunto por codificação funcional. E exige texto junto de vermelho/verde — é WCAG SC 1.4.1, Nível A.
+
+O que substitui a cor por assunto vem do roadmap.sh, que roda **dois sistemas ortogonais** na mesma tela: um comunica a estrutura (opinião de quem montou a trilha), outro comunica o estado do leitor. É exatamente o problema de um acervo — estrutura de assunto mais estado de leitura — resolvido sem gastar a paleta.
 
 **Movimento** — só onde orienta, com as três durações do Codédex. `prefers-reduced-motion` respeitado (o Codédex implementa e o trecho é copiável). Toda celebração pulável.
 
@@ -63,6 +65,13 @@ Mesma base bege/laranja e mesmo corpo de texto. Acrescenta na **moldura**: uma f
 **Aposta:** o achado central — personalidade na moldura, silêncio na leitura. Ganha a atmosfera sem pagar o custo medido em retenção.
 **Risco:** dois vocabulários tipográficos exigem disciplina para não vazar um no outro.
 
+### B2 — Vocabulário de jogo, visual de material didático
+
+Variação da B que a segunda pesquisa abriu. A freeCodeCamp chama o próprio ciclo de *"core gameplay loop"* e os projetos de *"miniboss"* — **com zero iconografia de jogo**. A energia vem da linguagem, não do pixel.
+
+**Aposta:** parecer material didático sério e ainda assim ter a atmosfera, sem carregar fonte display nem estética que envelhece.
+**Risco:** depende de escrita boa em cada rótulo; texto morno derruba tudo, e não há cromo para compensar.
+
 ### C — Cheia à la Codédex
 
 Adota o vocabulário NES.css (borda em degrau por `box-shadow`, sem raio), fonte pixelada em toda a chrome, XP e badges visíveis, tema escuro dominante.
@@ -83,7 +92,7 @@ Escala do Codédex como referência: `48/72 → 32 → 24/36 → 18 → 16 → 1
 
 | Anti-padrão | Por quê |
 |---|---|
-| **Streak diário** | Explora aversão à perda; a literatura relata culpa, ansiedade e checagem compulsiva. **O aluno que faltou por doença, prova ou falta de computador em casa perde a sequência** — o mecanismo pune exatamente a circunstância que a escola deveria absorver. O próprio Duolingo mediu que o *streak freeze* reduz churn em 21% **por aliviar ansiedade** |
+| **Streak diário** | Existem gradações verificadas que o tornam sobrevivível: a Codecademy usa streak **semanal**, e o Boot.dev tem *embers* que absorvem dias perdidos. Sem uma dessas, explora aversão à perda; a literatura relata culpa, ansiedade e checagem compulsiva. **O aluno que faltou por doença, prova ou falta de computador em casa perde a sequência** — o mecanismo pune exatamente a circunstância que a escola deveria absorver. O próprio Duolingo mediu que o *streak freeze* reduz churn em 21% **por aliviar ansiedade** |
 | **Ranking público em turma** | Ranking entre pessoas que se veem no dia seguinte. Estudo longitudinal encontrou ausência de prática adicional e associação com **notas mais baixas**. A evidência é conflitante, não unânime — mas o risco é maior aqui porque o dono é o professor. Se houver ranking, que seja **relativo** (vizinhos de desempenho), nunca absoluto |
 | **Celebração que interrompe** | Confete de 2s + redirect de 1s dá ~4,3s de espera forçada. **Quem revisa 30 cartões paga 30 vezes** — e em máquina fraca paga no frame rate também |
 | **Nav por `<div>` sem `role`** | O Codédex faz isto: os controles de ícone da nav são inalcançáveis por teclado. Para alunos de escola é bloqueante |
@@ -92,13 +101,21 @@ Escala do Codédex como referência: `48/72 → 32 → 24/36 → 18 → 16 → 1
 
 Vai para escola: contraste WCAG AA no mínimo, alvo de toque adequado, foco visível, navegação por teclado em tudo, e a página precisa funcionar em máquina fraca. O `prefers-reduced-motion` do Codédex é copiável literalmente.
 
+Três correções que a pesquisa trouxe e que evitam trabalho errado:
+
+- **Funcionar sem JS não é requisito WCAG.** Um SPA pode ser 100% AA conforme. O mandato é do GOV.UK e é sobre **resiliência**, não acessibilidade — o argumento honesto para adotá-lo é desempenho, não conformidade.
+- **OpenDyslexic não tem suporte experimental.** Dois estudos independentes na mesma revista deram nulo, e um terceiro com eye-tracking chegou ao mesmo lugar. O que funciona é o **estilo**: sans-serif, evitar itálico, entrelinha 1.5, alinhamento à esquerda sem justificar, 60–70 caracteres por linha. O guia da BDA que recomenda Comic Sans não cita estudo nenhum.
+- **`@primer/primitives` é MIT**, distribui tokens em JSON consumíveis sem React, com contraste **já auditado para AA** em claro e escuro. Resolve boa parte dos critérios 1.4.3 e 1.4.11 sem trabalho manual.
+
+**Aviso com prazo:** o **GitHub Classroom fecha em 28/08/2026**, com deleção de dados em 04/09. Não construir nada sobre ele.
+
 ## O que muda no que já existe
 
 Independente da direção escolhida:
 
 1. **`0%` vira `N de M`.** "0 de 15 artigos" convida; "0%" desanima.
 2. **A sidebar recua na leitura.** Hoje ela disputa com o texto o tempo todo.
-3. **Cor por tópico** ajuda a orientar em 1.040 artigos.
+3. **O "próximo passo" nasce por subtração, não por adição.** O mecanismo do roadmap.sh funciona porque o concluído é **visualmente removido** — tachado e cinza — e o que sobra em destaque é o próximo. Um checkmark verde *acrescentado* não produz o efeito: adiciona ruído em vez de limpar o caminho.
 
 ## Decisão pendente
 
