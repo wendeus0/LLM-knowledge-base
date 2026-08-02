@@ -41,6 +41,10 @@ Disponibilizar um ciclo local e verificável de ler um artigo, registrar estudo 
 - [ ] RF-07 [P1]: Dado um artigo aberto, quando houver outros artigos que apontam para ele, então o leitor exibe backlinks navegáveis identificados por `rel_slug`.
 - [ ] RF-08 [P1]: Dado o leitor, quando o estudante pesquisar ou enviar uma pergunta pela respectiva caixa, então a página apresenta os resultados ou a resposta da API da engine, preservando os avisos de grounding da resposta.
 - [ ] RF-09 [P1]: Dado o leitor em qualquer artigo, quando o estudante alternar entre os temas disponíveis, então há tema claro com fundo bege, não branco puro, e tema escuro com acento laranja, ambos com contraste suficiente para leitura longa.
+- [ ] RF-18 [P1]: Dado um wikilink cujo alvo não existe como artigo, quando o leitor renderiza a página, então ele aparece em cinza e inerte para navegação, e oferece um gancho de "buscar fontes para este tema".
+- [ ] RF-19 [P1]: Dado o gancho acionado para um termo, quando houver material local que o mencione, então a plataforma lista as fontes encontradas classificadas por origem e informa, para cada uma, se ela pode virar artigo diretamente ou se exige um passo anterior.
+- [ ] RF-20 [P2]: Dado um termo cuja fonte encontrada esteja em `raw/`, quando o estudante confirmar, então a plataforma compila aquele arquivo em artigo e o wikilink deixa de estar morto na próxima leitura.
+- [ ] RF-21 [P2]: Dado um termo sem material local, quando o gancho for acionado, então a plataforma oferece busca na web, sem executá-la automaticamente.
 - [ ] RF-10 [P1]: Dado o leitor em tela larga, quando o estudante navega pela trilha, então a sidebar esquerda permanece como navegação primária, mostra progresso e artigos do contexto atual, enquanto o artigo ocupa a superfície de leitura à direita.
 
 ### F3 — Notas e destaques
@@ -87,6 +91,8 @@ Disponibilizar um ciclo local e verificável de ler um artigo, registrar estudo 
 - RT-07: A resolução de wikilinks e o cálculo de backlinks constroem um índice por varredura do corpus uma vez por carga ou atualização controlada do corpus. Resolver cada link fazendo nova busca no vault é proibido, pois bloqueia a leitura no vault de 1.040 artigos.
 - RT-08: O estado de notas, destaques, flashcards e revisões fica em SQLite próprio da plataforma. Ele não escreve em `wiki/` nem reutiliza os arquivos JSON de `kb_state/` para esses dados.
 - RT-09: A geração e a verificação de cartões reutilizam as capacidades de LLM e grounding já existentes na engine; uma indisponibilidade da verificação mantém o cartão em curadoria e impede sua aceitação.
+- RT-11: A busca por fontes de um termo cobre três origens com capacidades distintas, e a interface não pode tratá-las como equivalentes: `raw/` compila direto (`compile_file` existe); `library/` exige `import-book` antes, porque são EPUB e PDF não fatiados; `wiki/_sources/` é fonte de artigo já compilado, então o termo provavelmente já tem cobertura sob outro título. Prometer "compilar direto" para as três seria mentira em duas.
+- RT-12: A busca por fontes é somente leitura e não dispara provider externo. Compilar e buscar na web são ações explícitas do estudante, nunca efeito de renderizar uma página.
 - RT-10: A renderização de Markdown suporta a regra de wikilink do corpus e converte seus destinos para URLs por `rel_slug`; a plataforma não introduz uma segunda busca, índice de relevância ou identidade por stem.
 
 ## Mudanças de API/CLI
@@ -165,6 +171,14 @@ Não há mudança de contrato da CLI nesta feature. A API HTTP não oferece rota
 - Edição, criação ou remoção do artigo Markdown compilado, inclusive por notas, destaques, cartões ou revisão.
 - Busca client-side, índice de relevância próprio do front ou alteração dos algoritmos de retrieval e rerank do `kb`.
 - Grafo de wikilinks como navegação primária.
+
+## Decisões incorporadas depois da validação
+
+**2026-08-02 — tratamento de wikilink sem artigo (RF-18 a RF-21).** Decisão do usuário: cinza mais gancho para buscar fontes e compilar o tema; havendo fontes, sugerir a compilação direto.
+
+O que a implementação descobriu e a SPEC precisa declarar: as três origens de fonte **não são equivalentes**. `raw/` tem 5 arquivos e compila direto. `library/` tem 827, mas são EPUB e PDF que exigem `import-book` antes. `wiki/_sources/` tem 712, e material lá significa que o tema provavelmente já tem artigo sob outro título — o caso mais útil de sinalizar, porque a resposta certa é "procure o artigo existente", não "compile de novo".
+
+Isto reposiciona o link morto: ele deixa de ser defeito de renderização e vira **mecanismo de crescimento do corpus** — a wiki passando a dizer o que lhe falta.
 
 ## Open questions
 
