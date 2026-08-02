@@ -30,23 +30,37 @@ def _normalize_link(link: str) -> str:
 
 
 def find_orphans(wiki_dir: Path) -> list[Path]:
-    """Retorna artigos sem backlinks na wiki."""
+    """Retorna artigos sem backlinks na wiki.
+
+    A identidade é o path relativo, não o stem: com stem, linkar
+    `cybersecurity/honeycomb` fazia `honeycomb` da raiz parecer linkado e
+    escapar do arquivamento. Wikilink ambíguo marca **todos** os candidatos —
+    arquivar algo que talvez esteja linkado é o erro caro.
+    """
+    from kb.graph import build_link_index, resolve_wikilink_all
+
     if not wiki_dir.exists():
         return []
     backlink_sources = [p for p in wiki_dir.rglob("*.md") if not p.is_symlink()]
     all_md = [p for p in backlink_sources if p.name != "_index.md"]
+
+    def identidade(path: Path) -> str:
+        return path.relative_to(wiki_dir).with_suffix("").as_posix()
+
+    index = build_link_index(wiki_dir)
     linked = set()
     for p in backlink_sources:
-        current = _normalize_link(p.stem)
+        current = identidade(p)
         try:
             text = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         for match in _WIKILINK_RE.finditer(text):
-            target = _normalize_link(match.group(1))
-            if target != current:
-                linked.add(target)
-    return [p for p in all_md if _normalize_link(p.stem) not in linked]
+            for alvo in resolve_wikilink_all(match.group(1), wiki_dir, index):
+                chave = identidade(alvo)
+                if chave != current:
+                    linked.add(chave)
+    return [p for p in all_md if identidade(p) not in linked]
 
 
 def find_by_age(wiki_dir: Path, days: int) -> list[Path]:
