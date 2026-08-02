@@ -19,6 +19,16 @@ class SearchResponse(BaseModel):
     results: list[SearchResult]
 
 
+class ArticleListItem(BaseModel):
+    slug: str
+    title: str
+    topic: str
+
+
+class ArticleListResponse(BaseModel):
+    results: list[ArticleListItem]
+
+
 class QaRequest(BaseModel):
     question: str
 

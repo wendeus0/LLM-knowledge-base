@@ -74,6 +74,41 @@ def article_summary(path: Path, wiki_dir: Path) -> dict:
     }
 
 
+SORTS = ("recent", "title")
+
+
+def list_articles(topic: str | None = None, limit: int | None = None, sort: str = "recent") -> list[dict]:
+    """Artigos da wiki para a home e para a sidebar.
+
+    Derivados (`_summaries/`, `_sources/`, `_index.md`) ficam de fora pela mesma
+    convenção `_*` que a busca já aplica.
+    """
+    if sort not in SORTS:
+        raise ValueError(f"sort inválido: {sort}")
+    wiki_dir = config.WIKI_DIR
+    if not wiki_dir.exists():
+        return []
+    encontrados = []
+    for path in wiki_dir.rglob("*.md"):
+        if path.is_symlink() or any(
+            part.startswith(("_", ".")) for part in path.relative_to(wiki_dir).parts
+        ):
+            continue
+        resumo = article_summary(path, wiki_dir)
+        if topic and resumo["topic"] != topic:
+            continue
+        encontrados.append(
+            {"slug": rel_slug(path, wiki_dir), **resumo, "mtime": path.stat().st_mtime}
+        )
+    if sort == "title":
+        encontrados.sort(key=lambda a: a["title"].lower())
+    else:
+        encontrados.sort(key=lambda a: a["mtime"], reverse=True)
+    for item in encontrados:
+        item.pop("mtime")
+    return encontrados[:limit] if limit else encontrados
+
+
 def get_article(slug: str) -> dict | None:
     """Devolve um artigo serializável, ou None quando não existe."""
     parts = _validate_slug(slug)

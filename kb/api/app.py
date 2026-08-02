@@ -7,6 +7,7 @@ from kb import config, search, stats
 from kb.api import articles
 from kb.api.articles import InvalidArticleSlug, get_article
 from kb.api.schemas import (
+    ArticleListResponse,
     ArticleResponse,
     HealthResponse,
     QaRequest,
@@ -90,6 +91,19 @@ def article(slug: str):
     if result is None:
         raise HTTPException(status_code=404, detail="Artigo não encontrado.")
     return result
+
+
+@app.get("/articles", response_model=ArticleListResponse)
+def list_articles(
+    topic: str | None = Query(default=None),
+    limit: int | None = Query(default=None, ge=1, le=500),
+    sort: str = Query(default="recent"),
+):
+    """Lista artigos para a home e para a sidebar do leitor."""
+    try:
+        return {"results": articles.list_articles(topic=topic, limit=limit, sort=sort)}
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/stats")
