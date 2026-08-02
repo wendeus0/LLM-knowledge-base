@@ -1,5 +1,6 @@
 """Renderização segura de Markdown e wikilinks para o leitor."""
 
+import re
 from collections import defaultdict
 from html import escape
 from urllib.parse import quote, urlencode
@@ -64,7 +65,9 @@ def _sem_titulo_repetido(content: str) -> str:
     return content
 
 
-def render_markdown(content: str, wikilinks: list[dict]) -> str:
+def render_markdown(
+    content: str, wikilinks: list[dict], highlights: list[dict] | None = None
+) -> str:
     """Converte Markdown em HTML usando os destinos resolvidos pela API."""
     renderer = MarkdownIt("commonmark", {"html": False, "linkify": True, "typographer": True})
     renderer.use(tasklists_plugin)
@@ -73,7 +76,7 @@ def render_markdown(content: str, wikilinks: list[dict]) -> str:
     by_text = defaultdict(list)
     for link in wikilinks:
         by_text[link["text"]].append(link)
-    return renderer.render(
+    html = renderer.render(
         _sem_titulo_repetido(content),
         {
             "wikilinks_by_text": by_text,
@@ -81,3 +84,18 @@ def render_markdown(content: str, wikilinks: list[dict]) -> str:
             "missing_wikilinks": 0,
         },
     )
+    return _apply_highlights(html, highlights or [])
+
+
+def _apply_highlights(html: str, highlights: list[dict]) -> str:
+    parts = re.split(r"(<[^>]+>)", html)
+    for highlight in highlights:
+        quote = escape(highlight["quote"])
+        if not quote:
+            continue
+        marker = f'<mark class="highlight">{quote}</mark>'
+        for index in range(0, len(parts), 2):
+            if quote in parts[index]:
+                parts[index] = parts[index].replace(quote, marker, 1)
+                break
+    return "".join(parts)

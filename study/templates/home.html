@@ -15,4 +15,5 @@
     <h2>Últimos artigos</h2>
     {% for item in articles %}<a href="/a/{{ item.slug }}"><span>{{ item.title }}</span><small>{{ item.topic }}</small></a>{% else %}<p>Nenhum artigo encontrado.</p>{% endfor %}
   </section>
+  {% if orphaned_highlights %}<section class="orphaned-highlights"><h2>Destaques sem âncora</h2>{% for highlight in orphaned_highlights %}<blockquote>{{ highlight.quote }}</blockquote><a href="/a/{{ highlight.slug }}">{{ highlight.slug }}</a>{% endfor %}</section>{% endif %}
 {% endblock %}

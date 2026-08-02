@@ -10,6 +10,13 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from study.highlights import (
+    active_highlights,
+    create_highlight,
+    orphan_article,
+    orphaned_highlights,
+)
+from study.notes import delete_note, get_note, save_note
 from study.render import render_markdown
 from study.sources import buscar_fontes
 
@@ -50,20 +57,33 @@ async def _form_value(request: Request, name: str) -> str:
 def home(request: Request):
     """Exibe busca e os artigos mais recentes do corpus."""
     articles = api_request("GET", "/articles", params={"limit": 12})
-    return _render(request, "home.html", articles=articles["results"])
+    return _render(
+        request,
+        "home.html",
+        articles=articles["results"],
+        orphaned_highlights=orphaned_highlights(),
+    )
 
 
 @app.get("/a/{slug:path}", response_class=HTMLResponse)
 def article(request: Request, slug: str):
     """Exibe um artigo e a trilha formada pelo tópico atual."""
-    data = api_request("GET", f"/article/{slug}")
+    try:
+        data = api_request("GET", f"/article/{slug}")
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            orphan_article(slug)
+        raise
     sidebar = api_request("GET", "/articles", params={"topic": data["topic"]})
+    highlights = active_highlights(slug, data["content"])
     return _render(
         request,
         "article.html",
         article=data,
-        article_html=render_markdown(data["content"], data["wikilinks"]),
+        article_html=render_markdown(data["content"], data["wikilinks"], highlights),
         sidebar=sidebar["results"],
+        note=get_note(slug),
+        orphaned_highlights=orphaned_highlights(slug),
     )
 
 
@@ -85,6 +105,36 @@ async def ask(request: Request):
         "POST", "/qa", json={"question": question}
     )
     return _render(request, "partials/answer.html", answer=answer)
+
+
+@app.post("/a/{slug:path}/note", response_class=HTMLResponse)
+async def save_article_note(request: Request, slug: str):
+    """Salva a nota do artigo e devolve o painel atualizado."""
+    note = save_note(slug, await _form_value(request, "body"))
+    return _render(request, "partials/note.html", slug=slug, note=note)
+
+
+@app.delete("/a/{slug:path}/note", response_class=HTMLResponse)
+def remove_article_note(request: Request, slug: str):
+    """Remove a nota do artigo e devolve o painel vazio."""
+    delete_note(slug)
+    return _render(request, "partials/note.html", slug=slug, note=None)
+
+
+@app.post("/a/{slug:path}/highlights", response_class=HTMLResponse)
+async def save_article_highlight(request: Request, slug: str):
+    """Salva um destaque textual selecionado no leitor."""
+    quote = (await _form_value(request, "quote")).strip()
+    if not quote:
+        raise HTTPException(status_code=400, detail="Selecione um trecho para destacar.")
+    create_highlight(
+        slug,
+        quote,
+        await _form_value(request, "prefix"),
+        await _form_value(request, "suffix"),
+        await _form_value(request, "note"),
+    )
+    return _render(request, "partials/highlight_feedback.html")
 
 
 @app.get("/fontes", response_class=HTMLResponse)
