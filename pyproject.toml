@@ -15,6 +15,18 @@ dependencies = [
 llm = [
     "openai>=1.0",
 ]
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+study = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "markdown-it-py>=3.0",
+    "mdit-py-plugins>=0.4",
+    "fsrs>=6.0",
+]
 web = [
     "requests>=2.31",
     "html2text>=2024.1",
@@ -67,3 +79,5 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "kb/cli.py" = ["B008"]
+"kb/api/*.py" = ["B008"]
+"study/*.py" = ["B008"]
