@@ -1,0 +1,7 @@
+---
+feature: 026-plataforma-de-estudos
+mode: act
+pipeline_state: CONTRACT_VALID
+branch: feat/026-plataforma-estudos
+last_updated: 2026-08-02
+---
