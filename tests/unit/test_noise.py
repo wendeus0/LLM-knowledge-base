@@ -17,6 +17,16 @@ def _paths(candidates):
     return [c.path for c in candidates]
 
 
+def test_should_classify_table_of_contents_as_sumario():
+    """027 (review do PR #69): o DOMAIN lista sumário como paratexto, mas a
+    taxonomia só cobria índice remissivo — TOC passava como conteúdo."""
+    assert classify_chapter("Sumário") == "sumario"
+    assert classify_chapter("Contents") == "sumario"
+    assert classify_chapter("Table of Contents") == "sumario"
+    assert classify_chapter("Contents at a Glance") == "sumario"
+    assert classify_chapter("Brief Contents") == "sumario"
+
+
 def test_should_classify_pt_noise_titles_by_category():
     # RED: falha até 011-corpus-noise-filter ser implementada
     assert classify_chapter("Agradecimentos") == "agradecimentos"
@@ -298,6 +308,42 @@ class TestCandidateStructure:
 
         assert candidate.category == "indice"
         assert "livro-a" in candidate.book and "livro-b" in candidate.book
+
+    def test_should_merge_book_lists_when_basename_exists_in_raw_and_library(self, tmp_path):
+        """Review PR #69 (3 bots): o merge dos mapas descartava os livros da
+        library quando raw/books tinha o mesmo basename."""
+        raw = tmp_path / "raw"
+        wiki = tmp_path / "wiki"
+        library = tmp_path / "library"
+        wiki.mkdir()
+        book_raw = _write_book_metadata(raw, [{"title": "Preface", "file": "04-preface.md"}])
+        (book_raw / "04-preface.md").write_text("prefácio raw", encoding="utf-8")
+        _write_library_book(
+            library, "software", "livro-lib", [{"title": "Preface", "file": "04-preface.md"}]
+        )
+        _write_article(wiki, "prefacio.md", "Prefácio do livro", "04-preface.md")
+
+        artigo = next(
+            c for c in scan_corpus(raw, wiki, library_dir=library) if c.kind == "article"
+        )
+
+        assert "livro-lib" in artigo.book
+        assert "livro" in artigo.book  # o diretório do livro em raw/books
+
+    def test_should_carry_book_provenance_on_raw_chapter_candidates(self, tmp_path):
+        """Review PR #69: candidato de capítulo chegava ao relatório sem livro
+        nem título original — irrevisável."""
+        raw = tmp_path / "raw"
+        wiki = tmp_path / "wiki"
+        wiki.mkdir()
+        book_dir = _write_book_metadata(raw, [{"title": "Agradecimentos", "file": "ch01.md"}])
+        (book_dir / "ch01.md").write_text("obrigado", encoding="utf-8")
+
+        [candidate] = scan_corpus(raw, wiki)
+
+        assert candidate.kind == "chapter"
+        assert candidate.book == "livro"
+        assert candidate.chapter_title == "Agradecimentos"
 
     def test_should_mark_title_match_without_book_provenance(self, tmp_path):
         raw = tmp_path / "raw"

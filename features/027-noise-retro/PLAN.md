@@ -15,7 +15,7 @@
 
 ## Desenho
 
-1. **`NoiseCandidate`** (dataclass ou dict tipado): `article: Path`, `book: str`, `chapter_title: str`, `category: str`, `source_chapter: Path | None`, `summary: Path | None`. `scan_corpus` passa a devolver `list[NoiseCandidate]`.
+1. **`NoiseCandidate`** (dataclass congelada — contrato do relatório HITL e do apply): `path: Path`, `kind: "chapter"|"article"`, `category: str`, `book: str | None` (todos os livros possíveis, separados por ` | ` em colisão de basename), `chapter_title: str | None`, `summary: Path | None`. `scan_corpus` devolve `list[NoiseCandidate]`.
 2. **Multi-root**: raízes = `[raw_dir / "books"]` + diretórios de 2º nível de `data_dir/library` que contêm `metadata.json` — implementado como glob `library/*/*/metadata.json` a partir de `DATA_DIR`, mantendo `_chapter_path_inside_book` (contenção) por raiz. Assinatura vira `scan_corpus(raw_dir, wiki_dir, library_dir=None, taxonomy=None)` com default `DATA_DIR/library` resolvido no CLI (função pura recebe paths — testável).
 3. **Casamento**: passada B inalterada na lógica (source-basename ∈ ruidosos, título como fallback), mas registra de qual livro/capítulo veio o match para preencher o candidato.
 4. **Apply**: monta `[{source: artigo, dest: ARCHIVE_DIR/rel}]` (+ summary quando existir) e delega a `move_to_archive`; commit recebe origens **e** destinos; ao final `update_index(no_commit=...)` + `refresh_embeddings_index()`. Capítulo-fonte nunca entra na lista de move.

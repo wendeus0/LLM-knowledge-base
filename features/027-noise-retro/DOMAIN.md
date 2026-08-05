@@ -29,7 +29,7 @@
 1. Nenhuma remoção é `unlink`: todo lote é move com backup versionado, precedido de tag git no vault.
 2. Capítulo-fonte de `library/` nunca é arquivado — só artigos da wiki. `metadata.json` permanece íntegro.
 3. Lote destrutivo no vault exige: relatório → aprovação do dono → apply → commit no git do vault.
-4. O manifest acompanha qualquer archive/move (status `archived`, path atualizado) — o guard de recompile (`find_compiled_entry`) nunca fica cego.
+4. O manifest acompanha qualquer archive/move (status `archived`, path atualizado) — o guard de recompile (`find_compiled_entry`) nunca fica cego. **Vigência:** a manutenção nasce na 028 (B4); na 027 a pré-condição foi validada em runtime (nenhum candidato tinha entrada) e o `apply` avisa quando um candidato tem entrada.
 5. Dedup remove apenas duplicata de ingestão; par temático é intocável até o reagrupamento.
 6. `rel_slug` de artigo vivo não muda nesta fase (topic é só frontmatter).
 7. Após qualquer apply: `update_index` + refresh de embeddings, e contagens antes/depois conferidas.

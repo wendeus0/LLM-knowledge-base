@@ -34,6 +34,7 @@ DEFAULT_TAXONOMY: dict[str, list[str]] = {
     "sobre_o_autor": ["sobre o autor", "sobre a autora", "sobre os autores", "about the author", "about the authors"],
     "copyright": ["copyright", "pagina de copyright", "direitos autorais", "avisos legais", "ficha catalografica", "creditos"],
     "indice": ["indice remissivo", "indice alfabetico", "index"],
+    "sumario": ["sumario", "table of contents", "contents", "brief contents"],
     "capa": ["capa", "pagina de titulo", "cover", "title page", "capa do documento"],
 }
 
@@ -146,7 +147,7 @@ def _noisy_chapters(metadata_globs, taxonomy):
     artigo veio, e o relatório precisa listar todos os candidatos.
     """
     noisy: dict[str, tuple[list[str], str, str]] = {}
-    chapter_paths: list[tuple[Path, str]] = []
+    chapter_paths: list[tuple[Path, str, str, str]] = []
     for metadata_path in metadata_globs:
         try:
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -170,7 +171,7 @@ def _noisy_chapters(metadata_globs, taxonomy):
                     books.append(book)
             else:
                 noisy[chapter_file] = ([book], title, category)
-            chapter_paths.append((chapter_path, category))
+            chapter_paths.append((chapter_path, category, book, title))
     return noisy, chapter_paths
 
 
@@ -197,10 +198,16 @@ def scan_corpus(
 
     raw_globs = sorted(Path(raw_dir).glob("books/*/metadata.json"))
     noisy_raw, raw_chapter_paths = _noisy_chapters(raw_globs, taxonomy)
-    for chapter_path, category in raw_chapter_paths:
+    for chapter_path, category, book, title in raw_chapter_paths:
         if chapter_path.exists():
             candidates.append(
-                NoiseCandidate(path=chapter_path, kind="chapter", category=category)
+                NoiseCandidate(
+                    path=chapter_path,
+                    kind="chapter",
+                    category=category,
+                    book=book,
+                    chapter_title=title,
+                )
             )
 
     noisy_library: dict[str, tuple[str, str, str]] = {}
@@ -210,7 +217,18 @@ def scan_corpus(
         )
         noisy_library, _ = _noisy_chapters(library_globs, taxonomy)
 
-    noisy_by_basename = {**noisy_library, **noisy_raw}
+    # Merge por basename preservando TODOS os livros: sobrescrever descartaria
+    # a proveniência da library quando raw/books tem o mesmo capítulo.
+    noisy_by_basename: dict[str, tuple[list[str], str, str]] = {}
+    for mapping in (noisy_library, noisy_raw):
+        for basename, (books, title, category) in mapping.items():
+            if basename in noisy_by_basename:
+                merged = noisy_by_basename[basename][0]
+                for book in books:
+                    if book not in merged:
+                        merged.append(book)
+            else:
+                noisy_by_basename[basename] = (list(books), title, category)
 
     if Path(wiki_dir).exists():
         from kb.frontmatter import parse as parse_frontmatter

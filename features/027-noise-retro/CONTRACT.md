@@ -25,7 +25,7 @@ validated_by: orquestrador (Fable 5), premissas verificadas por exploração rea
 - Capítulos-fonte de `library/` nunca são arquivados; só artigos da wiki (+ summaries).
 - Nenhum `unlink`; todo move com backup versionado; tag git antes do lote real.
 - Lote real (T-003) só com relatório aprovado pelo dono.
-- Manifest fora desta feature (os alvos não têm entrada hoje; schema v2 é da 028).
+- Manifest fora desta feature: pré-condição **validada em runtime** (nenhum dos 40 candidatos tinha entrada; as 5 entradas existentes são de artigos cybersecurity fora do lote) e o `apply` passou a avisar quando um candidato tem entrada. A manutenção real é B4 (028).
 
 ## Riscos aceitos
 

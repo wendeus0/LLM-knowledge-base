@@ -235,6 +235,80 @@ def test_should_version_existing_file_when_archive_path_conflicts(tmp_path, monk
     assert textos[versionados[0]] == "conteudo pre-existente do archive"
 
 
+def test_should_print_relative_paths_so_nested_candidates_are_identifiable(tmp_path, monkeypatch):
+    """Review PR #69: só o basename não identifica candidato aninhado nem
+    distingue nomes repetidos entre diretórios."""
+    raw, wiki, _ = _seed_dirty_vault(tmp_path, monkeypatch)
+    aninhado = wiki / "cybersecurity" / "indice-remissivo.md"
+    aninhado.parent.mkdir()
+    aninhado.write_text(
+        "---\ntitle: Índice remissivo\ntopic: cybersecurity\ntags: []\nsource: 20-index.md\n---\n\nSumário.\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["noise", "scan"])
+
+    assert result.exit_code == 0
+    assert "cybersecurity/indice-remissivo.md" in result.output
+    assert "books/livro/001-prefacio.md" in result.output
+
+
+def test_should_commit_the_versioned_backup_when_destination_collides(tmp_path, monkeypatch):
+    """Review PR #69: a colisão criava backup versionado fora do commit — a
+    proteção de conteúdo ficava num arquivo untracked."""
+    import subprocess
+
+    raw, wiki, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
+    conflicting = archive_dir / "books" / "livro" / "001-prefacio.md"
+    conflicting.parent.mkdir(parents=True)
+    conflicting.write_text("conteudo pre-existente do archive", encoding="utf-8")
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "config", "user.email", "kb@test"],
+        ["git", "config", "user.name", "kb"],
+        ["git", "add", "-A"],
+        ["git", "commit", "-qm", "seed"],
+    ):
+        subprocess.run(cmd, cwd=tmp_path, check=True)
+
+    result = runner.invoke(app, ["noise", "apply", "--commit"])
+
+    assert result.exit_code == 0
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=tmp_path, check=True, capture_output=True, text=True
+    ).stdout
+    sujos = [linha for linha in status.splitlines() if "_index.md" not in linha]
+    assert sujos == [], f"o backup versionado precisa estar no commit; sobrou: {sujos}"
+
+
+def test_should_warn_when_candidate_has_a_manifest_entry(tmp_path, monkeypatch):
+    """Review PR #69: a manutenção do manifest chega na 028 — até lá, arquivar
+    artigo com entrada deixaria o guard de recompile cego em silêncio."""
+    raw, wiki, _ = _seed_dirty_vault(tmp_path, monkeypatch)
+    state = tmp_path / "kb_state"
+    state.mkdir()
+    (state / "manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "source": "001-prefacio.md",
+                    "kind": "raw",
+                    "status": "compiled",
+                    "article": str(wiki / "prefacio-livro-ruidoso.md"),
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("kb.config.MANIFEST_PATH", state / "manifest.json")
+    monkeypatch.setattr("kb.state.MANIFEST_PATH", state / "manifest.json")
+
+    result = runner.invoke(app, ["noise", "apply"])
+
+    assert result.exit_code == 0
+    assert "manifest" in (result.output + (result.stderr or "")).lower()
+
+
 def test_should_preserve_hierarchy_and_move_summary_when_applying(tmp_path, monkeypatch):
     """027 RF-03/RF-06: o destino espelha o path relativo e o summary vai junto."""
     raw, wiki, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
