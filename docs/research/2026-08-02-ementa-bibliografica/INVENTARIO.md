@@ -2,7 +2,7 @@
 
 > Levantado em 2026-08-02. Serve à ementa: nenhum destes títulos foi recomendado de novo.
 
-**46 livros distintos + 11 papers e normas**, em `~/vault/library/`.
+**48 livros distintos + 11 papers e normas**, em `~/vault/library/` — a soma da tabela abaixo (31 + 10 + 4 + 3), reconferida em 2026-08-05 contando as entradas de cada área.
 
 ## Distribuição
 

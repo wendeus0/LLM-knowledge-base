@@ -2,7 +2,7 @@
 feature: 026-plataforma-de-estudos
 title: Plataforma de estudos web
 epic: infra
-status: ready
+status: in_progress
 created: 2026-08-02
 pr:
 ---
@@ -110,7 +110,7 @@ Não há mudança de contrato da CLI nesta feature. A API HTTP não oferece rota
 ## Testes
 
 - Unit: conversão de artigo para `rel_slug`; rejeição de traversal; serialização sem `Path`; montagem do índice único de wikilinks; resolução de duplicate stems; estado e transições de nota, destaque, cartão e revisão; bloqueio de aceitação de grounding não `ancorada`; cálculo de próxima revisão.
-- Integration: servidor em loopback com corpus e estado isolados; todas as cinco rotas; equivalência ordenada entre `/search` e a busca da engine; equivalência campo a campo de `/qa` e `kb qa --json`; HTTP 409 para conteúdo sensível; fluxo artigo → nota/destaque → cartão ancorado aceito → revisão → fila devida.
+- Integration: servidor em loopback com corpus e estado isolados; todas as seis rotas; equivalência ordenada entre `/search` e a busca da engine; equivalência campo a campo de `/qa` e `kb qa --json`; HTTP 409 para conteúdo sensível; fluxo artigo → nota/destaque → cartão ancorado aceito → revisão → fila devida.
 - Manual: abrir artigos reais em ambos os temas, alternar tema, confirmar layout sidebar/artigo, navegar wikilinks e backlinks, pesquisar, perguntar, revisar um cartão e verificar que nenhum arquivo de `wiki/` mudou.
 
 ## Dados de contexto

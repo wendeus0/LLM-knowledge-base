@@ -3,7 +3,7 @@
 **Branch:** `feat/026-plataforma-estudos` (existente; não criar outra)
 **Data:** 2026-08-02
 **Spec:** `features/026-plataforma-de-estudos/SPEC.md`
-**MVP scope desta entrega:** F0 de identidade como gate, seguido de F1 (API HTTP) e F2 (leitor). F3–F5 ficam declaradas para entrega posterior.
+**Escopo entregue nesta branch:** F0 de identidade como gate, F1 (API HTTP), F2 (leitor) e também F3–F5, que o corte original previa para depois e entraram na mesma branch assim que o leitor foi validado (ver `REPORT.md`). O que este PLAN chama de "posterior" abaixo descreve a intenção no momento do planejamento, não o que ficou de fora.
 
 ## Contexto técnico
 
@@ -40,7 +40,7 @@ F3–F5 (posterior): study/state.py ─► KB_DATA_DIR/study/study.db
 
 F0 é um gate, não uma segunda identidade: `rel_slug` é o caminho relativo a `wiki/`, sem extensão, em URLs, JSON, templates e SQLite. O índice de `kb.graph.build_link_index()` é construído uma vez por carga/atualização controlada. Um wikilink qualificado resolve diretamente; um link com stem ambíguo não é convertido para um destino arbitrário e o leitor mostra falha de navegação.
 
-As cinco rotas de F1 ficam em loopback e retornam modelos Pydantic que excluem `Path`: `GET /health`, `GET /search`, `POST /qa`, `GET /article/{slug:path}` e `GET /stats`. `POST /qa` não faz file-back e fixa `saved_path: null`; seu corpo é equivalente campo a campo ao JSON de `kb qa --json`. `SensitiveContentError` torna-se HTTP 409 seguro, sem confirmação interativa.
+As rotas de F1 ficam em loopback e retornam modelos Pydantic que excluem `Path`: `GET /health`, `GET /search`, `POST /qa`, `GET /article/{slug:path}`, `GET /stats` e `GET /articles` — a listagem entrou durante a F2, quando ficou claro que a home e a sidebar não tinham como montar "últimos artigos" nem "artigos deste topic" sem furar a fronteira HTTP do ADR-0019. São seis. `POST /qa` não faz file-back e fixa `saved_path: null`; seu corpo é equivalente campo a campo ao JSON de `kb qa --json`. `SensitiveContentError` torna-se HTTP 409 seguro, sem confirmação interativa.
 
 ## Decisões técnicas
 
@@ -59,7 +59,7 @@ As cinco rotas de F1 ficam em loopback e retornam modelos Pydantic que excluem `
 
 | Arquivo | Mudança planejada |
 |---|---|
-| `kb/api/app.py` | Novo: aplicação FastAPI, bind configurável porém restrito a loopback no comando de execução, registro das cinco rotas e mapeamento seguro de erros. |
+| `kb/api/app.py` | Novo: aplicação FastAPI, bind configurável porém restrito a loopback no comando de execução, registro das seis rotas e mapeamento seguro de erros. |
 | `kb/api/schemas.py` | Novo: modelos de request/response serializáveis; proíbe `Path` e fixa o schema público de QA. |
 | `kb/api/articles.py` | Novo: valida `rel_slug`, lê artigo permitido, deriva metadados e backlinks do índice carregado e devolve 400/404 sem vazar paths. |
 | `kb/search.py`, `kb/qa.py`, `kb/stats.py`, `kb/graph.py` | Integração somente por adaptadores: preservar busca ordenada, QA/grounding, agregados e índice; F0 é confirmado antes de alterar qualquer camada. |
@@ -93,7 +93,7 @@ O banco posterior é `KB_DATA_DIR/study/study.db`. O módulo abre conexões com 
 | Endpoint HTTP público | não | API e leitor aceitam somente loopback; não há exposição de rede nesta feature. |
 | I/O em DB real / migration / query não-trivial | **sim** | F3–F5 adicionam SQLite persistente, foreign keys, estados de curadoria e agenda calculada. |
 | UI com estado interativo | **sim** | Tema, busca/QA, notas, curadoria e revisão mudam estado e fluxo de teste. |
-| Output estrutural estável | **sim** | O JSON das cinco rotas, sobretudo `/qa`, é contrato público parseável e não pode vazar `Path`. |
+| Output estrutural estável | **sim** | O JSON das seis rotas, sobretudo `/qa`, é contrato público parseável e não pode vazar `Path`. |
 | Contrato HTTP entre serviços | **sim** | `study/` depende do comportamento e dos erros de `kb/api/` por HTTP. |
 | Contrato frontend↔backend | **sim** | Templates/htmx consomem respostas serializadas da API por meio do cliente do leitor. |
 | Fluxo E2E multi-página/browser real | **sim** | Leitura, links/backlinks, sidebar, tema, busca/QA e revisão atravessam páginas e interação real. |
@@ -119,7 +119,7 @@ O plano mantém o corpus fora do repositório e a wiki sob domínio exclusivo da
 
 1. F0 prova a identidade e a resolução determinística antes de qualquer URL ou payload de artigo.
 2. A fundação da API e seus schemas habilitam health, artigo, busca, QA e stats sem acoplamento do leitor ao domínio.
-3. As cinco rotas contratuais habilitam o cliente HTTP de `study/` e seus fragmentos de leitura, busca e pergunta.
+3. As seis rotas contratuais habilitam o cliente HTTP de `study/` e seus fragmentos de leitura, busca e pergunta.
 4. O renderer e o índice habilitam wikilinks/backlinks corretos; os tokens visuais e a prova em browser habilitam a validação de F2.
 5. Depois de F2 validado, SQLite habilita notas/destaques; curadoria ancorada habilita flashcards aceitos; somente então FSRS habilita revisão e calendário.
 
@@ -131,3 +131,15 @@ O plano mantém o corpus fora do repositório e a wiki sob domínio exclusivo da
 - Destaques podem se tornar órfãos após `compile` ou `heal`; a política preserva o dado, mas requer uma superfície posterior de manutenção.
 - FSRS e grounding introduzem dependências operacionais; falha de grounding mantém cartões em curadoria e falha de agendamento conserva a última agenda válida.
 - Não há linha de base numérica de uso, latência ou adesão do leitor; o plano não inventa metas para essas medições.
+
+## Divergências entre o planejado e o entregue
+
+Registradas aqui em vez de reescritas acima: o texto do plano vale como intenção da época, e o `REPORT.md` vale como estado real.
+
+| Planejado | Entregue | Por quê |
+|---|---|---|
+| Cinco rotas em F1 | Seis — `GET /articles` entrou junto | Home e sidebar precisavam de listagem; sem ela, o leitor importaria `kb` direto e furaria o ADR-0019 |
+| `study/app.py` | `study/web.py` | Nome do módulo; nenhuma mudança de arquitetura |
+| `study/state.py` como SQLite único | `study/db.py` (esquema e conexão) + `notes.py`, `highlights.py`, `cards.py`, `review.py` | Um módulo por assunto ficou mais legível que um `state.py` com quatro domínios |
+| Banco em `KB_DATA_DIR/study/study.db` | `KB_DATA_DIR/study.db` | Diretório extra sem conteúdo próprio; o teste `test_study_annotations.py` fixa que o banco fica ao lado do vault e fora de `wiki/` e `kb_state/` |
+| F3–F5 depois do MVP | Na mesma branch | O leitor foi validado e o ciclo de estudo só fecha com nota, cartão e revisão |

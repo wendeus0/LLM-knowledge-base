@@ -1,35 +1,29 @@
-# Handoff — 2026-08-02
+# Handoff — PR #66 corrigido e Direção B implementada (fases 0–7 completas)
 
-## O que existe agora
+> Substitui o handoff de 2026-08-05 escrito no meio da Fase 2. Todas as 8 fases do plano aprovado foram executadas. **Nada commitado** — é tudo working tree.
 
-**A plataforma de estudos roda.** `uvicorn kb.api.app:app --port 8000` e `uvicorn study.web:app --port 8001`. Leitor com dois temas (bege no claro, laranja no escuro), busca híbrida do kb, pergunta com ancoragem, notas, destaques, flashcards verificados por NLI e revisão por FSRS. **928 passed**, PR #66 aberto.
+## Onde está o plano
 
-**A geração saiu do bonsai local para o Codex Luna.** Shim OpenAI-compatible em `:1236` (`local-ai-lab/codex-shim.py`, launchd). `kb qa` caiu de timeout para 45s; `compile` faz 5 artigos em 39s.
-
-**Ementa de 271 títulos** em `docs/research/2026-08-02-ementa-bibliografica/`, duas trilhas, zero repetição do acervo.
-
-## Três decisões pendentes do usuário
-
-1. **Direção visual** — `DESIGN.md` oferece A, B, B2 ou C. Nada avança na aparência sem isso.
-2. **PR #66** — a fase 1 inteira da plataforma.
-3. **O que da ementa vira ingestão** — a entrega foi só a lista, por decisão dele.
-
-## O que eu errei e vale carregar
-
-**Tratei um desabafo como ordem de serviço.** Ele disse que dois dias de correção não o deixaram usar a ferramenta; eu troquei o modelo, compilei artigos e entreguei uma resposta que ninguém pediu. Ele corrigiu: queria aprimorar antes de usar. Dor descreve estado, pedido descreve resultado — e os dois pedem respostas diferentes.
-
-**O Codex me barrou três vezes na mesma feature e estava certo nas três.** `RED_BLOCKED` por SPEC ausente; a SPEC dele exigiu ADR e levantou duas clarificações reais; recusou implementar sem rota de listagem em vez de furar o ADR-0019. Delegar a ele não é só economia de token — é ter quem recusa o atalho.
+- Plano original das 8 fases: `/Users/wendeus/.claude/plans/olhe-o-id-do-distributed-bumblebee.md`
+- Plano de retomada desta sessão: `/Users/wendeus/.claude/plans/handoff-completo-salvo-em-enumerated-heron.md`
 
 ## Estado
 
-- `main` com F0 mergeada; branch `feat/026-plataforma-estudos` com a fase 1
-- Serviços: `:1234` embeddings · `:1235` NLI · `:1236` Codex Luna · `:8081` rerank (o gargalo que sobrou)
-- Nenhum P1 aberto no backlog de segurança
+- PR #66 `OPEN`, `headRefOid` = `af82323` = HEAD local. Nenhum push desde a pausa.
+- Working tree: 44 arquivos alterados, 1025 inserções, 422 remoções, mais 6 arquivos novos (`kb/security.py`, `tests/unit/test_kb_security.py`, `tests/unit/test_study_db.py`, `tests/integration/conftest.py`, `study/templates/partials/review_body.html`, `study/static/vendor/`).
+- Gate: `python -m pytest` → **963 passed**, cobertura 93% · `ruff check kb study tests` limpo.
+- Fases 0–7: todas `completed`. O detalhamento por arquivo está em `features/026-plataforma-de-estudos/REPORT.md`, seção "Rodada de correção do PR #66 (2026-08-05)".
 
-## Prompt de retomada
+## Decisões desta rodada que valem lembrar
 
-```
-Retomar o kb. A plataforma de estudos roda (PR #66). Pendente: escolher a direção
-visual no DESIGN.md, decidir o PR, e o que da ementa de 271 títulos vira ingestão.
-O rerank ainda é o gargalo — todo comando pede --no-rerank.
-```
+- **Dois tokens de acento.** `#b4551f` (a cor da imagem) é preenchimento; texto usa `--accent-ink` — `#a84d1c` no claro, `#f07a32` no escuro. O motivo é contraste WCAG AA: `#b4551f` como texto dá 4,02:1 sobre o bege e 3,63:1 sobre o escuro. Registrado em `docs/research/2026-08-01-kb-para-estudo/DESIGN.md`.
+- **Guard de rating duplicado foi removido** de `study/web.py`: sobreviveu à mutação porque `study/review.py:14` já validava o intervalo.
+- **`study.db` continua em `DATA_DIR`**, não em `kb_state/` — há teste explícito fixando isso (`test_study_annotations.py`). Entrou `/study.db*` no `.gitignore`.
+- **`Form(...)` nativo não foi adotado**: exigiria `python-multipart` como dependência de runtime para ganho cosmético.
+- Fase 4 (lote mecânico) foi delegada ao Codex via MCP com `model: gpt-5.6-luna` — `gpt-5.6-sol` e `gpt-5.2-codex` são recusados pelo conector com conta ChatGPT.
+
+## Próximo passo
+
+Commit + push + resposta aos bots do PR #66, via `git-flow-manager` — **só com pedido explícito do usuário**. Antes disso vale rodar `enforce-workflow` e `feature-scope-guard`.
+
+Evidência visual da Direção B (não versionada): `.playwright-mcp/direcao-b-claro-final.png`, `direcao-b-escuro-topo.png`, `direcao-b-toast.png`.

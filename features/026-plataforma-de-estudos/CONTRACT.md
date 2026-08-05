@@ -45,7 +45,7 @@ Premissas verificadas no ambiente ou no repositório, não assumidas.
 
 ## Gate de TDD
 
-Seis condições marcadas no PLAN — endpoint público é a única não marcada. Portanto **`test-design`**, com `test-red` como camada base (`RED_OK` segue sendo o gate canônico). Obrigatórios antes do GREEN: teste de contrato HTTP das cinco rotas, teste de estabilidade do JSON, teste de isolamento do SQLite, e teste de traversal em `/article/{slug}`.
+Seis condições marcadas no PLAN — endpoint público é a única não marcada. Portanto **`test-design`**, com `test-red` como camada base (`RED_OK` segue sendo o gate canônico). Obrigatórios antes do GREEN: teste de contrato HTTP das rotas (cinco no planejamento; `GET /articles` entrou durante a F2 e fechou em seis), teste de estabilidade do JSON, teste de isolamento do SQLite, e teste de traversal em `/article/{slug}`.
 
 ## Fora deste contrato
 

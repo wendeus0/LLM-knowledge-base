@@ -528,7 +528,7 @@ Achado mais importante desta frente, e ele invalida qualquer plano baseado em Cl
 
 | Data | Evento |
 |---|---|
-| **22/05/2026** | Anúncio oficial. *"Starting today, new sign-ups for GitHub Classroom are no longer available as we transition to partner solutions"* ([GitHub Changelog, 26/05/2026](https://github.blog/changelog/2026-05-26-github-classroom-sign-ups-are-no-longer-available/)). Rodava em modo manutenção havia 18 meses |
+| **26/05/2026** | Anúncio oficial. *"Starting today, new sign-ups for GitHub Classroom are no longer available as we transition to partner solutions"* ([GitHub Changelog, 26/05/2026](https://github.blog/changelog/2026-05-26-github-classroom-sign-ups-are-no-longer-available/)). Rodava em modo manutenção havia 18 meses |
 | **28/08/2026** | *"GitHub Classroom will fully transition to partner solutions. After that date, users won't be able to sign in to manage classrooms, and the GitHub Classroom website will be **decommissioned**."* Prazo final de exportação |
 | **04/09/2026** | Deleção final dos dados: nomes de classrooms/assignments, testes definidos fora de repos, histórico de test runs, submissões, rosters via LTI |
 
