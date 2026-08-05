@@ -4,7 +4,15 @@ description: Próximos passos priorizados
 type: project
 ---
 
-## Atualizado: 2026-07-31
+## Atualizado: 2026-08-05
+
+### Da plataforma de estudos (026), agora que ela está em `main`
+
+1. **Marcar leitura de artigo.** Destrava as duas coisas que ficaram pela metade: o progresso deixa de ser posição e vira leitura, e a trilha ganha a subtração da direção B (concluído sai de cena, o próximo passo fica em destaque). É o menor pedaço com maior efeito na tela.
+2. **Dedup dos 59 pares com cosseno ≥ 0,95.** O usuário viu os duplicados em segundos ao abrir o leitor. A causa raiz é o `manifest.json` nunca materializado — o compile não sabe que já viu a fonte. Sobe de prioridade porque agora a duplicata é visível, não medida.
+3. **Compilar direto pelo gancho de fontes.** Hoje ele lista o que existe em `raw/`, `library/` e `wiki/_sources`; falta o botão que dispara `compile_file`.
+
+### Anterior (2026-07-31)
 
 ### P0 — a mais urgente do sprint
 

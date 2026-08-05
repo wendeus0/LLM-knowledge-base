@@ -4,6 +4,14 @@ description: Frentes ativas + decisões abertas
 type: project
 ---
 
+## Frente fechada em 2026-08-05 — plataforma de estudos (026)
+
+**Status:** entregue e mergeada. PR #66 (F1–F5) e PR #67 (correção do review + Direção B), `main` @ `858c888`.
+
+O que a rodada de correção mudou de substantivo, além de fechar os apontamentos: dois bugs de concorrência com teste que os reproduz (revisão simultânea perdia o `fsrs_state`; migração simultânea estourava `duplicate column name`), a âncora de destaque passou a casar contra o texto renderizado em vez do Markdown cru, o índice de wikilinks ganhou invalidação por assinatura do corpus, e as transições de cartão viraram condicionais no `WHERE`.
+
+**Aberto na frente:** a subtração visual na trilha depende de marcação de "li este artigo", que não existe — é o próximo passo 1 do `REPORT.md`. O resto está em `PENDING_LOG.md` (sessão 2026-08-05).
+
 ## Frente ativa
 
 ### Política de corpus — map FECHADO (2026-07-30 → 2026-07-31)
