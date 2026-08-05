@@ -168,9 +168,13 @@ def _seed_dirty_vault(tmp_path, monkeypatch):
         encoding="utf-8",
     )
 
+    monkeypatch.setattr("kb.config.DATA_DIR", tmp_path)
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
     monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
+    # update_index lê o global de kb.compile, não kb.config — sem este patch o
+    # apply dos testes regenera o _index.md do vault REAL (lição de 2026-07-29).
+    monkeypatch.setattr("kb.compile.WIKI_DIR", wiki)
     return raw, wiki, archive_dir
 
 
@@ -213,16 +217,84 @@ def test_should_be_noop_when_apply_runs_on_clean_corpus(tmp_path, monkeypatch):
     assert "0" in second.output  # relatório indica zero candidatos
 
 
-def test_should_suffix_when_archive_name_conflicts(tmp_path, monkeypatch):
-    # RED: falha até 011-corpus-noise-filter ser implementada (caso de erro: conflito de nome)
-    _, _, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
-    conflicting = archive_dir / "001-prefacio.md"
+def test_should_version_existing_file_when_archive_path_conflicts(tmp_path, monkeypatch):
+    """027 RF-03: colisão no destino preserva o existente como backup versionado
+    (semântica de `move_to_archive`), nunca sobrescreve nem deleta."""
+    raw, _, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
+    conflicting = archive_dir / "books" / "livro" / "001-prefacio.md"
+    conflicting.parent.mkdir(parents=True)
     conflicting.write_text("conteudo pre-existente do archive", encoding="utf-8")
+
     result = runner.invoke(app, ["noise", "apply"])
+
     assert result.exit_code == 0
-    assert conflicting.read_text(encoding="utf-8") == "conteudo pre-existente do archive"
-    archived_texts = [p.read_text(encoding="utf-8") for p in archive_dir.rglob("*.md")]
-    assert any("Como o livro nasceu." in text for text in archived_texts)
+    textos = {p.name: p.read_text(encoding="utf-8") for p in archive_dir.rglob("*.md")}
+    assert "Como o livro nasceu." in textos["001-prefacio.md"]
+    versionados = [nome for nome in textos if nome.startswith("001-prefacio.v")]
+    assert versionados, "o arquivo pré-existente vira backup versionado"
+    assert textos[versionados[0]] == "conteudo pre-existente do archive"
+
+
+def test_should_preserve_hierarchy_and_move_summary_when_applying(tmp_path, monkeypatch):
+    """027 RF-03/RF-06: o destino espelha o path relativo e o summary vai junto."""
+    raw, wiki, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
+    aninhado = wiki / "cybersecurity" / "sumario-do-livro.md"
+    aninhado.parent.mkdir()
+    aninhado.write_text(
+        "---\ntitle: Índice remissivo\ntopic: cybersecurity\ntags: []\nsource: 20-index.md\n---\n\nSumário.\n",
+        encoding="utf-8",
+    )
+    summary = wiki / "_summaries" / "cybersecurity" / "sumario-do-livro.md"
+    summary.parent.mkdir(parents=True)
+    summary.write_text("resumo do sumário", encoding="utf-8")
+
+    result = runner.invoke(app, ["noise", "apply"])
+
+    assert result.exit_code == 0
+    assert not aninhado.exists()
+    assert not summary.exists()
+    assert (archive_dir / "cybersecurity" / "sumario-do-livro.md").is_file()
+    assert (archive_dir / "_summaries" / "cybersecurity" / "sumario-do-livro.md").is_file()
+
+
+def test_should_commit_origin_and_destination_when_apply_commits(tmp_path, monkeypatch):
+    """027 RF-04: o commit registra a deleção em wiki/ e o novo path em archive/."""
+    import subprocess
+
+    raw, wiki, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "config", "user.email", "kb@test"],
+        ["git", "config", "user.name", "kb"],
+        ["git", "add", "-A"],
+        ["git", "commit", "-qm", "seed"],
+    ):
+        subprocess.run(cmd, cwd=tmp_path, check=True)
+
+    result = runner.invoke(app, ["noise", "apply", "--commit"])
+
+    assert result.exit_code == 0
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=tmp_path, check=True, capture_output=True, text=True
+    ).stdout
+    sujos = [linha for linha in status.splitlines() if "_index.md" not in linha]
+    assert sujos == [], f"deleções e adições devem estar commitadas; sobrou: {sujos}"
+
+
+def test_should_regenerate_wiki_index_after_apply(tmp_path, monkeypatch):
+    """027 RF-05: _index.md deixa de listar o artigo arquivado."""
+    raw, wiki, _ = _seed_dirty_vault(tmp_path, monkeypatch)
+    (wiki / "artigo-vivo.md").write_text(
+        "---\ntitle: Artigo vivo\ntopic: general\ntags: []\nsource: 05-real.md\n---\n\nConteúdo.\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["noise", "apply"])
+
+    assert result.exit_code == 0
+    index = (wiki / "_index.md").read_text(encoding="utf-8")
+    assert "artigo-vivo" in index
+    assert "prefacio-livro-ruidoso" not in index
 
 
 def test_should_resume_remaining_files_when_apply_partially_done(tmp_path, monkeypatch):
@@ -280,9 +352,13 @@ def test_should_scan_wiki_article_by_frontmatter_title_without_metadata_trail(tm
         "---\ntitle: Agregados (Aggregates)\ntopic: general\ntags: []\nsource: 10-aggregates.md\n---\n\nConteúdo real.\n",
         encoding="utf-8",
     )
+    monkeypatch.setattr("kb.config.DATA_DIR", tmp_path)
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
     monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
+    # update_index lê o global de kb.compile, não kb.config — sem este patch o
+    # apply dos testes regenera o _index.md do vault REAL (lição de 2026-07-29).
+    monkeypatch.setattr("kb.compile.WIKI_DIR", wiki)
 
     result = runner.invoke(app, ["noise", "scan"])
     assert result.exit_code == 0
@@ -303,9 +379,13 @@ def test_should_never_scan_underscore_infra_files(tmp_path, monkeypatch):
     (wiki / "_pipeline").mkdir()
     (wiki / "_pipeline" / "prefacio-notas.md").write_text("---\ntitle: Prefácio\n---\n\nnota de pipeline\n", encoding="utf-8")
     (wiki / "prefacio-real.md").write_text("---\ntitle: Prefácio\ntopic: general\ntags: []\nsource: x.md\n---\n\nruído real\n", encoding="utf-8")
+    monkeypatch.setattr("kb.config.DATA_DIR", tmp_path)
     monkeypatch.setattr("kb.config.RAW_DIR", raw)
     monkeypatch.setattr("kb.config.WIKI_DIR", wiki)
     monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
+    # update_index lê o global de kb.compile, não kb.config — sem este patch o
+    # apply dos testes regenera o _index.md do vault REAL (lição de 2026-07-29).
+    monkeypatch.setattr("kb.compile.WIKI_DIR", wiki)
 
     result = runner.invoke(app, ["noise", "scan"])
     assert result.exit_code == 0

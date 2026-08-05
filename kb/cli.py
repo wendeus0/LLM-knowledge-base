@@ -1119,15 +1119,20 @@ def handoff_create(
     console.print(f"[green]Handoff criado:[/] {path}")
 
 
+def _noise_candidates():
+    from kb.config import DATA_DIR, RAW_DIR, WIKI_DIR
+    from kb.noise import scan_corpus
+
+    return scan_corpus(RAW_DIR, WIKI_DIR, library_dir=DATA_DIR / "library")
+
+
 @noise_app.command("scan")
 def noise_scan():
     """Lista candidatos a ruído já ingeridos (dry-run; não altera nada)."""
-    from kb.config import RAW_DIR, WIKI_DIR
-    from kb.noise import scan_corpus
-
-    candidates = scan_corpus(RAW_DIR, WIKI_DIR)
+    candidates = _noise_candidates()
     for candidate in candidates:
-        typer.echo(candidate.name)
+        origem = f"  [{candidate.book} · {candidate.chapter_title}]" if candidate.book else ""
+        typer.echo(f"{candidate.category}\t{candidate.path.name}{origem}")
     typer.echo(f"{len(candidates)} candidato(s) a ruído")
 
 
@@ -1139,19 +1144,44 @@ def noise_apply(
         help="Padrão: move localmente sem commit; use --commit para versionar",
     ),
 ):
-    """Move candidatos a ruído para archive/ (nunca deleta)."""
+    """Move candidatos a ruído para archive/ (nunca deleta; preserva hierarquia)."""
+    from kb.archive import move_to_archive
+    from kb.compile import update_index
     from kb.config import ARCHIVE_DIR, RAW_DIR, WIKI_DIR
-    from kb.noise import archive_candidates, scan_corpus
+    from kb.embeddings import refresh_embeddings_index
 
-    candidates = scan_corpus(RAW_DIR, WIKI_DIR)
-    moved = archive_candidates(candidates, ARCHIVE_DIR)
-    for destination in moved:
-        typer.echo(f"arquivado: {destination.name}")
+    candidates = _noise_candidates()
+    moves = []
+    for candidate in candidates:
+        base = RAW_DIR if candidate.kind == "chapter" else WIKI_DIR
+        moves.append(
+            {"source": candidate.path, "dest": ARCHIVE_DIR / candidate.path.relative_to(base)}
+        )
+        if candidate.summary is not None:
+            moves.append(
+                {
+                    "source": candidate.summary,
+                    "dest": ARCHIVE_DIR / candidate.summary.relative_to(WIKI_DIR),
+                }
+            )
+    log = move_to_archive(moves, ARCHIVE_DIR)
+    moved = [entry for entry in log if entry["action"] == "moved"]
+    for entry in log:
+        if entry["action"] == "moved":
+            typer.echo(f"arquivado: {entry['dest']}")
+        else:
+            typer.echo(f"erro: {entry['source']} — {entry.get('detail', '')}", err=True)
     typer.echo(f"{len(moved)} arquivo(s) movido(s) para archive/")
+    if moved:
+        update_index(no_commit=True)
+        refresh_embeddings_index()
     if moved and not no_commit:
         from kb.git import commit
 
-        commit("chore(corpus): archive noise chapters", [*moved])
+        paths = [Path(entry["source"]) for entry in moved]
+        paths += [Path(entry["dest"]) for entry in moved]
+        paths.append(WIKI_DIR / "_index.md")
+        commit("chore(corpus): archive noise chapters", paths)
 
 
 @index_app.command("build")
