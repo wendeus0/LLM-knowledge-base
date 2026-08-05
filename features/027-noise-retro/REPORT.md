@@ -14,11 +14,14 @@ Primeira das três features do esforço de higiene do corpus (etapas 1–3 do AD
 
 ## Validação
 
-**979 passed** (16 testes novos/reescritos de noise), ruff limpo, appeasement exit 0, cobertura 93%.
+**985 passed** (22 testes novos/reescritos de noise), ruff limpo, appeasement exit 0, cobertura 93%.
 
-**Lote real (T-003, HITL):** preflight (tree limpa, tag `pre-noise-retro-2026-08-05`, cron sem kb) → relatório de 40 candidatos book-qualified → aprovação do dono ("aplicar os 40") → apply --commit. Resultado no vault: **79 arquivos movidos** (40 artigos + 39 summaries), commit `bc5d5c9`, `_index.md` −40 entradas, índice de embeddings descartou 40 vetores sem re-embedar, wiki de 1.042 → **1.002 artigos vivos**. Tela conferida: home com 12 recentes, zero paratexto.
+**Lotes reais (T-003, HITL), dois com aprovação do dono:**
 
-Achado do lote que virou melhoria antes do apply: a primeira versão do scan atribuía o livro errado em colisão de basename (ex.: artigo do *Working Effectively* rotulado como *Observability Engineering*). Corrigido com teste antes do lote — o relatório HITL mostrava proveniência falsa.
+1. **Paratexto** — preflight (tree limpa, tag `pre-noise-retro-2026-08-05`, cron sem kb) → relatório de 40 candidatos book-qualified → aprovação → apply --commit. 79 arquivos movidos (40 artigos + 39 summaries), commit `bc5d5c9` no vault, wiki 1.042 → 1.002. Tela conferida: home sem paratexto.
+2. **Sumários/TOC** — o review do PR #69 expôs que a taxonomia não cobria table-of-contents (o glossário do DOMAIN prometia); categoria `sumario` adicionada revelou +22 artigos-TOC → relatório delta → aprovação → apply --commit. 44 arquivos movidos, commit `734604e`, tag `pre-noise-sumarios-2026-08-05`, wiki em **980 artigos vivos**.
+
+Dois achados viraram correção com teste antes de qualquer apply: (1) a primeira versão do scan atribuía o livro errado em colisão de basename — o relatório HITL mostrava proveniência falsa; (2) o review do PR #69 somou proveniência completa no merge raw×library, backup versionado dentro do commit, aviso de entrada de manifest e a categoria `sumario`.
 
 ## Riscos e dívida
 
