@@ -22,7 +22,7 @@ def test_should_render_search_results_from_the_engine_api(monkeypatch):
 
     monkeypatch.setattr("study.web.api_request", api_request)
 
-    response = TestClient(app).post("/buscar", data={"q": "dorks"})
+    response = TestClient(app, client=("127.0.0.1", 51234)).post("/buscar", data={"q": "dorks"})
 
     assert response.status_code == 200
     assert 'href="/a/cybersecurity/dorks"' in response.text
@@ -56,7 +56,7 @@ def test_should_preserve_grounding_block_when_rendering_an_answer(monkeypatch):
 
     monkeypatch.setattr("study.web.api_request", api_request)
 
-    response = TestClient(app).post("/perguntar", data={"question": "O que são dorks?"})
+    response = TestClient(app, client=("127.0.0.1", 51234)).post("/perguntar", data={"question": "O que são dorks?"})
 
     assert response.status_code == 200
     assert "São operadores de busca." in response.text

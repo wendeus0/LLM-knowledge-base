@@ -1,0 +1,18 @@
+<section id="review-body" class="review-panel">
+  <p class="eyebrow">Revisão espaçada</p>
+  <h1>Revisar</h1>
+  {% if card %}
+    <article class="review-card" x-data="{}" x-on:keydown.window="if (!['INPUT', 'TEXTAREA', 'SELECT'].includes($event.target.tagName) && !$event.target.isContentEditable && ['1', '2', '3', '4'].includes($event.key)) $refs['rating' + $event.key].click()">
+      <p class="card-state">Devido em <time datetime="{{ card.due_at }}">{{ card.due_at | data_amigavel }}</time></p>
+      <h2>{{ card.front }}</h2>
+      <details><summary>Revelar resposta</summary><p>{{ card.back }}</p></details>
+      <form hx-post="/revisar/{{ card.id }}" hx-target="#review-body" hx-swap="outerHTML">
+        <button x-ref="rating1" name="rating" value="1" type="submit">1 · De novo</button>
+        <button x-ref="rating2" name="rating" value="2" type="submit">2 · Difícil</button>
+        <button x-ref="rating3" name="rating" value="3" type="submit">3 · Bom</button>
+        <button x-ref="rating4" name="rating" value="4" type="submit">4 · Fácil</button>
+      </form>
+    </article>
+  {% else %}<p>Nenhum card está devido agora.</p>{% endif %}
+  <section class="review-calendar"><h2>Calendário</h2><p>Datas calculadas pelo FSRS.</p><ol>{% for item in queue %}<li><time datetime="{{ item.due_at }}">{{ item.due_at | data_amigavel }}</time> — {{ item.front }}</li>{% else %}<li>Sem revisões agendadas.</li>{% endfor %}</ol></section>
+</section>

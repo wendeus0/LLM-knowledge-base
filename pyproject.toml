@@ -22,10 +22,11 @@ api = [
 study = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
     "jinja2>=3.1",
     "markdown-it-py>=3.0",
     "mdit-py-plugins>=0.4",
-    "fsrs>=6.0",
+    "fsrs>=6.0,<7.0",
 ]
 web = [
     "requests>=2.31",
@@ -53,7 +54,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["kb"]
+packages = ["kb", "study"]
 
 [tool.hatch.version]
 path = "kb/__init__.py"

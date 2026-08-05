@@ -10,9 +10,11 @@ from kb.guardrails import (
     untrusted_policy,
     wrap_untrusted,
 )
-from study.db import _connect_db, _ensure_schema
+from study.db import _connect_db, _ensure_schema, card_row
 
 MAX_CARDS_PER_ARTICLE = 5
+MIN_BACK_CHARS = 40
+MAX_BACK_CHARS = 240
 
 
 def generate_cards(slug: str, content: str) -> list[dict]:
@@ -38,11 +40,14 @@ def generate_cards(slug: str, content: str) -> list[dict]:
         ],
         temperature=0.2,
     )
-    cards = []
-    for candidate in _candidates(response):
-        verdict, evidence = _ground(candidate["front"], candidate["back"], content)
-        cards.append(create_card(slug, candidate["front"], candidate["back"], verdict, evidence))
-    return cards
+    graded = [
+        (candidate["front"], candidate["back"], *_ground(candidate["back"], content))
+        for candidate in _candidates(response)
+    ]
+    return [
+        create_card(slug, front, back, verdict, evidence)
+        for front, back, verdict, evidence in graded
+    ]
 
 
 def create_card(slug: str, front: str, back: str, verdict: str, evidence: str) -> dict:
@@ -73,7 +78,7 @@ def get_card(card_id: int) -> dict | None:
             """,
             (card_id,),
         ).fetchone()
-    return _card_row(row)
+    return card_row(row)
 
 
 def cards_for_article(slug: str) -> list[dict]:
@@ -88,7 +93,7 @@ def cards_for_article(slug: str) -> list[dict]:
             """,
             (slug,),
         ).fetchall()
-    return [_card_row(row) for row in rows]
+    return [card_row(row) for row in rows]
 
 
 def accept_card(card_id: int) -> dict:
@@ -122,9 +127,9 @@ def edit_card(card_id: int, front: str, back: str, content: str) -> dict:
     card = get_card(card_id)
     if card is None:
         raise LookupError("Cartão não encontrado.")
-    if card["state"] == "descartado":
-        raise ValueError("Cartões descartados não podem ser editados.")
-    verdict, evidence = _ground(front, back, content)
+    if card["state"] in ("descartado", "aceito"):
+        raise ValueError("Cartões descartados ou já aceitos não podem ser editados.")
+    verdict, evidence = _ground(back, content)
     now = _now()
     with _connect_db() as conn:
         _ensure_schema(conn)
@@ -176,18 +181,28 @@ def _candidates(response: str) -> list[dict]:
             continue
         front = candidate.get("front")
         back = candidate.get("back")
-        if isinstance(front, str) and isinstance(back, str) and front.strip() and back.strip():
+        if (
+            isinstance(front, str)
+            and isinstance(back, str)
+            and front.strip()
+            and MIN_BACK_CHARS <= len(back.strip()) <= MAX_BACK_CHARS
+        ):
             cards.append({"front": front.strip(), "back": back.strip()})
     return cards
 
 
-def _ground(front: str, back: str, content: str) -> tuple[str, str]:
+def _ground(back: str, content: str) -> tuple[str, str]:
+    """Verifica só a resposta (`back`) — é a única parte que precisa decorrer do artigo."""
     try:
-        result = grounding.verify(f"Pergunta: {front}\nResposta: {back}", content)
+        result = grounding.verify(back, content)
     except grounding.GroundingUnavailable:
         return "degraded", ""
     if result.status != "verified":
         return result.status, ""
+    if result.unverified_due_to_limit:
+        # Parte do `back` nunca foi checada contra o artigo — não é seguro
+        # ancorar um cartão com base em verificação incompleta.
+        return "degraded", ""
     for claim in result.claims:
         if claim.verdict != "ancorada":
             return claim.verdict, claim.evidence
@@ -199,21 +214,3 @@ def _ground(front: str, back: str, content: str) -> tuple[str, str]:
 def _now() -> str:
     return datetime.now(UTC).isoformat()
 
-
-def _card_row(row) -> dict | None:
-    if row is None:
-        return None
-    return {
-        "id": row[0],
-        "slug": row[1],
-        "front": row[2],
-        "back": row[3],
-        "state": row[4],
-        "verdict": row[5],
-        "evidence": row[6],
-        "fsrs_state": row[7],
-        "due_at": row[8],
-        "created_at": row[9],
-        "updated_at": row[10],
-        "accepted_at": row[11],
-    }

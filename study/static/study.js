@@ -36,8 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   highlightButton?.addEventListener("click", () => {
     if (!highlight) return;
+    // Clicar duas vezes na mesma seleção salvava o mesmo trecho duas vezes.
+    const pending = highlight;
+    highlight = null;
+    highlightButton.disabled = true;
     htmx.ajax("POST", `/a/${highlightButton.dataset.slug}/highlights`, {
-      values: highlight,
+      values: pending,
       target: "#highlight-feedback",
       swap: "innerHTML",
     });

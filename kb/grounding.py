@@ -254,6 +254,13 @@ def verify(response: str, context: str, max_pairs: int | None = None) -> Groundi
     try:
         claim_vectors = _embed_texts(checked)
         window_vectors = _embed_texts(windows)
+    except Exception:
+        # Fronteira de rede com o serviço de embeddings: qualquer falha aqui
+        # (serviço fora, erro de conexão, resposta inesperada) degrada a
+        # verificação em vez de propagar e derrubar quem chamou verify().
+        return GroundingResult(status="degraded")
+
+    try:
         claim_verdicts = []
         for claim, claim_vector in zip(checked, claim_vectors, strict=True):
             if time.monotonic() >= prazo:

@@ -559,6 +559,21 @@ class TestBudgetLimit:
         assert resultado.status == "degraded"
         assert resultado.claims == []
 
+    def test_should_degrade_when_the_embedding_service_fails_with_a_raw_exception(
+        self, monkeypatch
+    ):
+        """`_embed_texts` propaga o que o SDK do provider levantar, não só GroundingUnavailable."""
+
+        def _boom(textos):
+            raise ConnectionError("endpoint de embeddings recusou a conexão")
+
+        monkeypatch.setattr(grounding, "_embed_texts", _boom)
+
+        resultado = grounding.verify(self._resposta(2), "Contexto com conteúdo suficiente.")
+
+        assert resultado.status == "degraded"
+        assert resultado.claims == []
+
 
 class TestVerdictEvidence:
     """A evidência mostrada precisa ser a que produziu o veredito.

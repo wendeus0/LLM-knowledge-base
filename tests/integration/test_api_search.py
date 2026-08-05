@@ -1,21 +1,9 @@
 """Contrato HTTP da busca híbrida da engine."""
 
-from importlib import import_module
 from pathlib import Path
 
-from fastapi.testclient import TestClient
 
-
-def _client():
-    try:
-        app = import_module("kb.api.app").app
-    except ModuleNotFoundError:
-        app = None
-    assert app is not None
-    return TestClient(app)
-
-
-def test_should_preserve_engine_order_and_use_rel_slugs(tmp_wiki, monkeypatch):
+def test_should_preserve_engine_order_and_use_rel_slugs(tmp_wiki, monkeypatch, api_client):
     first = tmp_wiki / "ai" / "attention.md"
     second = tmp_wiki / "cybersecurity" / "attention.md"
     for path in (first, second):
@@ -28,7 +16,7 @@ def test_should_preserve_engine_order_and_use_rel_slugs(tmp_wiki, monkeypatch):
     ]
     monkeypatch.setattr("kb.search.search", lambda *args, **kwargs: engine_results)
 
-    response = _client().get("/search", params={"q": "attention", "top_k": 2})
+    response = api_client.get("/search", params={"q": "attention", "top_k": 2})
 
     assert response.status_code == 200
     assert response.json() == {

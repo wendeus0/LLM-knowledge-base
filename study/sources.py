@@ -3,7 +3,18 @@
 import re
 from pathlib import Path
 
-_TEXT_EXTENSIONS = {".csv", ".html", ".htm", ".json", ".md", ".rst", ".txt", ".yaml", ".yml"}
+_TEXT_EXTENSIONS = {
+    ".csv",
+    ".html",
+    ".htm",
+    ".json",
+    ".markdown",
+    ".md",
+    ".rst",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
 _ORIGINS = (
     ("raw", "raw", "Compilar diretamente", "Material bruto pode virar artigo agora."),
     ("library", "library", "Importar livro antes", "EPUB e PDF exigem import-book antes."),
@@ -26,6 +37,30 @@ def _data_dir() -> Path:
     from kb import config
 
     return config.DATA_DIR
+
+
+def _diretorio(origin: str, relative_root: str, root: Path, configurado: bool) -> Path:
+    """Onde procurar cada origem.
+
+    `KB_RAW_DIR` e `KB_WIKI_DIR` podem apontar para fora de `KB_DATA_DIR`;
+    montar o caminho por concatenação ignorava a configuração e não achava nada.
+    """
+    if not configurado:
+        return root / relative_root
+    from kb import config
+
+    if origin == "raw":
+        return config.RAW_DIR
+    if origin == "sources":
+        return config.WIKI_DIR / "_sources"
+    return root / relative_root
+
+
+def _exibivel(path: Path, root: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
 
 
 def _normalized(value: str) -> str:
@@ -51,12 +86,12 @@ def buscar_fontes(termo: str, data_dir: Path | None = None) -> dict:
     root = data_dir or _data_dir()
     origins = []
     for origin, relative_root, action, message in _ORIGINS:
-        directory = root / relative_root
+        directory = _diretorio(origin, relative_root, root, data_dir is None)
         matches = []
         if directory.is_dir():
             for path in directory.rglob("*"):
                 if path.is_file() and not path.is_symlink() and _matches(path, termo):
-                    matches.append({"path": str(path.relative_to(root)), "name": path.name})
+                    matches.append({"path": _exibivel(path, root), "name": path.name})
         origins.append(
             {
                 "origin": origin,

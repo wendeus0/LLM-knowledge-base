@@ -47,7 +47,7 @@ def test_should_persist_note_changes_without_changing_the_compiled_article(tmp_p
     before = article_path.read_bytes()
     content = {"content": "# Transformers\n\nAtenção é tudo.", "missing": False}
     monkeypatch.setattr("study.web.api_request", _article_api(content))
-    client = TestClient(app)
+    client = TestClient(app, client=("127.0.0.1", 51234))
 
     created = client.post("/a/ai/transformers/note", data={"body": "Rever atenção."})
     reopened_after_create = client.get("/a/ai/transformers")
@@ -76,7 +76,7 @@ def test_should_reapply_a_highlight_when_reopening_its_article(tmp_path, monkeyp
     _isolated_vault(tmp_path, monkeypatch)
     content = {"content": "# Transformers\n\nAtenção é tudo.", "missing": False}
     monkeypatch.setattr("study.web.api_request", _article_api(content))
-    client = TestClient(app)
+    client = TestClient(app, client=("127.0.0.1", 51234))
 
     created = client.post(
         "/a/ai/transformers/highlights",
@@ -89,13 +89,54 @@ def test_should_reapply_a_highlight_when_reopening_its_article(tmp_path, monkeyp
     assert '<mark class="highlight">Atenção é tudo</mark>' in reopened.text
 
 
+def test_should_anchor_a_highlight_selected_over_formatted_text(tmp_path, monkeypatch):
+    """A seleção vem do texto renderizado; a âncora era procurada no Markdown cru."""
+    from study.web import app
+
+    _isolated_vault(tmp_path, monkeypatch)
+    content = {"content": "# Transformers\n\nAtenção **relaciona** tokens.", "missing": False}
+    monkeypatch.setattr("study.web.api_request", _article_api(content))
+    client = TestClient(app, client=("127.0.0.1", 51234))
+
+    client.post(
+        "/a/ai/transformers/highlights",
+        data={"quote": "Atenção relaciona tokens", "prefix": "", "suffix": ".", "note": ""},
+    )
+    reopened = client.get("/a/ai/transformers")
+
+    assert reopened.status_code == 200
+    assert '<mark class="highlight">' in reopened.text
+    assert "Destaques sem âncora" not in reopened.text
+
+
+def test_should_orphan_a_highlight_whose_quote_became_ambiguous(tmp_path, monkeypatch):
+    """Reancorar na primeira ocorrência é adivinhação: o destaque marcava outro trecho."""
+    from study.web import app
+
+    _isolated_vault(tmp_path, monkeypatch)
+    content = {"content": "# Transformers\n\nAtenção é tudo.", "missing": False}
+    monkeypatch.setattr("study.web.api_request", _article_api(content))
+    client = TestClient(app, client=("127.0.0.1", 51234))
+    client.post(
+        "/a/ai/transformers/highlights",
+        data={"quote": "Atenção é tudo", "prefix": "antes: ", "suffix": " depois", "note": ""},
+    )
+    content["content"] = "# Transformers\n\nAtenção é tudo. De novo: Atenção é tudo."
+
+    reopened = client.get("/a/ai/transformers")
+
+    assert reopened.status_code == 200
+    assert '<mark class="highlight">' not in reopened.text
+    assert "Destaques sem âncora" in reopened.text
+
+
 def test_should_keep_highlight_as_orphan_when_its_text_disappears(tmp_path, monkeypatch):
     from study.web import app
 
     _isolated_vault(tmp_path, monkeypatch)
     content = {"content": "# Transformers\n\nAtenção é tudo.", "missing": False}
     monkeypatch.setattr("study.web.api_request", _article_api(content))
-    client = TestClient(app)
+    client = TestClient(app, client=("127.0.0.1", 51234))
     client.post(
         "/a/ai/transformers/highlights",
         data={"quote": "Atenção é tudo", "prefix": "Transformers\n\n", "suffix": ".", "note": ""},
@@ -116,7 +157,7 @@ def test_should_keep_highlight_as_orphan_when_its_article_disappears(tmp_path, m
     _isolated_vault(tmp_path, monkeypatch)
     content = {"content": "# Transformers\n\nAtenção é tudo.", "missing": False}
     monkeypatch.setattr("study.web.api_request", _article_api(content))
-    client = TestClient(app)
+    client = TestClient(app, client=("127.0.0.1", 51234))
     client.post(
         "/a/ai/transformers/highlights",
         data={"quote": "Atenção é tudo", "prefix": "Transformers\n\n", "suffix": ".", "note": ""},
@@ -140,7 +181,7 @@ def test_should_create_the_study_database_beside_the_vault_not_corpus_directorie
     content = {"content": "# Transformers\n\nAtenção é tudo.", "missing": False}
     monkeypatch.setattr("study.web.api_request", _article_api(content))
 
-    response = TestClient(app).post("/a/ai/transformers/note", data={"body": "Nota."})
+    response = TestClient(app, client=("127.0.0.1", 51234)).post("/a/ai/transformers/note", data={"body": "Nota."})
 
     assert response.status_code == 200
     assert (data_dir / "study.db").is_file()

@@ -15,8 +15,10 @@ from kb.api.schemas import (
     SearchResponse,
 )
 from kb.guardrails import SensitiveContentError
+from kb.security import loopback_only_middleware
 
 app = FastAPI(title="kb local API")
+app.middleware("http")(loopback_only_middleware)
 
 
 @app.exception_handler(SensitiveContentError)
