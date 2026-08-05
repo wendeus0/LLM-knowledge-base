@@ -97,12 +97,22 @@ def orphaned_highlights(slug: str | None = None) -> list[dict]:
 
 
 def _locate(content: str, highlight: dict) -> int | None:
+    """Posição do destaque no texto do artigo, ou None quando perdeu a âncora.
+
+    Sem a âncora completa, só reancora quando a citação aparece uma única vez:
+    escolher a primeira de várias marca um trecho que o leitor não destacou.
+    """
     anchor = f"{highlight['prefix']}{highlight['quote']}{highlight['suffix']}"
     anchor_start = content.find(anchor)
     if anchor_start != -1:
         return anchor_start + len(highlight["prefix"])
-    quote_start = content.find(highlight["quote"])
-    return quote_start if quote_start != -1 else None
+    quote = highlight["quote"]
+    if not quote:
+        return None
+    primeira = content.find(quote)
+    if primeira == -1 or content.find(quote, primeira + 1) != -1:
+        return None
+    return primeira
 
 
 def _highlight_row(row) -> dict | None:

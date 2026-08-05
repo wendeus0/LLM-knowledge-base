@@ -5,7 +5,10 @@
   <aside class="trail" aria-label="Trilha do tópico {{ article.topic }}">
     <p class="eyebrow">Trilha</p>
     <h2>{{ article.topic }}</h2>
-    <div class="progress"><span></span></div><p class="progress-label">Progresso <strong>0%</strong></p>
+    {% set posicao = sidebar | map(attribute='slug') | list %}
+    {% set indice = posicao.index(article.slug) + 1 if article.slug in posicao else 0 %}
+    <div class="progress"><span style="width:{{ (indice / posicao | length * 100) | round if posicao else 0 }}%"></span></div>
+    <p class="progress-label">Artigo <strong>{{ indice }}</strong> de <strong>{{ posicao | length }}</strong> na trilha</p>
     <p class="module-label">Artigos</p>
     <ol>{% for item in sidebar %}<li class="{% if item.slug == article.slug %}is-current{% endif %}"><a href="/a/{{ item.slug }}"><i></i>{{ item.title }}</a></li>{% endfor %}</ol>
   </aside>

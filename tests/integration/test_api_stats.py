@@ -1,26 +1,12 @@
 """Contrato HTTP das métricas agregadas da wiki."""
 
-from importlib import import_module
-
-from fastapi.testclient import TestClient
-
-
-def _client():
-    try:
-        app = import_module("kb.api.app").app
-    except ModuleNotFoundError:
-        app = None
-    assert app is not None
-    return TestClient(app)
-
-
-def test_should_return_engine_aggregates_without_mutating_vault(tmp_wiki, monkeypatch):
+def test_should_return_engine_aggregates_without_mutating_vault(tmp_wiki, monkeypatch, api_client):
     article = tmp_wiki / "python" / "typing.md"
     article.write_text("# Typing\n", encoding="utf-8")
     monkeypatch.setattr("kb.analytics.history.DB_PATH", tmp_wiki.parent / "tracking.db")
     before = article.read_text(encoding="utf-8")
 
-    response = _client().get("/stats")
+    response = api_client.get("/stats")
 
     assert response.status_code == 200
     assert response.json()["articles"] == {"total": 1, "by_topic": {"python": 1}}

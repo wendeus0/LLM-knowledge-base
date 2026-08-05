@@ -49,6 +49,76 @@ def test_should_offer_a_source_hook_for_an_unresolved_wikilink():
     assert "buscar fontes" in html  # segue anunciado, agora em title/aria-label
 
 
+def test_should_resolve_a_wikilink_written_with_padding_spaces():
+    from study.render import render_markdown
+
+    html = render_markdown(
+        "Veja [[ OSINT ]].",
+        [{"text": " OSINT ", "targets": ["ai/osint"], "ambiguous": False}],
+    )
+
+    assert 'href="/a/ai/osint"' in html
+    assert "wikilink--missing" not in html
+
+
+def test_should_reuse_the_resolved_target_when_the_same_wikilink_repeats():
+    from study.render import render_markdown
+
+    html = render_markdown(
+        "Veja [[OSINT]] e de novo [[OSINT]].",
+        [{"text": "OSINT", "targets": ["ai/osint"], "ambiguous": False}],
+    )
+
+    assert html.count('href="/a/ai/osint"') == 2
+    assert "wikilink--missing" not in html
+
+
+def test_should_mark_a_highlight_that_contains_an_apostrophe():
+    from study.render import render_markdown
+
+    html = render_markdown(
+        "Rodou `it's fine` no terminal.",
+        [],
+        [{"quote": "it's fine", "start": 6}],
+    )
+
+    assert '<mark class="highlight">it\'s fine</mark>' in html
+
+
+def test_should_mark_a_highlight_that_spans_inline_formatting():
+    from study.render import render_markdown
+
+    html = render_markdown(
+        "Atenção **relaciona** tokens.",
+        [],
+        [{"quote": "Atenção relaciona tokens", "start": 0}],
+    )
+
+    assert html.count('<mark class="highlight">') == 3
+    assert "<strong>" in html
+    assert ">relaciona<" in html
+
+
+def test_should_mark_the_occurrence_the_anchor_points_at():
+    from study.render import render_markdown
+
+    conteudo = "alfa beta e depois alfa beta."
+    html = render_markdown(conteudo, [], [{"quote": "alfa beta", "start": 19}])
+
+    assert html.count('<mark class="highlight">') == 1
+    assert html.index("<mark") > html.index("depois")
+
+
+def test_should_expose_the_plain_text_the_reader_sees():
+    from study.render import plain_text
+
+    texto = plain_text("Atenção **relaciona** [[tokens]].", [])
+
+    assert "Atenção relaciona tokens" in texto
+    assert "**" not in texto
+    assert "[[" not in texto
+
+
 def test_should_classify_local_sources_without_reading_epub_content(tmp_path):
     from study.sources import buscar_fontes
 
@@ -90,6 +160,43 @@ def test_should_keep_an_h1_that_is_not_the_first_block():
     html = render_markdown("Introdução.\n\n# Outro título\n\nMais texto.\n", [])
 
     assert "<h1" in html
+
+
+def test_should_match_content_inside_a_long_markdown_extension(tmp_path):
+    from study.sources import buscar_fontes
+
+    (tmp_path / "raw").mkdir()
+    (tmp_path / "raw" / "anotacoes.markdown").write_text("Tema: Zero Trust", encoding="utf-8")
+
+    encontrado = buscar_fontes("zero trust", data_dir=tmp_path)
+
+    raw = next(item for item in encontrado["origins"] if item["origin"] == "raw")
+    assert [match["name"] for match in raw["matches"]] == ["anotacoes.markdown"]
+
+
+def test_should_search_the_configured_raw_and_wiki_directories(monkeypatch, tmp_path):
+    """`KB_RAW_DIR`/`KB_WIKI_DIR` podem apontar para fora de `KB_DATA_DIR`."""
+    import kb.config
+    from study.sources import buscar_fontes
+
+    raw = tmp_path / "fora" / "raw"
+    wiki = tmp_path / "fora" / "wiki"
+    (wiki / "_sources").mkdir(parents=True)
+    raw.mkdir(parents=True)
+    (raw / "guia.md").write_text("Tema: Zero Trust", encoding="utf-8")
+    (wiki / "_sources" / "refs.md").write_text("Zero Trust nas fontes", encoding="utf-8")
+    monkeypatch.setenv("KB_RAW_DIR", str(raw))
+    monkeypatch.setenv("KB_WIKI_DIR", str(wiki))
+    monkeypatch.setattr(kb.config, "DATA_DIR", tmp_path / "vault")
+    monkeypatch.setattr(kb.config, "RAW_DIR", raw)
+    monkeypatch.setattr(kb.config, "WIKI_DIR", wiki)
+
+    encontrado = buscar_fontes("zero trust")
+
+    por_origem = {item["origin"]: item for item in encontrado["origins"]}
+    assert encontrado["found"] is True
+    assert por_origem["raw"]["matches"]
+    assert por_origem["sources"]["matches"]
 
 
 def test_should_resolve_the_vault_from_kb_config_not_from_raw_env(monkeypatch, tmp_path):

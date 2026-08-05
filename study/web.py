@@ -1,16 +1,20 @@
 """Aplicação FastAPI do leitor, separada da engine por HTTP local."""
 
 import os
+import sqlite3
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import parse_qs
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from kb.guardrails import SensitiveContentError
+from kb.security import loopback_only_middleware, reject_cross_origin_writes_middleware
 from study.cards import (
     accept_card,
     cards_for_article,
@@ -26,14 +30,30 @@ from study.highlights import (
     orphaned_highlights,
 )
 from study.notes import delete_note, get_note, save_note
-from study.render import render_markdown
+from study.render import plain_text, render_markdown
 from study.review import due_card, review_card, review_queue
 from study.sources import buscar_fontes
 
 _ROOT = Path(__file__).parent
 templates = Jinja2Templates(directory=_ROOT / "templates")
+
+
+def data_amigavel(valor: str) -> str:
+    """Formata um ISO-8601 para leitura humana, preservando o que não for data."""
+    if not valor:
+        return ""
+    try:
+        momento = datetime.fromisoformat(valor)
+    except ValueError:
+        return valor
+    return momento.astimezone().strftime("%d/%m/%Y às %H:%M")
+
+
+templates.env.filters["data_amigavel"] = data_amigavel
 app = FastAPI(title="study local reader")
 app.mount("/static", StaticFiles(directory=_ROOT / "static"), name="static")
+app.middleware("http")(reject_cross_origin_writes_middleware)
+app.middleware("http")(loopback_only_middleware)
 
 
 def api_request(method: str, path: str, **kwargs) -> dict:
@@ -85,7 +105,7 @@ def article(request: Request, slug: str):
             orphan_article(slug)
         raise
     sidebar = api_request("GET", "/articles", params={"topic": data["topic"]})
-    highlights = active_highlights(slug, data["content"])
+    highlights = active_highlights(slug, plain_text(data["content"], data["wikilinks"]))
     return _render(
         request,
         "article.html",
@@ -102,8 +122,8 @@ def article(request: Request, slug: str):
 async def search(request: Request):
     """Renderiza a busca da engine como fragmento htmx."""
     query = (await _form_value(request, "q")).strip()
-    results = {"results": []} if not query else api_request(
-        "GET", "/search", params={"q": query, "top_k": 10}
+    results = {"results": []} if not query else await run_in_threadpool(
+        api_request, "GET", "/search", params={"q": query, "top_k": 10}
     )
     return _render(request, "partials/search_results.html", query=query, results=results["results"])
 
@@ -112,8 +132,8 @@ async def search(request: Request):
 async def ask(request: Request):
     """Renderiza a resposta e toda a informação de grounding da engine."""
     question = (await _form_value(request, "question")).strip()
-    answer = {"answer": "", "grounding": {"claims": []}} if not question else api_request(
-        "POST", "/qa", json={"question": question}
+    answer = {"answer": "", "grounding": {"claims": []}} if not question else await run_in_threadpool(
+        api_request, "POST", "/qa", json={"question": question}
     )
     return _render(request, "partials/answer.html", answer=answer)
 
@@ -159,10 +179,12 @@ def generate_article_cards(request: Request, slug: str):
     """Gera cartões candidatos e mostra o grounding antes de qualquer aceitação."""
     article = api_request("GET", f"/article/{slug}")
     try:
-        cards = generate_cards(slug, article["content"])
+        generate_cards(slug, article["content"])
     except SensitiveContentError as exc:
         raise HTTPException(status_code=409, detail="Conteúdo sensível requer autorização.") from exc
-    return _render(request, "partials/cards.html", slug=slug, cards=cards)
+    # O painel inteiro é substituído: mostrar só o lote novo fazia os cartões já
+    # curados sumirem da tela até o próximo reload.
+    return _render(request, "partials/cards.html", slug=slug, cards=cards_for_article(slug))
 
 
 @app.post("/cards/{card_id}/accept", response_class=HTMLResponse)
@@ -179,6 +201,7 @@ def accept_article_card(request: Request, card_id: int):
         "partials/cards.html",
         slug=card["slug"],
         cards=cards_for_article(card["slug"]),
+        conquista="Card ancorado aceito — entrou na revisão",
     )
 
 
@@ -188,7 +211,7 @@ async def edit_article_card(request: Request, card_id: int):
     card = get_card(card_id)
     if card is None:
         raise HTTPException(status_code=404, detail="Cartão não encontrado.")
-    article = api_request("GET", f"/article/{card['slug']}")
+    article = await run_in_threadpool(api_request, "GET", f"/article/{card['slug']}")
     try:
         updated = edit_card(
             card_id,
@@ -233,10 +256,11 @@ def review(request: Request):
 async def submit_review(request: Request, card_id: int):
     """Registra um dos quatro ratings FSRS e recalcula a data devida."""
     try:
-        rating = int(await _form_value(request, "rating"))
-        review_card(card_id, rating)
-    except (TypeError, ValueError) as exc:
+        review_card(card_id, int(await _form_value(request, "rating")))
+    except (TypeError, ValueError, sqlite3.IntegrityError) as exc:
         raise HTTPException(status_code=400, detail="Rating de revisão inválido.") from exc
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return _render(request, "review.html", card=due_card(), queue=review_queue())
+    # O htmx troca `#review-body` por `outerHTML`: devolver a página inteira
+    # aninhava um documento dentro do painel.
+    return _render(request, "partials/review_body.html", card=due_card(), queue=review_queue())

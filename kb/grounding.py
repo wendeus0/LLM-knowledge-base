@@ -254,6 +254,17 @@ def verify(response: str, context: str, max_pairs: int | None = None) -> Groundi
     try:
         claim_vectors = _embed_texts(checked)
         window_vectors = _embed_texts(windows)
+        # A validação mora dentro da fronteira: resposta com menos vetores que
+        # textos quebraria depois, no `zip(strict=True)`, fora do degrade.
+        if len(claim_vectors) != len(checked) or len(window_vectors) != len(windows):
+            raise ValueError("serviço de embeddings devolveu vetores em número inesperado")
+    except Exception:
+        # Fronteira de rede com o serviço de embeddings: qualquer falha aqui
+        # (serviço fora, erro de conexão, resposta inesperada) degrada a
+        # verificação em vez de propagar e derrubar quem chamou verify().
+        return GroundingResult(status="degraded")
+
+    try:
         claim_verdicts = []
         for claim, claim_vector in zip(checked, claim_vectors, strict=True):
             if time.monotonic() >= prazo:

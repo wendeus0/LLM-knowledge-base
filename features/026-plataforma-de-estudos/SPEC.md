@@ -2,7 +2,7 @@
 feature: 026-plataforma-de-estudos
 title: Plataforma de estudos web
 epic: infra
-status: ready
+status: in_progress
 created: 2026-08-02
 pr:
 ---
@@ -34,6 +34,7 @@ Disponibilizar um ciclo local e verificável de ler um artigo, registrar estudo 
 - [ ] RF-03 [P1]: Dada uma pergunta válida, quando o cliente solicitar `POST /qa`, então recebe exatamente os campos JSON de `kb qa --json`: `answer`, `grounding.status`, `grounding.checked_claims`, `grounding.unverified_due_to_limit`, `grounding.claims` e `saved_path`.
 - [ ] RF-04 [P1]: Dado um `rel_slug` válido, quando o cliente solicitar `GET /article/{slug:path}`, então recebe o artigo correspondente e metadados suficientes para apresentá-lo sem revelar o path absoluto ou o objeto `Path` interno.
 - [ ] RF-05 [P1]: Dado o corpus configurado, quando o cliente solicitar `GET /stats`, então recebe as métricas agregadas que a engine já expõe para a wiki, sem alterar o corpus ou seu estado.
+- [ ] RF-05a [P1]: Dado o corpus configurado, quando o cliente solicitar `GET /articles`, opcionalmente filtrando por `topic` e limitando a quantidade, então recebe a lista de artigos identificados por `rel_slug` com título e topic, sem derivados (`_*`) e sem expor paths. A rota entrou durante a F2: a home e a sidebar não tinham como montar "últimos artigos" nem "artigos deste topic" sem furar a fronteira HTTP do ADR-0019.
 
 ### F2 — Leitor
 
@@ -104,13 +105,14 @@ Disponibilizar um ciclo local e verificável de ler um artigo, registrar estudo 
 | `POST /qa` | Pergunta à engine; resposta com o JSON literal de `kb qa --json` descrito em RT-04. |
 | `GET /article/{slug:path}` | Artigo identificado por `rel_slug`, seu conteúdo e metadados serializáveis. |
 | `GET /stats` | Agregado de métricas já fornecido pela engine. |
+| `GET /articles` | Lista de artigos por `rel_slug`, com título e topic, para home e sidebar. |
 
 Não há mudança de contrato da CLI nesta feature. A API HTTP não oferece rota de escrita de artigo compilado.
 
 ## Testes
 
 - Unit: conversão de artigo para `rel_slug`; rejeição de traversal; serialização sem `Path`; montagem do índice único de wikilinks; resolução de duplicate stems; estado e transições de nota, destaque, cartão e revisão; bloqueio de aceitação de grounding não `ancorada`; cálculo de próxima revisão.
-- Integration: servidor em loopback com corpus e estado isolados; todas as cinco rotas; equivalência ordenada entre `/search` e a busca da engine; equivalência campo a campo de `/qa` e `kb qa --json`; HTTP 409 para conteúdo sensível; fluxo artigo → nota/destaque → cartão ancorado aceito → revisão → fila devida.
+- Integration: servidor em loopback com corpus e estado isolados; todas as seis rotas; equivalência ordenada entre `/search` e a busca da engine; equivalência campo a campo de `/qa` e `kb qa --json`; HTTP 409 para conteúdo sensível; fluxo artigo → nota/destaque → cartão ancorado aceito → revisão → fila devida.
 - Manual: abrir artigos reais em ambos os temas, alternar tema, confirmar layout sidebar/artigo, navegar wikilinks e backlinks, pesquisar, perguntar, revisar um cartão e verificar que nenhum arquivo de `wiki/` mudou.
 
 ## Dados de contexto
@@ -136,7 +138,7 @@ Não há mudança de contrato da CLI nesta feature. A API HTTP não oferece rota
 
 ## Acceptance criteria
 
-- [ ] AC-01 [P1] Dado o servidor em loopback, quando `health`, `search`, `qa`, `article` e `stats` forem chamados com entradas válidas, então cada rota retorna resposta HTTP de sucesso e nenhum payload contém objeto `Path`, path absoluto ou identificador por stem.
+- [ ] AC-01 [P1] Dado o servidor em loopback, quando `health`, `search`, `qa`, `article`, `stats` e `articles` forem chamados com entradas válidas, então cada rota retorna resposta HTTP de sucesso e nenhum payload contém objeto `Path`, path absoluto ou identificador por stem.
 - [ ] AC-02 [P1] Dada a mesma consulta e a mesma configuração de rerank, quando ela for executada pela API e pela busca da engine, então os resultados devolvidos têm a mesma ordenação por `rel_slug`.
 - [ ] AC-03 [P1] Dada uma resposta de QA, quando ela for solicitada pela API e pela CLI em JSON, então os campos e a estrutura de `answer`, `grounding` e `saved_path` são equivalentes; na API, `saved_path` é `null`.
 - [ ] AC-04 [P1] Dado conteúdo classificado como sensível, quando uma rota que usa provider for chamada sem autorização explícita, então a resposta é HTTP 409 e não há prompt interativo; dado um slug malicioso, quando `/article/{slug}` for chamado, então a resposta é HTTP 400 sem leitura fora da wiki.

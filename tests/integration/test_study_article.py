@@ -41,11 +41,14 @@ def test_should_render_article_sidebar_wikilinks_and_backlinks(tmp_path, monkeyp
 
     monkeypatch.setattr("study.web.api_request", api_request)
 
-    response = TestClient(app).get("/a/cybersecurity/dorks")
+    response = TestClient(app, client=("127.0.0.1", 51234)).get("/a/cybersecurity/dorks")
 
     assert response.status_code == 200
     assert 'href="/a/ai/osint"' in response.text
     assert 'href="/a/cybersecurity/pesquisa"' in response.text
     assert "Google Dorks" in response.text
-    assert "Progresso" in response.text
+    # A trilha diz a posição, não uma porcentagem: "0%" desanima e, sem marcação
+    # de leitura, seria número inventado (DESIGN.md, "O que muda no que já existe").
+    assert "na trilha" in response.text
+    assert "Progresso <strong>0%</strong>" not in response.text
     assert ("GET", "/articles", {"params": {"topic": "cybersecurity"}}) in calls

@@ -25,24 +25,54 @@ def _validate_slug(slug: str) -> list[str]:
     return parts
 
 
-@lru_cache(maxsize=16)
-def _build_index(wiki_dir: str) -> dict:
-    return graph.build_link_index(Path(wiki_dir))
+def _fingerprint(wiki_dir: Path) -> tuple:
+    """Assinatura do corpus: identifica mudança sem reler o conteúdo.
+
+    O `lru_cache` do índice era invalidado só por reinício do processo — artigo
+    novo, editado ou apagado não aparecia até derrubar a API. `stat` de N
+    arquivos custa ordens de grandeza menos que a leitura de N arquivos que o
+    cálculo de backlinks fazia por requisição.
+    """
+    if not wiki_dir.is_dir():
+        return ()
+    entradas = []
+    for path in wiki_dir.rglob("*.md"):
+        if path.is_symlink():
+            continue
+        try:
+            info = path.stat()
+        except OSError:
+            # O corpus é do usuário e `compile`/`heal` mexem nele em paralelo:
+            # arquivo que some entre o rglob e o stat sai da assinatura em vez
+            # de derrubar a requisição.
+            continue
+        entradas.append((path.relative_to(wiki_dir).as_posix(), info.st_mtime_ns, info.st_size))
+    return tuple(sorted(entradas))
+
+
+@lru_cache(maxsize=4)
+def _build_index(wiki_dir: str, fingerprint: tuple) -> dict:
+    """Índice de wikilinks mais o mapa de backlinks já invertido, por slug."""
+    caminho = Path(wiki_dir)
+    index = graph.build_link_index(caminho)
+    backlinks: dict[str, set[str]] = {}
+    for candidate in index["por_slug"].values():
+        origem = rel_slug(candidate, caminho)
+        try:
+            content = candidate.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            # Mesma corrida do `_fingerprint`: o arquivo pode ter sumido entre a
+            # varredura e a leitura. Ele fica fora dos backlinks desta versão do
+            # índice, que a próxima requisição já reconstrói.
+            continue
+        for link in graph.extract_wikilinks(content):
+            for alvo in graph.resolve_wikilink_all(link, caminho, index):
+                backlinks.setdefault(rel_slug(alvo, caminho), set()).add(origem)
+    return {**index, "backlinks": {slug: sorted(origens) for slug, origens in backlinks.items()}}
 
 
 def _index_for(wiki_dir: Path) -> dict:
-    return _build_index(str(wiki_dir.resolve()))
-
-
-def _backlinks(path: Path, wiki_dir: Path, index: dict) -> list[str]:
-    linked_by: list[str] = []
-    for candidate in index["por_slug"].values():
-        content = candidate.read_text(encoding="utf-8", errors="replace")
-        for link in graph.extract_wikilinks(content):
-            if path in graph.resolve_wikilink_all(link, wiki_dir, index):
-                linked_by.append(rel_slug(candidate, wiki_dir))
-                break
-    return sorted(linked_by)
+    return _build_index(str(wiki_dir), _fingerprint(wiki_dir))
 
 
 def _wikilinks(content: str, wiki_dir: Path, index: dict) -> list[dict]:
@@ -113,7 +143,9 @@ def get_article(slug: str) -> dict | None:
     """Devolve um artigo serializável, ou None quando não existe."""
     parts = _validate_slug(slug)
     wiki_dir = config.WIKI_DIR
-    candidate = wiki_dir.joinpath(*parts).with_suffix(".md")
+    # `with_suffix` trocaria a extensão pelo que vem depois do último ponto do
+    # slug: `ai/gpt-4.5` viraria `ai/gpt-4.md`.
+    candidate = wiki_dir.joinpath(*parts[:-1], f"{parts[-1]}.md")
     try:
         candidate.resolve().relative_to(wiki_dir.resolve())
     except ValueError as exc:
@@ -134,5 +166,5 @@ def get_article(slug: str) -> dict | None:
         "source": metadata.get("source") or None,
         "content": content,
         "wikilinks": _wikilinks(content, wiki_dir, index),
-        "backlinks": _backlinks(candidate, wiki_dir, index),
+        "backlinks": index["backlinks"].get(rel_slug(candidate, wiki_dir), []),
     }

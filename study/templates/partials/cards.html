@@ -1,4 +1,5 @@
 <section id="cards" class="cards-panel">
+  {% if conquista %}<p class="toast" role="status">{{ conquista }}</p>{% endif %}
   <h2>Flashcards</h2>
   <p>Todo cartão começa em curadoria e só entra na revisão quando estiver ancorado no artigo.</p>
   <button type="button" hx-post="/a/{{ slug }}/cards/generate" hx-target="#cards" hx-swap="outerHTML">Gerar cards</button>

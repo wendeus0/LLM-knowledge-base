@@ -28,11 +28,10 @@ As três micro-interações que valem copiar, todas classificadas como **orienta
 | Saída pula | `translateY(0 → -10px → 0)`, `.3s ease-out`, ao chegar conteúdo novo | Resolve "aconteceu algo e eu não vi" |
 | Toast de conquista | `scale(.8)+opacity 0 → scale(1)`, `.2s`, fixo embaixo | Confirma sem interromper |
 
-**Dois achados estruturais que contradizem o que já construímos:**
+**Três achados estruturais que contradizem o que já construímos:**
 
 1. **O Codédex não tem sidebar em lugar nenhum.** A hierarquia curso → capítulo → exercício é atravessada **por páginas** — banner, acordeão numerado, barra inferior fixa na lição — nunca por uma árvore sempre aberta. Nossa tela atual tem sidebar permanente.
 2. **O progresso dele é sempre `N de M`, nunca percentual.** Nossa barra mostra `0%`, que é a forma mais desanimadora possível de dizer "você não começou".
-
 3. **Ele tem um *objeto* de progresso** — `Level 17`, `6995 XP`, `Platinum`, `61 Badges` — uma ficha que pertence à pessoa e faz sentido mostrar a outro aluno. O Educative tem um *relatório* (calendário de atividade), que é privado por natureza. **Quando isto virar social na escola, é o objeto que precisa existir**, não o relatório.
 
 ## Os quatro eixos decididos
@@ -117,6 +116,25 @@ Independente da direção escolhida:
 2. **A sidebar recua na leitura.** Hoje ela disputa com o texto o tempo todo.
 3. **O "próximo passo" nasce por subtração, não por adição.** O mecanismo do roadmap.sh funciona porque o concluído é **visualmente removido** — tachado e cinza — e o que sobra em destaque é o próximo. Um checkmark verde *acrescentado* não produz o efeito: adiciona ruído em vez de limpar o caminho.
 
-## Decisão pendente
+## Decisão — **B**, em 2026-08-05
 
-Escolha entre **A**, **B** e **C** — ou diga o que quer de cada. A recomendação da pesquisa é **B**, pelo achado da coerência, mas a skill `visual-direction` é explícita: ela entrega opções, não elege vencedora. Depois de escolhida, construo as telas navegáveis para você comparar antes de virar código de produção.
+O dono escolheu a **direção B** (moldura lúdica, leitura sóbria) e entregou a paleta por imagem de referência, com o laranja mais fechado que o exemplo original.
+
+| Token | Claro | Escuro |
+|---|---|---|
+| `--bg` | `#efe7da` | `#191715` |
+| `--surface` | `#fffdf9` | `#28231f` |
+| `--accent` (preenchimento: botão, barra, marcador, borda) | `#b4551f` | `#b4551f` |
+| `--accent-ink` (texto: wikilink, backlink) | `#a84d1c` | `#f07a32` |
+
+**Por que dois tokens de acento em vez de um.** `#b4551f` como *texto* dá 4,02:1 sobre o bege e 3,63:1 sobre o escuro — abaixo do 4,5:1 que a WCAG AA pede para texto normal, e esta tela vai para escola. Como *preenchimento* ele passa com folga (branco sobre `#b4551f` = 4,93:1). Então a cor escolhida é a cor da marca em tudo que é área pintada, e o texto usa o tom vizinho que passa: `#a84d1c` no claro (4,57:1 sobre o bege) e `#f07a32` no escuro (6,41:1). O laranja da imagem continua sendo o que se vê; nenhuma palavra fica ilegível por causa dele.
+
+Implementado nesta rodada:
+
+- Fonte pixelada **Press Start 2P** (SIL OFL 1.1), subset latino self-hosted em `study/static/vendor/press-start-2p-latin.woff2` — **4,7 KB**, contra os ~15 KB orçados. Restrita a título de trilha e números de progresso; o corpo do texto segue em fonte de sistema.
+- Botão afunda 4px em `:active`, `0,1s`, sem mover a sombra.
+- Toast de conquista (`scale(.8)+opacity 0 → scale(1)`, `0,2s`, fixo embaixo), disparado só quando um card ancorado é aceito.
+- `0%` virou **"Artigo N de M na trilha"** — posição, que é dado real, em vez de percentual de leitura, que exigiria marcação que ainda não existe.
+- A trilha recua durante a leitura (`opacity:.62`, volta ao cheio em `:hover`/`:focus-within`).
+- Subtração no painel de cards: descartado fica tachado e cinza, aceito fica esmaecido, e o que sobra em destaque é o que ainda pede decisão. A subtração na *trilha* continua pendente — depende da marcação de "li este artigo", registrada como dívida no `REPORT.md`.
+- `prefers-reduced-motion` desliga transição de botão, animação do toast e o recuo da trilha.

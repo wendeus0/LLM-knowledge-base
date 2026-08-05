@@ -1,24 +1,13 @@
 """Estabilidade do JSON de QA na fronteira HTTP."""
 
 import json
-from importlib import import_module
 
-from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from kb import grounding
 from kb.cli import app as cli_app
 
 runner = CliRunner()
-
-
-def _client():
-    try:
-        app = import_module("kb.api.app").app
-    except ModuleNotFoundError:
-        app = None
-    assert app is not None
-    return TestClient(app)
 
 
 def _prepare(tmp_wiki, monkeypatch):
@@ -42,12 +31,12 @@ def _prepare(tmp_wiki, monkeypatch):
     monkeypatch.setattr("kb.grounding.verify", lambda *args, **kwargs: result)
 
 
-def test_should_match_kb_qa_json_field_by_field_and_never_file_back(tmp_wiki, monkeypatch):
+def test_should_match_kb_qa_json_field_by_field_and_never_file_back(tmp_wiki, monkeypatch, api_client):
     _prepare(tmp_wiki, monkeypatch)
     question = "O que faz o circuit breaker?"
 
     cli_result = runner.invoke(cli_app, ["qa", question, "--json"])
-    response = _client().post("/qa", json={"question": question})
+    response = api_client.post("/qa", json={"question": question})
 
     assert cli_result.exit_code == 0
     assert response.status_code == 200
@@ -59,13 +48,13 @@ def test_should_match_kb_qa_json_field_by_field_and_never_file_back(tmp_wiki, mo
     assert set(api_payload) == {"answer", "grounding", "saved_path"}
 
 
-def test_should_return_safe_conflict_for_sensitive_provider_content(tmp_wiki):
+def test_should_return_safe_conflict_for_sensitive_provider_content(tmp_wiki, api_client):
     article = tmp_wiki / "ai" / "sensitive.md"
     article.write_text(
         "Segredo do artigo: api_key: sk-123456789012345\n", encoding="utf-8"
     )
 
-    response = _client().post(
+    response = api_client.post(
         "/qa", json={"question": "O que diz o segredo api_key: sk-123456789012345?"}
     )
 

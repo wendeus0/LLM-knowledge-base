@@ -23,7 +23,7 @@ O ciclo que ele definiu como "utilizável" fecha nesta entrega: ler → buscar �
 
 ## Validação
 
-**928 passed** nos dois ambientes (vault real e `KB_DATA_DIR` inexistente) · `ruff` limpo · gate de test-appeasement exit 0.
+**963 passed**, cobertura 93% · `ruff check kb study tests` limpo · gate de test-appeasement exit 0. (Eram 928 na primeira entrega; a rodada de correção do PR #66, abaixo, somou 35 testes.)
 
 **Provado com serviços reais, não só com mock:**
 
@@ -47,12 +47,38 @@ O ciclo que ele definiu como "utilizável" fecha nesta entrega: ler → buscar �
 2. A SPEC que ele escreveu exigiu ADR e levantou duas clarificações reais.
 3. Recusou implementar a F2 sem rota de listagem, em vez de importar `kb` direto e furar o ADR-0019.
 
+## Rodada de correção do PR #66 (2026-08-05)
+
+Três bots de review (CodeAnt AI, CodeRabbit, cubic) levantaram ~85 apontamentos e três jobs de CI falhavam. O que mudou, por severidade:
+
+**CI e segurança.** `.github/workflows/tests.yml` instalava sem os extras `api`/`study` — os três jobs de teste caíam por falta de `fastapi`/`httpx`. Novo `kb/security.py` com dois middlewares: recusa de requisição fora do loopback (`KB_ALLOW_REMOTE_ACCESS=1` faz o opt-in explícito) e recusa de escrita cross-origin por `Origin`/`Referer`, que é o vetor real de CSRF numa app sem sessão. O `TestClient` do Starlette usa `("testclient", 50000)`, que não é loopback: os 20 call-sites viraram `TestClient(app, client=("127.0.0.1", 51234))`.
+
+**Concorrência e corretude.**
+
+| Onde | O que estava errado |
+|---|---|
+| `study/web.py` | Rotas `async` chamavam `httpx` síncrono e travavam o event loop — agora via `run_in_threadpool` |
+| `study/review.py` | `fsrs_state` era lido fora da transação que o reescrevia: duas revisões simultâneas partiam do mesmo estado e a última vencia. Agora `BEGIN IMMEDIATE` serializa leitura e escrita — reproduzido por teste antes do fix |
+| `study/db.py` | Duas conexões migrando ao mesmo tempo estouravam `duplicate column name` (reproduzido com oito conexões sobre um banco legado). WAL e `busy_timeout` também entraram |
+| `kb/grounding.py` | Falha crua do servidor de embeddings virava 500 em vez de `degraded` — o `try` só cobria `classify()` |
+| `kb/api/articles.py` | O índice de wikilinks era `lru_cache` sem invalidação: artigo novo ou editado não aparecia até reiniciar a API. Agora a chave inclui uma assinatura (`mtime`+tamanho) do corpus, e os backlinks saem de um mapa invertido calculado uma vez — antes cada requisição relia o corpus inteiro |
+| `kb/api/articles.py` | `Path.with_suffix(".md")` transformava `ai/gpt-4.5` em `ai/gpt-4.md` |
+| `study/highlights.py` + `study/render.py` | A âncora do destaque era procurada no Markdown cru, mas a seleção vem do texto renderizado: todo destaque que passasse por ênfase, link ou wikilink virava órfão. Agora casa contra o texto renderizado, marca através de nós (`**ênfase**` no meio) e reancora só quando a citação é única — antes escolhia a primeira de várias em silêncio |
+| `study/cards.py` | `edit_card` aceitava cartão já `aceito` e zerava o progresso FSRS; candidatos fora de 40–240 caracteres não eram descartados; o grounding verificava pergunta + resposta em vez da resposta |
+| Templates | Um lote novo de cards escondia os já curados; `POST /revisar/{id}` devolvia a página inteira para um `hx-swap="outerHTML"` de fragmento |
+
+**Fase 4 (mecânica, delegada ao Codex e revisada aqui).** Fixture `api_client` única em `tests/integration/conftest.py` (sete arquivos deduplicados), `card_row` único em `study/db.py`, htmx e Alpine vendorizados em `study/static/vendor/` (o Alpine estava em `3.x.x`, sem pin), data devida em formato legível, e o oráculo do teste de FSRS trocado por data literal — ele recalculava o valor esperado com o mesmo `Scheduler` da implementação.
+
+**Direção de design B.** Paleta fechada (`#efe7da`/`#fffdf9`/`#b4551f`/`#191715`), fonte pixelada de 4,7 KB restrita a título de trilha e números, botão que afunda 4px, toast de conquista que sai sozinho, `0%` substituído por "Artigo N de M na trilha", trilha que recua na leitura e `prefers-reduced-motion` cobrindo tudo isso. Detalhe e justificativa de contraste em `docs/research/2026-08-01-kb-para-estudo/DESIGN.md`.
+
+**Não feito, e por quê.** O `Form(...)` nativo do FastAPI no lugar do `_form_value` exigiria acrescentar `python-multipart` como dependência de runtime para um ganho cosmético — o parser atual está coberto por teste. A subtração visual na trilha (concluído tachado) depende da marcação de leitura, que segue como dívida abaixo.
+
 ## Riscos e dívida
 
 | Item | Estado |
 |---|---|
 | **Roadmap não existe** | Fase 2. A sidebar já nasceu no formato que ele vai preencher, mas hoje lista só os artigos do topic |
-| **Progresso mostra 0%** | Não há marcação de "li este artigo"; a barra existe sem alimentação |
+| **Progresso é posição, não leitura** | A barra mostra "Artigo N de M na trilha" porque não existe marcação de "li este artigo". Enquanto ela não existir, não há como tachar o concluído na trilha — que é o mecanismo de subtração da direção B |
 | **Wikilinks do vault apontam para conceitos sem artigo** | É o gancho funcionando como desenhado, mas significa muitos links cinza numa primeira leitura |
 | **Sem auth, só localhost** | Sair disso exige ADR próprio (gatilho registrado no 0019) |
 | **`kb_state/` sem locking** | Mitigado: a plataforma só lê. Escrever exigiria locking antes |
