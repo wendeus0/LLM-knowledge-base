@@ -7,10 +7,22 @@ nunca entram na taxonomia default (decisão do dono, 2026-07-15).
 """
 
 import json
-import shutil
 import tomllib
 import unicodedata
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass(frozen=True)
+class NoiseCandidate:
+    """Candidato a ruído com a proveniência que o relatório de revisão exige."""
+
+    path: Path
+    kind: str  # "chapter" (fonte em raw/books) | "article" (wiki)
+    category: str
+    book: str | None = None
+    chapter_title: str | None = None
+    summary: Path | None = None
 
 DEFAULT_TAXONOMY: dict[str, list[str]] = {
     "agradecimentos": ["agradecimentos", "agradecimento", "acknowledgments", "acknowledgements", "acknowledgment"],
@@ -22,6 +34,7 @@ DEFAULT_TAXONOMY: dict[str, list[str]] = {
     "sobre_o_autor": ["sobre o autor", "sobre a autora", "sobre os autores", "about the author", "about the authors"],
     "copyright": ["copyright", "pagina de copyright", "direitos autorais", "avisos legais", "ficha catalografica", "creditos"],
     "indice": ["indice remissivo", "indice alfabetico", "index"],
+    "sumario": ["sumario", "table of contents", "contents", "brief contents"],
     "capa": ["capa", "pagina de titulo", "cover", "title page", "capa do documento"],
 }
 
@@ -125,21 +138,25 @@ def _chapter_path_inside_book(metadata_path: Path, chapter_file: str) -> Path | 
     return candidate
 
 
-def scan_corpus(
-    raw_dir: Path, wiki_dir: Path, taxonomy: dict[str, list[str]] | None = None
-) -> list[Path]:
-    """Lista candidatos a ruído já ingeridos: capítulos em raw/books/ e artigos wiki derivados."""
-    if taxonomy is None:
-        taxonomy = load_taxonomy()
-    candidates: list[Path] = []
-    noisy_chapter_files: set[str] = set()
-    for metadata_path in sorted(Path(raw_dir).glob("books/*/metadata.json")):
+def _noisy_chapters(metadata_globs, taxonomy):
+    """Mapa `basename do capítulo → (livros, título, categoria)` das raízes dadas.
+
+    A colisão de basename entre livros é benigna para a CLASSIFICAÇÃO — o slug
+    embute o título (`04-preface.md` é prefácio em qualquer livro) — mas não
+    para a proveniência: sem manifest, o basename não diz de qual livro o
+    artigo veio, e o relatório precisa listar todos os candidatos.
+    """
+    noisy: dict[str, tuple[list[str], str, str]] = {}
+    chapter_paths: list[tuple[Path, str, str, str]] = []
+    for metadata_path in metadata_globs:
         try:
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        book = metadata.get("book_title") or metadata_path.parent.name
         for chapter in metadata.get("chapters", []):
-            category = classify_chapter(chapter.get("title") or "", taxonomy)
+            title = chapter.get("title") or ""
+            category = classify_chapter(title, taxonomy)
             if not category:
                 continue
             chapter_file = chapter.get("file")
@@ -148,9 +165,71 @@ def scan_corpus(
             chapter_path = _chapter_path_inside_book(metadata_path, chapter_file)
             if chapter_path is None:
                 continue
-            noisy_chapter_files.add(chapter_file)
-            if chapter_path.exists():
-                candidates.append(chapter_path)
+            if chapter_file in noisy:
+                books = noisy[chapter_file][0]
+                if book not in books:
+                    books.append(book)
+            else:
+                noisy[chapter_file] = ([book], title, category)
+            chapter_paths.append((chapter_path, category, book, title))
+    return noisy, chapter_paths
+
+
+def _summary_mirror(article: Path, wiki_dir: Path) -> Path | None:
+    candidate = Path(wiki_dir) / "_summaries" / article.relative_to(wiki_dir)
+    return candidate if candidate.exists() else None
+
+
+def scan_corpus(
+    raw_dir: Path,
+    wiki_dir: Path,
+    library_dir: Path | None = None,
+    taxonomy: dict[str, list[str]] | None = None,
+) -> list[NoiseCandidate]:
+    """Candidatos a ruído já ingeridos, com a proveniência que a revisão exige.
+
+    Duas raízes de metadados: `raw/books/*/` (fila de entrada — os capítulos-
+    ruído dela SÃO candidatos a move) e `library/*/…/` (acervo — os capítulos
+    ficam intactos e só qualificam os artigos da wiki derivados deles).
+    """
+    if taxonomy is None:
+        taxonomy = load_taxonomy()
+    candidates: list[NoiseCandidate] = []
+
+    raw_globs = sorted(Path(raw_dir).glob("books/*/metadata.json"))
+    noisy_raw, raw_chapter_paths = _noisy_chapters(raw_globs, taxonomy)
+    for chapter_path, category, book, title in raw_chapter_paths:
+        if chapter_path.exists():
+            candidates.append(
+                NoiseCandidate(
+                    path=chapter_path,
+                    kind="chapter",
+                    category=category,
+                    book=book,
+                    chapter_title=title,
+                )
+            )
+
+    noisy_library: dict[str, tuple[str, str, str]] = {}
+    if library_dir is not None:
+        library_globs = sorted(Path(library_dir).glob("*/metadata.json")) + sorted(
+            Path(library_dir).glob("*/*/metadata.json")
+        )
+        noisy_library, _ = _noisy_chapters(library_globs, taxonomy)
+
+    # Merge por basename preservando TODOS os livros: sobrescrever descartaria
+    # a proveniência da library quando raw/books tem o mesmo capítulo.
+    noisy_by_basename: dict[str, tuple[list[str], str, str]] = {}
+    for mapping in (noisy_library, noisy_raw):
+        for basename, (books, title, category) in mapping.items():
+            if basename in noisy_by_basename:
+                merged = noisy_by_basename[basename][0]
+                for book in books:
+                    if book not in merged:
+                        merged.append(book)
+            else:
+                noisy_by_basename[basename] = (list(books), title, category)
+
     if Path(wiki_dir).exists():
         from kb.frontmatter import parse as parse_frontmatter
 
@@ -162,26 +241,30 @@ def scan_corpus(
                 meta, _ = parse_frontmatter(article.read_text(encoding="utf-8"))
             except OSError:
                 continue
-            if meta.get("source") in noisy_chapter_files:
-                candidates.append(article)
+            source = meta.get("source")
+            if source in noisy_by_basename:
+                books, chapter_title, category = noisy_by_basename[source]
+                candidates.append(
+                    NoiseCandidate(
+                        path=article,
+                        kind="article",
+                        category=category,
+                        book=" | ".join(books),
+                        chapter_title=chapter_title,
+                        summary=_summary_mirror(article, Path(wiki_dir)),
+                    )
+                )
                 continue
             title = (meta.get("title") or "").strip().strip("'\"")
-            if title and classify_chapter(title, taxonomy):
-                candidates.append(article)
+            title_category = classify_chapter(title, taxonomy) if title else None
+            if title_category:
+                candidates.append(
+                    NoiseCandidate(
+                        path=article,
+                        kind="article",
+                        category=title_category,
+                        summary=_summary_mirror(article, Path(wiki_dir)),
+                    )
+                )
     return candidates
 
-
-def archive_candidates(candidates: list[Path], archive_dir: Path) -> list[Path]:
-    """Move candidatos para archive/ (nunca deleta); conflito de nome ganha sufixo."""
-    archive_dir = Path(archive_dir)
-    archive_dir.mkdir(parents=True, exist_ok=True)
-    moved: list[Path] = []
-    for source in candidates:
-        destination = archive_dir / source.name
-        suffix = 1
-        while destination.exists():
-            destination = archive_dir / f"{source.stem}-{suffix}{source.suffix}"
-            suffix += 1
-        shutil.move(str(source), str(destination))
-        moved.append(destination)
-    return moved
