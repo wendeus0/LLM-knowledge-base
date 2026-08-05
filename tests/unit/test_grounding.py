@@ -574,6 +574,22 @@ class TestBudgetLimit:
         assert resultado.status == "degraded"
         assert resultado.claims == []
 
+    def test_should_degrade_when_the_embedding_service_returns_the_wrong_vector_count(
+        self, monkeypatch
+    ):
+        """Resposta com menos vetores que textos quebrava no `zip(strict=True)`,
+        fora do bloco que degrada — `verify()` voltava a propagar exceção."""
+
+        def _curto(textos):
+            return [[1.0, 0.0]] * max(0, len(textos) - 1)
+
+        monkeypatch.setattr(grounding, "_embed_texts", _curto)
+
+        resultado = grounding.verify(self._resposta(2), "Contexto com conteúdo suficiente.")
+
+        assert resultado.status == "degraded"
+        assert resultado.claims == []
+
 
 class TestVerdictEvidence:
     """A evidência mostrada precisa ser a que produziu o veredito.

@@ -28,12 +28,20 @@ async def loopback_only_middleware(request: Request, call_next):
 
 
 def _same_origin(candidate: str, request: Request) -> bool:
-    parsed = urlsplit(candidate)
-    default_port = 443 if request.url.scheme == "https" else 80
-    candidate_port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    return parsed.hostname == request.url.hostname and candidate_port == (
-        request.url.port or default_port
-    )
+    """Compara origem declarada e origem da requisição.
+
+    Cabeçalho malformado (porta fora de faixa, IPv6 truncado) faz `.port`
+    levantar `ValueError`: sem o guard, a exceção escapava do middleware e
+    devolvia 500 no lugar da recusa.
+    """
+    try:
+        parsed = urlsplit(candidate)
+        candidate_port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        candidate_host = parsed.hostname
+        request_port = request.url.port or (443 if request.url.scheme == "https" else 80)
+    except ValueError:
+        return False
+    return candidate_host == request.url.hostname and candidate_port == request_port
 
 
 async def reject_cross_origin_writes_middleware(request: Request, call_next):

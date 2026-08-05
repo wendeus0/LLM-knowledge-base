@@ -85,6 +85,15 @@ def test_should_allow_write_when_both_origin_and_referer_are_absent():
     assert response.status_code == 200
 
 
+def test_should_reject_write_when_origin_header_is_malformed():
+    """`urlsplit(...).port` levanta `ValueError` em porta inválida ou IPv6 truncado;
+    a exceção escapava do middleware e virava 500 em vez de recusa."""
+    for origem in ("http://127.0.0.1:99999", "http://[::1", "http://exemplo:porta"):
+        response = _client().post("/mutate", headers={"origin": origem})
+
+        assert response.status_code == 403, origem
+
+
 def test_should_not_check_origin_for_get_requests():
     client = _client()
     response = client.get("/ping", headers={"origin": "https://attacker.example"})

@@ -110,15 +110,17 @@ def accept_card(card_id: int) -> dict:
     fsrs_card = Card(card_id=card_id)
     with _connect_db() as conn:
         _ensure_schema(conn)
-        conn.execute(
+        cursor = conn.execute(
             """
             UPDATE cards
             SET state = 'aceito', fsrs_state = ?, due_at = ?, accepted_at = ?, updated_at = ?
-            WHERE id = ?
+            WHERE id = ? AND state = 'curadoria' AND verdict = 'ancorada'
             """,
             (json.dumps(fsrs_card.to_dict()), fsrs_card.due.isoformat(), accepted_at, accepted_at, card_id),
         )
         conn.commit()
+    if cursor.rowcount == 0:
+        raise ValueError("Somente cartões ancorados em curadoria podem ser aceitos.")
     return get_card(card_id)
 
 
@@ -133,16 +135,21 @@ def edit_card(card_id: int, front: str, back: str, content: str) -> dict:
     now = _now()
     with _connect_db() as conn:
         _ensure_schema(conn)
-        conn.execute(
+        # O estado volta a ser conferido no próprio UPDATE: `_ground` é lento e
+        # uma aceitação concorrente na janela entre a leitura e a escrita
+        # reabria o cartão, zerando o progresso FSRS.
+        cursor = conn.execute(
             """
             UPDATE cards
             SET front = ?, back = ?, state = 'curadoria', verdict = ?, evidence = ?,
                 fsrs_state = NULL, due_at = NULL, accepted_at = NULL, updated_at = ?
-            WHERE id = ?
+            WHERE id = ? AND state = 'curadoria'
             """,
             (front, back, verdict, evidence, now, card_id),
         )
         conn.commit()
+    if cursor.rowcount == 0:
+        raise ValueError("Cartões descartados ou já aceitos não podem ser editados.")
     return get_card(card_id)
 
 
@@ -155,11 +162,13 @@ def discard_card(card_id: int) -> dict:
         raise ValueError("Somente cartões em curadoria podem ser descartados.")
     with _connect_db() as conn:
         _ensure_schema(conn)
-        conn.execute(
-            "UPDATE cards SET state = 'descartado', updated_at = ? WHERE id = ?",
+        cursor = conn.execute(
+            "UPDATE cards SET state = 'descartado', updated_at = ? WHERE id = ? AND state = 'curadoria'",
             (_now(), card_id),
         )
         conn.commit()
+    if cursor.rowcount == 0:
+        raise ValueError("Somente cartões em curadoria podem ser descartados.")
     return get_card(card_id)
 
 

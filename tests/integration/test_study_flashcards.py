@@ -196,6 +196,34 @@ def test_should_discard_candidates_whose_answer_is_outside_the_length_bounds(tmp
     assert [card["front"] for card in cards_for_article("ai/transformers")] == ["No intervalo?"]
 
 
+def test_should_not_reopen_a_card_accepted_while_the_edition_was_being_grounded(
+    tmp_path, monkeypatch
+):
+    """A checagem de estado acontecia antes do grounding, que é lento: uma
+    aceitação concorrente entrava na janela e o UPDATE reabria o cartão."""
+    from study import cards as cards_module
+    from study.cards import accept_card, create_card, edit_card, get_card
+
+    _isolated_vault(tmp_path, monkeypatch)
+    card = create_card("ai/transformers", "Pergunta", "Resposta", "ancorada", "")
+    original = cards_module._ground
+
+    def _ground_com_aceite_concorrente(back, content):
+        accept_card(card["id"])
+        return original(back, content)
+
+    monkeypatch.setattr("kb.grounding.verify", lambda *args: _verified("ancorada"))
+    monkeypatch.setattr(cards_module, "_ground", _ground_com_aceite_concorrente)
+
+    with pytest.raises(ValueError):
+        edit_card(card["id"], "Outra pergunta?", "Outra resposta.", "Atenção relaciona tokens.")
+
+    depois = get_card(card["id"])
+    assert depois["state"] == "aceito"
+    assert depois["front"] == "Pergunta"
+    assert depois["fsrs_state"] is not None
+
+
 def test_should_keep_compiled_article_unchanged_when_curating_cards(tmp_path, monkeypatch):
     from study.cards import get_card
     from study.web import app
