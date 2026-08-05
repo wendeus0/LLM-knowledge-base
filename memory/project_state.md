@@ -6,7 +6,15 @@ type: project
 
 ## Estado global
 
-Atualizada: 2026-07-31
+Atualizada: 2026-08-05
+
+- **Branch:** `main` @ `858c888` — PR #67 (`fix/pr-66-review-followup`) mergeado; CI verde em 3.11/3.12/3.13
+- **Tests:** `968 passed`, cobertura 93%. Verificado nos dois ambientes: com `KB_DATA_DIR=~/vault` e com um caminho inexistente
+- **Plataforma de estudos entregue:** feature 026 mergeada em duas etapas — PR #66 (F1–F5) e PR #67 (correção de ~85 apontamentos de três bots de review + Direção de design B). `study/` é o segundo produto local, falando com `kb/api/` por HTTP em loopback
+- **Segurança das apps locais:** `kb/security.py` recusa requisição fora do loopback (`KB_ALLOW_REMOTE_ACCESS=1` é o opt-in) e escrita cross-origin por `Origin`/`Referer` comparando a tripla (esquema, host, porta)
+- **Direção visual fechada:** direção B (moldura lúdica, leitura sóbria). `--accent` `#b4551f` para área pintada; `--accent-ink` para texto (`#a84d1c` claro, `#f07a32` escuro), porque `#b4551f` como texto reprova no WCAG AA. Fonte pixelada Press Start 2P (4,7 KB, OFL) restrita a título de trilha e números; htmx e Alpine vendorizados em `study/static/vendor/`
+
+### Estado anterior (2026-07-31)
 
 - **Branch:** `main` @ `6cd8d88` — PR #46 (`feat/compile-output-gate`) mergeado; CI verde em 3.11/3.12/3.13
 - **Sprint atual:** política de corpus — wayfinder aberto em `docs/research/2026-07-30-politica-de-corpus/`, 8 tickets, 002 e 003 resolvidos

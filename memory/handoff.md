@@ -1,30 +1,29 @@
-# Handoff — PR #66 corrigido e Direção B implementada (fases 0–7 completas)
+# Handoff — 2026-08-05
 
-> Substitui o handoff de 2026-08-05 escrito no meio da Fase 2. Todas as 8 fases do plano aprovado foram executadas. **Nada commitado** — é tudo working tree.
+Sessão fechou a feature 026 em `main`. Nada pendente de commit.
 
-## Onde está o plano
+## O que foi entregue
 
-Os dois planos ficam fora do repositório, no diretório de planos do harness
-(`~/.claude/plans/`): `olhe-o-id-do-distributed-bumblebee.md` (as 8 fases
-originais) e `handoff-completo-salvo-em-enumerated-heron.md` (a retomada).
+PR #67 mergeado (`858c888`), em cima do PR #66 que outra sessão mergeou às 10:51 do mesmo dia. Seis commits: correção dos ~85 apontamentos dos bots de review do PR #66, reconciliação dos documentos da feature, auditoria da ementa bibliográfica, a Direção de design B, e duas rodadas de resposta ao review do próprio PR #67 (CodeAnt, CodeRabbit e cubic).
 
-## Estado
+**Gate:** `968 passed`, cobertura 93%, `ruff check kb study tests` limpo, gate de test-appeasement exit 0 — verificado com `KB_DATA_DIR` apontando para o vault real e para um caminho inexistente. CI verde nos três Pythons e na `main` depois do merge.
 
-- PR #66 `OPEN`, `headRefOid` = `af82323` = HEAD local. Nenhum push desde a pausa.
-- Working tree: 44 arquivos alterados, 1025 inserções, 422 remoções, mais 6 arquivos novos (`kb/security.py`, `tests/unit/test_kb_security.py`, `tests/unit/test_study_db.py`, `tests/integration/conftest.py`, `study/templates/partials/review_body.html`, `study/static/vendor/`).
-- Gate: `python -m pytest` → **963 passed**, cobertura 93% · `ruff check kb study tests` limpo.
-- Fases 0–7: todas `completed`. O detalhamento por arquivo está em `features/026-plataforma-de-estudos/REPORT.md`, seção "Rodada de correção do PR #66 (2026-08-05)".
+## Decisões desta rodada que não estão óbvias no código
 
-## Decisões desta rodada que valem lembrar
+- **Dois tokens de acento.** `#b4551f` (a cor que o usuário escolheu por imagem) é preenchimento; texto usa `--accent-ink`. Como texto, `#b4551f` dá 4,02:1 sobre o bege e 3,63:1 sobre o escuro — abaixo do AA, e a tela vai para escola. Registrado em `docs/research/2026-08-01-kb-para-estudo/DESIGN.md`.
+- **`study.db` fica em `DATA_DIR`, não em `kb_state/`.** Há teste explícito fixando isso (`test_study_annotations.py`); o `.gitignore` ganhou `/study.db*`.
+- **Guard de rating removido de `study/web.py`** — sobreviveu à mutação porque `study/review.py:14` já validava.
+- **Fase 4 (lote mecânico) foi delegada ao Codex** via MCP com `model: gpt-5.6-luna`; `gpt-5.6-sol` e `gpt-5.2-codex` são recusados pelo conector com conta ChatGPT. Revisei e ajustei dois pontos do que ele entregou.
 
-- **Dois tokens de acento.** `#b4551f` (a cor da imagem) é preenchimento; texto usa `--accent-ink` — `#a84d1c` no claro, `#f07a32` no escuro. O motivo é contraste WCAG AA: `#b4551f` como texto dá 4,02:1 sobre o bege e 3,63:1 sobre o escuro. Registrado em `docs/research/2026-08-01-kb-para-estudo/DESIGN.md`.
-- **Guard de rating duplicado foi removido** de `study/web.py`: sobreviveu à mutação porque `study/review.py:14` já validava o intervalo.
-- **`study.db` continua em `DATA_DIR`**, não em `kb_state/` — há teste explícito fixando isso (`test_study_annotations.py`). Entrou `/study.db*` no `.gitignore`.
-- **`Form(...)` nativo não foi adotado**: exigiria `python-multipart` como dependência de runtime para ganho cosmético.
-- Fase 4 (lote mecânico) foi delegada ao Codex via MCP com `model: gpt-5.6-luna` — `gpt-5.6-sol` e `gpt-5.2-codex` são recusados pelo conector com conta ChatGPT.
+## Duas coisas para decidir na próxima sessão
 
-## Próximo passo
+1. **Branches remotas mergeadas** — `feat/026-plataforma-estudos` e `fix/pr-66-review-followup`. Não apagadas por exigirem confirmação.
+2. **Marcar leitura de artigo** é o próximo passo com maior efeito na tela: destrava o progresso real e a subtração na trilha. Ver `memory/next_steps.md`.
 
-Commit + push + resposta aos bots do PR #66, via `git-flow-manager` — **só com pedido explícito do usuário**. Antes disso vale rodar `enforce-workflow` e `feature-scope-guard`.
+## Prompt de retomada
 
-Evidência visual da Direção B (não versionada): `.playwright-mcp/direcao-b-claro-final.png`, `direcao-b-escuro-topo.png`, `direcao-b-toast.png`.
+```
+Leia memory/project_state.md e memory/next_steps.md. A feature 026 está em main
+(858c888). Quero atacar a marcação de leitura de artigo — ela destrava o
+progresso real e a subtração na trilha, pendências P2 do PENDING_LOG.
+```

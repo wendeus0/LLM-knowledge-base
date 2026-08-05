@@ -235,3 +235,29 @@ Testei traversal com `curl .../article/../../etc/passwd` e recebi 404. Quase rep
 O teste válido usa `%2E%2E`, que atravessa a normalização do cliente e chega codificado ao servidor.
 
 **Regra:** teste de segurança que depende do que o cliente envia precisa provar o que o cliente enviou. Um 404 pode significar "bloqueei" ou "a requisição nem chegou como você pensou".
+
+### Teste que passa lendo o vault real
+
+`kb.config` deriva `RAW_DIR`, `WIKI_DIR` e `STATE_DIR` de `DATA_DIR` **no import**. Monkeypatchar só `DATA_DIR` não move os derivados: o código que lê `config.RAW_DIR` continua apontando para `~/vault`. Aqui existe e o teste passa; no CI não existe e o teste falha.
+
+Aconteceu duas vezes com consequências diferentes: em 2026-07-29 a suíte **escreveu** no `kb_state` real e destruiu o índice de embeddings; em 2026-08-05 a suíte apenas **leu** o vault e deu falso verde.
+
+**Regra:** isolamento por atributo monkeypatchado é frágil por construção. Rodar a suíte com `KB_DATA_DIR` apontando para um caminho inexistente é o teste do isolamento — e é barato:
+
+```bash
+KB_DATA_DIR=/tmp/vault-inexistente python -m pytest -q
+```
+
+### `monkeypatch` de primitiva do `pathlib` vaza para onde você não espera
+
+Simular "o arquivo sumiu" patchando `Path.stat` global parece cirúrgico e não é: em Python 3.13 o `is_symlink()` consulta o stat e não engole a exceção; em 3.14 engole. O teste ficou verde local e vermelho no CI, e o defeito estava no teste.
+
+Simular a corrida onde ela acontece de verdade — fazer o `rglob` entregar um caminho já apagado — usa a semântica real do sistema de arquivos e não depende da versão.
+
+**Regra:** ao simular falha de I/O, prefira produzir a condição real a interceptar a primitiva. Toda interceptação de primitiva do `pathlib`/`os` pega mais caminhos do que o alvo.
+
+### O guard que sobrevive à mutação é duplicação, não defesa
+
+Um bot pediu validação de rating 1–4 na rota; escrevi. Ao mutar (removendo o guard), o teste continuou verde: `study/review.py` já validava desde antes. O guard não mudava comportamento nenhum.
+
+**Regra:** guard novo pedido por review passa pela mesma prova que teste novo — mutou e o teste continuou verde, ou o guard é redundante ou o teste é decorativo. Nos dois casos há o que remover.
