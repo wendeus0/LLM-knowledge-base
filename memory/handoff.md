@@ -4,8 +4,9 @@
 
 ## Onde está o plano
 
-- Plano original das 8 fases: `/Users/wendeus/.claude/plans/olhe-o-id-do-distributed-bumblebee.md`
-- Plano de retomada desta sessão: `/Users/wendeus/.claude/plans/handoff-completo-salvo-em-enumerated-heron.md`
+Os dois planos ficam fora do repositório, no diretório de planos do harness
+(`~/.claude/plans/`): `olhe-o-id-do-distributed-bumblebee.md` (as 8 fases
+originais) e `handoff-completo-salvo-em-enumerated-heron.md` (a retomada).
 
 ## Estado
 

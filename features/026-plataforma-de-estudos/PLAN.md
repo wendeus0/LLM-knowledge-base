@@ -11,7 +11,7 @@
 |---|---|
 | Linguagem/versão | Python 3.11+ |
 | Dependências principais | `fastapi`, `uvicorn`, `jinja2`, `markdown-it-py`, `mdit-py-plugins` e `fsrs`; os extras `api` e `study` já estão declarados em `pyproject.toml`. |
-| Storage | Corpus permanece em `KB_DATA_DIR/wiki/`; estado da plataforma usa `KB_DATA_DIR/study/study.db`, separado de `kb_state/` e da wiki. |
+| Storage | Corpus permanece em `KB_DATA_DIR/wiki/`; estado da plataforma usa um SQLite separado de `kb_state/` e da wiki — planejado em `KB_DATA_DIR/study/study.db`, entregue em `KB_DATA_DIR/study.db` (ver Divergências). |
 | Estratégia de testes | `test-design`, com `test-red` como base, fixtures de wiki/estado integralmente isoladas, HTTP via `TestClient` e prova renderizada no browser para a UI. |
 | Plataforma alvo | Dois serviços locais em loopback: API FastAPI e leitor Jinja2/htmx/Alpine. |
 | Tipo de projeto | Monorepo: `kb/` continua engine headless; `study/` é o segundo produto local. |
@@ -35,7 +35,7 @@ kb/api/ (FastAPI, schemas e adaptadores)
   ├─► kb/stats.py        métricas agregadas
   └─► KB_DATA_DIR/wiki/  somente leitura
 
-F3–F5 (posterior): study/state.py ─► KB_DATA_DIR/study/study.db
+F3–F5 (planejado): study/state.py ─► KB_DATA_DIR/study/study.db  [entregue: study/db.py ─► KB_DATA_DIR/study.db]
 ```
 
 F0 é um gate, não uma segunda identidade: `rel_slug` é o caminho relativo a `wiki/`, sem extensão, em URLs, JSON, templates e SQLite. O índice de `kb.graph.build_link_index()` é construído uma vez por carga/atualização controlada. Um wikilink qualificado resolve diretamente; um link com stem ambíguo não é convertido para um destino arbitrário e o leitor mostra falha de navegação.
@@ -63,7 +63,7 @@ As rotas de F1 ficam em loopback e retornam modelos Pydantic que excluem `Path`:
 | `kb/api/schemas.py` | Novo: modelos de request/response serializáveis; proíbe `Path` e fixa o schema público de QA. |
 | `kb/api/articles.py` | Novo: valida `rel_slug`, lê artigo permitido, deriva metadados e backlinks do índice carregado e devolve 400/404 sem vazar paths. |
 | `kb/search.py`, `kb/qa.py`, `kb/stats.py`, `kb/graph.py` | Integração somente por adaptadores: preservar busca ordenada, QA/grounding, agregados e índice; F0 é confirmado antes de alterar qualquer camada. |
-| `kb/config.py` | Novo diretório de estado `study/` sob `KB_DATA_DIR` para F3–F5, sem reutilizar `STATE_DIR`. |
+| `kb/config.py` | Planejava um diretório `study/` sob `KB_DATA_DIR` para F3–F5, sem reutilizar `STATE_DIR`. Não foi criado: o banco ficou em `KB_DATA_DIR/study.db` (ver Divergências). |
 | `study/app.py` | Novo: aplicação do leitor, rotas de páginas e cliente HTTP para `kb/api/`, sem importar módulos de domínio do `kb`. |
 | `study/render.py` | Novo: Markdown, transformação de wikilinks para URLs por `rel_slug`, backlinks e tratamento visível de link ambíguo/inconsistente. |
 | `study/templates/` | Novo: layout, artigo, fragmentos htmx de busca/QA e sidebar de trilha. |
@@ -75,7 +75,7 @@ As rotas de F1 ficam em loopback e retornam modelos Pydantic que excluem `Path`:
 
 ## Schema SQLite da plataforma
 
-O banco posterior é `KB_DATA_DIR/study/study.db`. O módulo abre conexões com `sqlite3`, habilita chaves estrangeiras por conexão, chama `_ensure_schema(conn)` antes de operar e faz `commit()` explícito, no padrão de `kb/core/tracking.py`. Não há ORM, tabela de versão de migration ou escrita nos JSONs de `kb_state/`.
+O banco posterior era planejado em `KB_DATA_DIR/study/study.db`; foi entregue em `KB_DATA_DIR/study.db` (ver Divergências). O módulo abre conexões com `sqlite3`, habilita chaves estrangeiras por conexão, chama `_ensure_schema(conn)` antes de operar e faz `commit()` explícito, no padrão de `kb/core/tracking.py`. Não há ORM, tabela de versão de migration ou escrita nos JSONs de `kb_state/`.
 
 | Tabela | Colunas e invariantes |
 |---|---|

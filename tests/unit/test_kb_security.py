@@ -85,6 +85,15 @@ def test_should_allow_write_when_both_origin_and_referer_are_absent():
     assert response.status_code == 200
 
 
+def test_should_reject_write_when_origin_scheme_differs_from_the_request():
+    """Origem é (esquema, host, porta): comparar só host e porta deixava
+    `https://host:80` passar por uma requisição `http://host:80`."""
+    client = _client()
+    response = client.post("/mutate", headers={"origin": "https://testserver:80"})
+
+    assert response.status_code == 403
+
+
 def test_should_reject_write_when_origin_header_is_malformed():
     """`urlsplit(...).port` levanta `ValueError` em porta inválida ou IPv6 truncado;
     a exceção escapava do middleware e virava 500 em vez de recusa."""

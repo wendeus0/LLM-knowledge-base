@@ -41,7 +41,13 @@ def _same_origin(candidate: str, request: Request) -> bool:
         request_port = request.url.port or (443 if request.url.scheme == "https" else 80)
     except ValueError:
         return False
-    return candidate_host == request.url.hostname and candidate_port == request_port
+    # Origem é a tripla (esquema, host, porta): comparar só host e porta deixa
+    # `https://host:80` passar por uma requisição `http://host:80`.
+    return (
+        parsed.scheme == request.url.scheme
+        and candidate_host == request.url.hostname
+        and candidate_port == request_port
+    )
 
 
 async def reject_cross_origin_writes_middleware(request: Request, call_next):

@@ -39,7 +39,13 @@ def _fingerprint(wiki_dir: Path) -> tuple:
     for path in wiki_dir.rglob("*.md"):
         if path.is_symlink():
             continue
-        info = path.stat()
+        try:
+            info = path.stat()
+        except OSError:
+            # O corpus é do usuário e `compile`/`heal` mexem nele em paralelo:
+            # arquivo que some entre o rglob e o stat sai da assinatura em vez
+            # de derrubar a requisição.
+            continue
         entradas.append((path.relative_to(wiki_dir).as_posix(), info.st_mtime_ns, info.st_size))
     return tuple(sorted(entradas))
 
@@ -52,7 +58,13 @@ def _build_index(wiki_dir: str, fingerprint: tuple) -> dict:
     backlinks: dict[str, set[str]] = {}
     for candidate in index["por_slug"].values():
         origem = rel_slug(candidate, caminho)
-        content = candidate.read_text(encoding="utf-8", errors="replace")
+        try:
+            content = candidate.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            # Mesma corrida do `_fingerprint`: o arquivo pode ter sumido entre a
+            # varredura e a leitura. Ele fica fora dos backlinks desta versão do
+            # índice, que a próxima requisição já reconstrói.
+            continue
         for link in graph.extract_wikilinks(content):
             for alvo in graph.resolve_wikilink_all(link, caminho, index):
                 backlinks.setdefault(rel_slug(alvo, caminho), set()).add(origem)

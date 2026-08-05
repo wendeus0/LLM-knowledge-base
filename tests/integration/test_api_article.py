@@ -70,6 +70,38 @@ def test_should_reflect_a_new_backlink_without_restarting_the_process(tmp_wiki, 
     assert depois == ["ai/attention"]
 
 
+def test_should_serve_the_article_when_a_file_vanishes_while_the_corpus_is_scanned(
+    tmp_wiki, monkeypatch, api_client
+):
+    """`compile`/`heal` mexem no corpus em paralelo: um arquivo que some entre o
+    rglob e o stat não pode derrubar a requisição."""
+    (tmp_wiki / "ai" / "transformers.md").write_text(
+        "---\ntitle: Transformers\ntopic: ai\n---\nConteúdo.\n", encoding="utf-8"
+    )
+    (tmp_wiki / "ai" / "efemero.md").write_text("---\ntitle: Efêmero\n---\ntexto\n", encoding="utf-8")
+    original = Path.stat
+
+    original_read = Path.read_text
+
+    def _stat_com_arquivo_sumindo(self, *args, **kwargs):
+        if self.name == "efemero.md":
+            raise FileNotFoundError(self)
+        return original(self, *args, **kwargs)
+
+    def _read_com_arquivo_sumindo(self, *args, **kwargs):
+        if self.name == "efemero.md":
+            raise FileNotFoundError(self)
+        return original_read(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", _stat_com_arquivo_sumindo)
+    monkeypatch.setattr(Path, "read_text", _read_com_arquivo_sumindo)
+
+    response = api_client.get("/article/ai/transformers")
+
+    assert response.status_code == 200
+    assert response.json()["slug"] == "ai/transformers"
+
+
 def test_should_not_reread_the_corpus_on_every_article_request(tmp_wiki, monkeypatch, api_client):
     for indice in range(12):
         (tmp_wiki / "ai" / f"artigo-{indice}.md").write_text(
