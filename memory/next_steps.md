@@ -58,3 +58,12 @@ type: project
 3. **F-06 e F-08** (P2) — pisos de dependência com CVE e symlink na wiki lido para o provider.
 4. **Espalhar o gate de appeasement** para outros repos Python (1 arquivo + 1 linha de CI).
 5. **Threading de `--allow-sensitive`** até embeddings/rerank (hoje opt-in por `KB_EGRESS_ALLOW_SENSITIVE`).
+
+## 2026-08-03 em diante
+
+1. **Escolher a direção visual** — bloqueia qualquer trabalho de aparência.
+2. **Decidir o PR #66.**
+3. **Ingestão da ementa** — separar o `aberto` e baixável, rodar `import-book`.
+4. **Dedup dos 59 pares** — a plataforma tornou visível o que exigia medição por cosseno.
+5. **Rerank** — é o único gargalo que sobrou; todo comando ainda pede `--no-rerank`.
+6. **Progresso de leitura** — a barra da sidebar mostra 0% porque nada a alimenta.

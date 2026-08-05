@@ -1,0 +1,1 @@
+{% if query %}<section class="result-panel"><h2>Resultados para “{{ query }}”</h2>{% for item in results %}<a href="/a/{{ item.slug }}"><strong>{{ item.title }}</strong><span>{{ item.topic }}</span><p>{{ item.snippet }}</p></a>{% else %}<p>Nenhum artigo encontrado.</p>{% endfor %}</section>{% endif %}

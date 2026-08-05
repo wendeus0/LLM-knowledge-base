@@ -120,3 +120,10 @@ kb/
 **Novo no harness:** skill `test-appeasement-audit` (detector AST + gate de CI com ratchet), aplicada ao kb — baseline vazio.
 **Novo no kb:** `scripts/appeasement_report.py` no CI, `docs/failures/test-appeasement-mock-shaped-production.md`.
 **Suíte:** 869 passed. **PRs abertos:** nenhum.
+
+## 2026-08-02
+
+**Segundo produto nasceu:** plataforma de estudos em `study/`, sobre `kb/api/`. ADR-0019 fixa a fronteira — corpus é território da engine, estado de estudo é território da plataforma, `rel_slug` é a identidade pública.
+**Geração migrou** do bonsai local para o Codex Luna via shim em `:1236`.
+**Ementa de 271 títulos** levantada por sete agentes Luna, duas trilhas, zero repetição.
+**Suíte:** 928 passed. **PR aberto:** #66.

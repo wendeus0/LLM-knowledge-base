@@ -1,0 +1,8 @@
+<section id="note-panel" class="note-panel">
+  <h2>Nota</h2>
+  <form hx-post="/a/{{ slug }}/note" hx-target="#note-panel" hx-swap="outerHTML">
+    <textarea id="note" name="body" aria-label="Nota do artigo" placeholder="Registre sua nota aqui.">{{ note.body if note else '' }}</textarea>
+    <button type="submit">Salvar nota</button>
+  </form>
+  {% if note %}<button type="button" class="secondary-button" hx-delete="/a/{{ slug }}/note" hx-target="#note-panel" hx-swap="outerHTML">Remover nota</button>{% endif %}
+</section>

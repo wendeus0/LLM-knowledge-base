@@ -151,3 +151,11 @@ Juiz LLM verbalizando confiança foi medido e reprovado (83% de falso alarme) �
 - **Política de corpus** — `WAYFINDER_CLEAR` desde a manhã; ADR-0018 em `main`.
 
 Nenhuma feature ativa. Próxima frente natural: ticket 006 (decisão de produto, exige grilling).
+
+## 2026-08-02
+
+**026-plataforma-de-estudos** — fase 1 entregue (F1 a F5), PR #66 aberto. O ciclo ler→buscar→perguntar→gerar card→verificar→revisar fecha.
+
+**Pendente de decisão do usuário:** direção visual (A/B/B2/C no `DESIGN.md`), o merge do #66, e o que da ementa vira ingestão.
+
+**Fase 2 declarada:** roadmap/trilha, progresso de leitura (a barra existe sem dado que a alimente), e o botão que dispara `compile` a partir do gancho de fontes.

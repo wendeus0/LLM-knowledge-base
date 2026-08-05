@@ -211,3 +211,27 @@ Validar o host da URL não cobre nenhum dos dois, porque o desvio acontece no **
 Um edit programático inseriu uma chamada de gate **dentro da docstring** da função: inerte, invisível ao `pytest` e ao `ruff`. Outro produziu `base_url=x ** {...}` por falta de vírgula — sintaxe válida (operador de potência), erro só em runtime, num caminho que a suíte não cobre.
 
 **Regra:** depois de edit programático em código de produção, leia o trecho alterado e execute o caminho. Verde é ausência de evidência de falha, não evidência de execução.
+
+### Dor não é pedido
+
+O usuário desabafou que dois dias de correção não o deixaram usar a ferramenta. Eu ouvi ordem de serviço, troquei o modelo, compilei artigos e entreguei uma resposta de QA. Ele corrigiu: queria **aprimorar a ferramenta antes de usá-la**, e o desabafo era contexto, não escopo.
+
+O sinal que eu ignorei: ele descreveu um estado ("estou há dois dias..."), não um resultado desejado ("faça X"). Estado é convite a diagnosticar junto; resultado é convite a executar.
+
+**Regra:** quando a mensagem descreve frustração em vez de pedir entrega, a resposta é devolver o enquadramento — não produzir. Uma pergunta custa segundos; a entrega não pedida custa a confiança de que eu escuto.
+
+### Um plano aprovado não substitui o gate do repositório
+
+Delegue implementação apontando para um plano em `~/.claude/plans/` como contrato. O executor recusou com `RED_BLOCKED`: a regra 2 do `AGENTS.md` exige `SPEC_VALID` **no repositório**, e plano externo não é isso.
+
+Ele estava certo, e a SPEC que escreveu depois levantou três coisas que eu tinha pulado — ADR necessário, duas clarificações reais, e a recomendação de fatiar a entrega. Bloqueou mais duas vezes na mesma feature, sempre com razão.
+
+**Regra:** o gate mora onde o trabalho mora. Artefato fora do repositório informa, não autoriza.
+
+### Cliente HTTP normaliza a URL antes de enviar
+
+Testei traversal com `curl .../article/../../etc/passwd` e recebi 404. Quase reportei como desvio da spec, que pede 400. O curl **normaliza `../` antes de enviar** — o servidor recebeu `/article/etc/passwd`, que simplesmente não existe.
+
+O teste válido usa `%2E%2E`, que atravessa a normalização do cliente e chega codificado ao servidor.
+
+**Regra:** teste de segurança que depende do que o cliente envia precisa provar o que o cliente enviou. Um 404 pode significar "bloqueei" ou "a requisição nem chegou como você pensou".
