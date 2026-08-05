@@ -44,14 +44,19 @@ def _diretorio(origin: str, relative_root: str, root: Path, configurado: bool) -
 
     `KB_RAW_DIR` e `KB_WIKI_DIR` podem apontar para fora de `KB_DATA_DIR`;
     montar o caminho por concatenação ignorava a configuração e não achava nada.
+    O gatilho é a variável estar declarada, não o valor resolvido: `config`
+    deriva `RAW_DIR`/`WIKI_DIR` de `DATA_DIR` no import, então comparar valores
+    faria a busca ignorar um `DATA_DIR` trocado depois.
     """
     if not configurado:
         return root / relative_root
+    import os
+
     from kb import config
 
-    if origin == "raw":
+    if origin == "raw" and os.getenv("KB_RAW_DIR"):
         return config.RAW_DIR
-    if origin == "sources":
+    if origin == "sources" and os.getenv("KB_WIKI_DIR"):
         return config.WIKI_DIR / "_sources"
     return root / relative_root
 

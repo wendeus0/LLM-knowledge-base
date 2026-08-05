@@ -185,6 +185,8 @@ def test_should_search_the_configured_raw_and_wiki_directories(monkeypatch, tmp_
     raw.mkdir(parents=True)
     (raw / "guia.md").write_text("Tema: Zero Trust", encoding="utf-8")
     (wiki / "_sources" / "refs.md").write_text("Zero Trust nas fontes", encoding="utf-8")
+    monkeypatch.setenv("KB_RAW_DIR", str(raw))
+    monkeypatch.setenv("KB_WIKI_DIR", str(wiki))
     monkeypatch.setattr(kb.config, "DATA_DIR", tmp_path / "vault")
     monkeypatch.setattr(kb.config, "RAW_DIR", raw)
     monkeypatch.setattr(kb.config, "WIKI_DIR", wiki)
