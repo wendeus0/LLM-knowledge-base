@@ -2,6 +2,9 @@ import importlib
 
 
 def _reload_config(monkeypatch, raw_topics=None):
+    # O reload re-executa load_dotenv(): sem este no-op, o .env local do
+    # desenvolvedor (ex.: KB_TOPICS da taxonomia real) vazaria para o teste.
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: False)
     if raw_topics is None:
         monkeypatch.delenv("KB_TOPICS", raising=False)
     else:

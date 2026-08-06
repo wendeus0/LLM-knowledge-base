@@ -127,3 +127,142 @@ def test_should_upsert_knowledge_by_normalized_source(tmp_raw_wiki):
     entries = load_knowledge()
     assert len(entries) == 1
     assert entries[0]["article"] == "wiki/new.md"
+
+
+class TestManifestV2:
+    """028 B1: entradas ganham proveniência auditável e paths relativos, sem
+    quebrar entradas legadas nem o guard de recompile."""
+
+    def test_should_write_backfill_entry_with_relative_paths_and_provenance(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        import kb.config
+        from kb.state import load_manifest, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        data_dir = raw.parent
+        monkeypatch.setattr(kb.config, "DATA_DIR", data_dir)
+        library = data_dir / "library" / "software" / "livro-a"
+        library.mkdir(parents=True)
+        (library / "05-real.md").write_text("capítulo", encoding="utf-8")
+        artigo = wiki / "ai" / "artigo.md"
+        artigo.write_text("---\ntitle: A\n---\ncorpo", encoding="utf-8")
+
+        entry = record_backfill(
+            source_path=library / "05-real.md",
+            article_path=artigo,
+            book="livro-a",
+            provenance="backfill-basename",
+        )
+
+        assert entry["source"] == "library/software/livro-a/05-real.md"
+        assert entry["article"] == "ai/artigo.md"
+        assert entry["book"] == "livro-a"
+        assert entry["provenance"] == "backfill-basename"
+        assert entry["status"] == "compiled"
+        assert load_manifest()[-1] == entry
+
+    def test_should_treat_legacy_entry_without_provenance_as_compile(self, tmp_raw_wiki):
+        from kb.state import entry_provenance, load_manifest, save_manifest
+
+        save_manifest([{"source": "a.md", "kind": "raw", "status": "compiled"}])
+
+        assert entry_provenance(load_manifest()[0]) == "compile"
+
+    def test_should_mark_entry_archived_when_its_article_is_archived(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        import kb.config
+        from kb.state import load_manifest, mark_archived, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        monkeypatch.setattr(kb.config, "DATA_DIR", raw.parent)
+        artigo = wiki / "duplicata.md"
+        artigo.write_text("---\ntitle: D\n---\ncorpo", encoding="utf-8")
+        record_backfill(
+            source_path=raw / "x.md", article_path=artigo, book=None, provenance="backfill-content"
+        )
+
+        alterados = mark_archived(artigo)
+
+        assert alterados == 1
+        entry = load_manifest()[-1]
+        assert entry["status"] == "archived"
+
+    def test_should_find_compiled_entry_for_backfilled_library_source(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        """O guard de recompile precisa enxergar a entrada nova mesmo com a
+        fonte fora de RAW_DIR."""
+        import kb.config
+        from kb.state import find_compiled_entry, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        data_dir = raw.parent
+        monkeypatch.setattr(kb.config, "DATA_DIR", data_dir)
+        library = data_dir / "library" / "ai" / "livro-b"
+        library.mkdir(parents=True)
+        fonte = library / "07-cap.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        artigo = wiki / "cap.md"
+        artigo.write_text("---\ntitle: C\n---\ncorpo", encoding="utf-8")
+        record_backfill(source_path=fonte, article_path=artigo, book="livro-b", provenance="backfill-basename")
+
+        assert find_compiled_entry(fonte) is not None
+
+    def test_should_update_article_path_when_article_moves(self, tmp_raw_wiki, monkeypatch):
+        import kb.config
+        from kb.state import load_manifest, record_backfill, update_article_path
+
+        raw, wiki = tmp_raw_wiki
+        monkeypatch.setattr(kb.config, "DATA_DIR", raw.parent)
+        artigo = wiki / "antigo.md"
+        artigo.write_text("---\ntitle: A\n---\ncorpo", encoding="utf-8")
+        record_backfill(source_path=raw / "y.md", article_path=artigo, book=None, provenance="backfill-content")
+
+        alterados = update_article_path(artigo, wiki / "_chapters" / "livro" / "antigo.md")
+
+        assert alterados == 1
+        assert load_manifest()[-1]["article"] == "_chapters/livro/antigo.md"
+
+
+class TestManifestV2Review:
+    """Review do PR #70: upsert por fonte não pode perder a relação
+    artigo→fonte, e entrada arquivada não pode guiar recompile."""
+
+    def test_should_keep_one_entry_per_article_when_two_articles_share_a_source(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        import kb.config
+        from kb.state import load_manifest, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        monkeypatch.setattr(kb.config, "DATA_DIR", raw.parent)
+        fonte = raw / "07-cap.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        for nome in ("gemeo-a.md", "gemeo-b.md"):
+            (wiki / nome).write_text("---\ntitle: G\n---\ncorpo", encoding="utf-8")
+            record_backfill(source_path=fonte, article_path=wiki / nome, book=None, provenance="backfill-basename")
+
+        artigos = {e["article"] for e in load_manifest() if e.get("source") == "07-cap.md"}
+
+        assert artigos == {"gemeo-a.md", "gemeo-b.md"}
+
+    def test_should_not_offer_archived_entry_to_the_recompile_guard(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        import kb.config
+        from kb.state import find_compiled_entry, mark_archived, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        monkeypatch.setattr(kb.config, "DATA_DIR", raw.parent)
+        fonte = raw / "08-cap.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        artigo = wiki / "arquivavel.md"
+        artigo.write_text("---\ntitle: A\n---\ncorpo", encoding="utf-8")
+        record_backfill(source_path=fonte, article_path=artigo, book=None, provenance="backfill-basename")
+        assert find_compiled_entry(fonte) is not None
+
+        mark_archived(artigo)
+
+        assert find_compiled_entry(fonte) is None

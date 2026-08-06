@@ -371,6 +371,19 @@ def test_should_regenerate_wiki_index_after_apply(tmp_path, monkeypatch):
     assert "prefacio-livro-ruidoso" not in index
 
 
+def test_should_exit_nonzero_when_a_move_fails(tmp_path, monkeypatch):
+    """Review PR #70 (CodeRabbit): falha parcial de arquivamento devolvia 0 —
+    invisível para script e para o commit por cima."""
+    raw, wiki, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)
+    # destino vira DIRETÓRIO: move_to_archive registra action=error
+    bloqueio = archive_dir / "books" / "livro" / "001-prefacio.md"
+    bloqueio.mkdir(parents=True)
+
+    result = runner.invoke(app, ["noise", "apply"])
+
+    assert result.exit_code == 1
+
+
 def test_should_resume_remaining_files_when_apply_partially_done(tmp_path, monkeypatch):
     # RED: falha até 011-corpus-noise-filter ser implementada (caso de erro: retomada pós-falha)
     raw, wiki, archive_dir = _seed_dirty_vault(tmp_path, monkeypatch)

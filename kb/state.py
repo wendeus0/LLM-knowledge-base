@@ -30,15 +30,34 @@ def _write_json(path: Path, payload) -> None:
 
 
 def normalize_source_path(source_path: Path | str) -> str:
-    from kb.config import RAW_DIR
+    from kb.config import DATA_DIR, RAW_DIR
 
     path = Path(source_path)
     if not path.is_absolute():
         return str(path)
+    for base in (RAW_DIR, DATA_DIR):
+        try:
+            return str(path.resolve().relative_to(Path(base).resolve()))
+        except ValueError:
+            continue
+    return str(path)
+
+
+def _normalize_article_path(article_path: Path | str) -> str:
+    from kb.config import WIKI_DIR
+
+    path = Path(article_path)
+    if not path.is_absolute():
+        return str(path)
     try:
-        return str(path.resolve().relative_to(RAW_DIR.resolve()))
+        return str(path.resolve().relative_to(Path(WIKI_DIR).resolve()))
     except ValueError:
         return str(path)
+
+
+def entry_provenance(entry: dict) -> str:
+    """Entradas legadas (compile/ingest) não carregam o campo — são `compile`."""
+    return entry.get("provenance") or "compile"
 
 
 def load_manifest() -> list[dict]:
@@ -89,9 +108,114 @@ def mark_compiled(
     return compiled_entry
 
 
+def record_backfill(
+    source_path: Path | str,
+    article_path: Path | str,
+    book: str | None,
+    provenance: str,
+) -> dict:
+    """Materializa proveniência reconstruída (028 B1) — upsert pela fonte."""
+    entries = load_manifest()
+    entry = {
+        "source": normalize_source_path(source_path),
+        "kind": "raw",
+        "status": "compiled",
+        "article": _normalize_article_path(article_path),
+        "book": book,
+        "provenance": provenance,
+    }
+    entries = [
+        item
+        for item in entries
+        if not (
+            normalize_source_path(item.get("source", "")) == entry["source"]
+            and (
+                not item.get("article")
+                or _normalize_article_path(item["article"]) == entry["article"]
+            )
+        )
+    ]
+    entries.append(entry)
+    save_manifest(entries)
+    return entry
+
+
+def record_backfill_many(links) -> int:
+    """Versão em lote do `record_backfill` — uma leitura e uma escrita.
+
+    Upsert por (fonte, artigo): duas ligações vivas para a mesma fonte — o caso
+    que o dedup precisa enxergar — coexistem em vez de a última engolir a
+    anterior.
+    """
+    entries = load_manifest()
+    novos = []
+    chaves = set()
+    for source_path, article_path, book, provenance in links:
+        entry = {
+            "source": normalize_source_path(source_path),
+            "kind": "raw",
+            "status": "compiled",
+            "article": _normalize_article_path(article_path),
+            "book": book,
+            "provenance": provenance,
+        }
+        novos.append(entry)
+        chaves.add((entry["source"], entry["article"]))
+    mantidos = [
+        item
+        for item in entries
+        if (
+            normalize_source_path(item.get("source", "")),
+            _normalize_article_path(item.get("article", "")) if item.get("article") else "",
+        )
+        not in chaves
+    ]
+    save_manifest(mantidos + novos)
+    return len(novos)
+
+
+def _entries_for_article(entries: list[dict], article_path: Path | str) -> list[dict]:
+    alvo = _normalize_article_path(article_path)
+    return [
+        entry
+        for entry in entries
+        if entry.get("article") and _normalize_article_path(entry["article"]) == alvo
+    ]
+
+
+def mark_archived(article_path: Path | str) -> int:
+    """Marca `status: archived` nas entradas do artigo; devolve quantas mudaram.
+
+    Sem isto, arquivar um artigo deixa o guard de recompile apontando para um
+    path inexistente em silêncio.
+    """
+    entries = load_manifest()
+    atingidas = _entries_for_article(entries, article_path)
+    for entry in atingidas:
+        entry["status"] = "archived"
+    if atingidas:
+        save_manifest(entries)
+    return len(atingidas)
+
+
+def update_article_path(old_path: Path | str, new_path: Path | str) -> int:
+    """Atualiza o path do artigo nas entradas correspondentes (move/reagrupamento)."""
+    entries = load_manifest()
+    atingidas = _entries_for_article(entries, old_path)
+    for entry in atingidas:
+        entry["article"] = _normalize_article_path(new_path)
+    if atingidas:
+        save_manifest(entries)
+    return len(atingidas)
+
+
 def find_compiled_entry(source_path: Path | str) -> dict | None:
     normalized_source = normalize_source_path(source_path)
     for entry in load_manifest():
+        if entry.get("status") == "archived":
+            # Entrada arquivada não pode guiar recompile: o path de artigo dela
+            # não existe mais, e reusá-lo recriaria o que o dedup removeu.
+            continue
         if normalize_source_path(entry.get("source", "")) == normalized_source:
             return entry
     return None

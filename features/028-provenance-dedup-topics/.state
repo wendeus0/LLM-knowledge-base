@@ -1,0 +1,7 @@
+---
+feature: 028-provenance-dedup-topics
+mode: act
+pipeline_state: READY_FOR_COMMIT
+branch: feat/028-provenance-dedup-topics
+last_updated: 2026-08-05
+---

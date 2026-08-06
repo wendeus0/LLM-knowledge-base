@@ -26,6 +26,10 @@ app = typer.Typer(
         "  [--workers/-j INT] [--chunk-pages INT] [--allow-sensitive] [--no-commit|--commit]\n\n"
         "noise scan  |  noise apply [--no-commit|--commit]\n\n"
         "index build [--force]  |  index status\n\n"
+        "manifest backfill [--apply] [--no-commit|--commit]\n\n"
+        "dedup scan  |  dedup apply [--no-commit|--commit]\n\n"
+        "topics normalize [--apply] [--no-commit|--commit]  |  topics assign [--apply] [--limit INT] [--no-commit|--commit]\n\n"
+        "archive [--stale] [--older-than INT] [--dry-run]\n\n"
         "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
@@ -46,11 +50,170 @@ discovery_app = typer.Typer(help="Descoberta automatizada e ingestão periódica
 handoff_app = typer.Typer(help="Handoff operacional de sessão")
 noise_app = typer.Typer(help="Higiene de capítulos-ruído do corpus (scan/apply)")
 index_app = typer.Typer(help="Índice de embeddings do vault (build/status)")
+manifest_app = typer.Typer(help="Proveniência artigo→fonte no manifest (backfill)")
+dedup_app = typer.Typer(help="Duplicatas de ingestão (scan/apply)")
+topics_app = typer.Typer(help="Topics do frontmatter (normalize/assign)")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(discovery_app, name="discovery")
 app.add_typer(handoff_app, name="handoff")
 app.add_typer(noise_app, name="noise")
 app.add_typer(index_app, name="index")
+app.add_typer(manifest_app, name="manifest")
+app.add_typer(dedup_app, name="dedup")
+app.add_typer(topics_app, name="topics")
+
+
+@topics_app.command("normalize")
+def topics_normalize(
+    apply: bool = typer.Option(False, "--apply", help="Grava as normalizações (default: só relatório)"),
+    no_commit: bool = typer.Option(True, "--no-commit/--commit"),
+):
+    """Normaliza variantes de topic para os canônicos (mapa fechado, sem LLM)."""
+    from kb.config import WIKI_DIR
+    from kb.topics import apply_topic, normalize_variants
+
+    propostas = normalize_variants(WIKI_DIR)
+    for p in propostas:
+        typer.echo(f"{p.article.relative_to(WIKI_DIR)}\t{p.old} → {p.new}")
+    typer.echo(f"{len(propostas)} normalização(ões)")
+    if not apply or not propostas:
+        if not apply:
+            typer.echo("(relatório — nada foi escrito; use --apply)")
+        return
+    for p in propostas:
+        apply_topic(p.article, p.new)
+    typer.echo(f"{len(propostas)} artigo(s) atualizados")
+    if not no_commit:
+        from kb.git import commit
+
+        commit("chore(corpus): normaliza variantes de topic", [p.article for p in propostas])
+
+
+@topics_app.command("assign")
+def topics_assign(
+    apply: bool = typer.Option(False, "--apply", help="Grava os topics propostos (default: só relatório)"),
+    no_commit: bool = typer.Option(True, "--no-commit/--commit"),
+    limit: int = typer.Option(0, "--limit", help="Máximo de artigos a classificar (0 = todos)"),
+):
+    """Propõe topic via LLM (restrito a KB_TOPICS) para artigos general da raiz."""
+    from kb import client
+    from kb.config import TOPICS, WIKI_DIR
+    from kb.frontmatter import parse
+    from kb.topics import apply_topic, propose_topics
+
+    alvos = []
+    for article in sorted(WIKI_DIR.glob("*.md")):
+        if article.name.startswith(("_", ".")):
+            continue
+        meta, _ = parse(article.read_text(encoding="utf-8", errors="replace"))
+        topic = (meta.get("topic") or "").strip().strip("'\"")
+        if topic in ("", "general"):
+            alvos.append(article)
+    if limit:
+        alvos = alvos[:limit]
+    propostas = propose_topics(alvos, list(TOPICS), chat_fn=client.chat)
+    aceitas = [p for p in propostas if p.new]
+    for p in propostas:
+        status = p.new if p.new else "REJEITADO (fora da taxonomia ou falha)"
+        typer.echo(f"{p.article.relative_to(WIKI_DIR)}\t{p.old or '—'} → {status}")
+    typer.echo(f"{len(aceitas)} proposta(s) válidas de {len(propostas)}")
+    if not apply or not aceitas:
+        if not apply:
+            typer.echo("(relatório — nada foi escrito; use --apply)")
+        return
+    for p in aceitas:
+        apply_topic(p.article, p.new)
+    typer.echo(f"{len(aceitas)} artigo(s) atualizados")
+    if not no_commit:
+        from kb.git import commit
+
+        commit("chore(corpus): atribui topics via taxonomia canônica", [p.article for p in aceitas])
+
+
+def _duplicate_pairs():
+    from kb.config import DATA_DIR, RAW_DIR, STATE_DIR, WIKI_DIR
+    from kb.dedup import article_vectors_from_index, find_duplicates
+    from kb.state import load_manifest
+
+    vectors = article_vectors_from_index(WIKI_DIR, STATE_DIR)
+    return find_duplicates(
+        WIKI_DIR, DATA_DIR, RAW_DIR,
+        vectors=vectors or None,
+        manifest_entries=load_manifest(),
+    )
+
+
+def _print_pair(pair):
+    from kb.config import WIKI_DIR
+
+    detalhe = f"ratio={pair.text_ratio:.3f}" if pair.text_ratio is not None else ""
+    if pair.cosine is not None:
+        detalhe = f"cos={pair.cosine:.3f} {detalhe}"
+    typer.echo(
+        f"{pair.reason}\tfica: {pair.survivor.relative_to(WIKI_DIR)}"
+        f"\tsai: {pair.loser.relative_to(WIKI_DIR)}\t{detalhe}"
+    )
+
+
+@dedup_app.command("scan")
+def dedup_scan():
+    """Lista pares de duplicata de ingestão (dry-run; não altera nada)."""
+    from kb.config import DATA_DIR, RAW_DIR, STATE_DIR, WIKI_DIR
+    from kb.dedup import article_vectors_from_index, review_candidates
+
+    pares = _duplicate_pairs()
+    for pair in pares:
+        _print_pair(pair)
+    typer.echo(f"{len(pares)} par(es) de duplicata de ingestão")
+    vectors = article_vectors_from_index(WIKI_DIR, STATE_DIR)
+    revisao = review_candidates(WIKI_DIR, DATA_DIR, RAW_DIR, vectors=vectors or None)
+    if revisao:
+        typer.echo("— revisão humana (gêmeos semânticos com prosa distinta; pode ser mesmo documento em duas URLs):")
+        for pair in revisao:
+            _print_pair(pair)
+
+
+@dedup_app.command("apply")
+def dedup_apply(
+    no_commit: bool = typer.Option(
+        True, "--no-commit/--commit", help="Padrão: move localmente sem commit"
+    ),
+):
+    """Arquiva o perdedor de cada par (com summary), atualizando o manifest."""
+    from kb.archive import move_to_archive
+    from kb.compile import update_index
+    from kb.config import ARCHIVE_DIR, MANIFEST_PATH, WIKI_DIR
+    from kb.embeddings import refresh_embeddings_index
+    from kb.state import mark_archived
+
+    pares = _duplicate_pairs()
+    moves = []
+    for pair in pares:
+        _print_pair(pair)
+        moves.append({"source": pair.loser, "dest": ARCHIVE_DIR / pair.loser.relative_to(WIKI_DIR)})
+        summary = WIKI_DIR / "_summaries" / pair.loser.relative_to(WIKI_DIR)
+        if summary.exists():
+            moves.append({"source": summary, "dest": ARCHIVE_DIR / summary.relative_to(WIKI_DIR)})
+    log = move_to_archive(moves, ARCHIVE_DIR)
+    moved = [entry for entry in log if entry["action"] == "moved"]
+    for entry in log:
+        if entry["action"] != "moved":
+            typer.echo(f"erro: {entry['source']} — {entry.get('detail', '')}", err=True)
+    arquivadas = sum(mark_archived(Path(entry["source"])) for entry in moved)
+    typer.echo(f"{len(moved)} arquivo(s) movido(s); {arquivadas} entrada(s) de manifest marcadas archived")
+    if moved:
+        update_index(no_commit=True)
+        refresh_embeddings_index()
+    if any(entry["action"] == "error" for entry in log):
+        raise typer.Exit(1)
+    if moved and not no_commit:
+        from kb.git import commit
+
+        paths = [Path(entry["source"]) for entry in moved]
+        paths += [Path(entry["dest"]) for entry in moved]
+        paths += [Path(entry["backup"]) for entry in moved if "backup" in entry]
+        paths += [WIKI_DIR / "_index.md", MANIFEST_PATH]
+        commit("chore(corpus): dedup de duplicatas de ingestão", paths)
 console = Console()
 
 
@@ -1119,6 +1282,67 @@ def handoff_create(
     console.print(f"[green]Handoff criado:[/] {path}")
 
 
+@manifest_app.command("backfill")
+def manifest_backfill(
+    apply: bool = typer.Option(False, "--apply", help="Escreve as ligações no manifest (default: só relatório)"),
+    no_commit: bool = typer.Option(
+        True, "--no-commit/--commit", help="Com --apply: versionar o manifest no git do vault"
+    ),
+):
+    """Reconstrói a proveniência artigo→fonte (basename → conteúdo → cosseno → unresolved)."""
+    from kb.backfill import backfill_links
+    from kb.config import DATA_DIR, RAW_DIR, WIKI_DIR
+
+    embed_fn = None
+    try:
+        from kb.embed_server import probe, probe_timeout
+        from kb.embeddings import _embed_base_url, embed_texts
+
+        if probe(_embed_base_url(), probe_timeout()).reachable:
+            embed_fn = embed_texts
+        else:
+            typer.echo("aviso: servidor de embeddings inacessível — ambíguos ficarão unresolved", err=True)
+    except Exception:
+        typer.echo("aviso: embeddings indisponíveis — ambíguos ficarão unresolved", err=True)
+
+    from kb.config import STATE_DIR
+    from kb.dedup import article_vectors_from_index
+
+    links = backfill_links(
+        WIKI_DIR, DATA_DIR, RAW_DIR,
+        embed_fn=embed_fn,
+        article_vectors=article_vectors_from_index(WIKI_DIR, STATE_DIR),
+    )
+    contagem: dict[str, int] = {}
+    for link in links:
+        contagem[link.provenance] = contagem.get(link.provenance, 0) + 1
+        fonte = link.source.relative_to(DATA_DIR) if link.source and link.source.is_relative_to(DATA_DIR) else (link.source or "—")
+        score = f" score={link.score:.3f}" if link.score is not None else ""
+        typer.echo(
+            f"{link.provenance}\t{link.article.relative_to(WIKI_DIR)}\t→ {fonte}"
+            f"{'  [' + link.book + ']' if link.book else ''}{score}"
+        )
+    typer.echo(
+        "; ".join(f"{k}: {v}" for k, v in sorted(contagem.items())) + f"; total: {len(links)}"
+    )
+    if not apply:
+        typer.echo("(relatório — nada foi escrito; use --apply para materializar)")
+        return
+    from kb.config import MANIFEST_PATH
+    from kb.state import record_backfill_many
+
+    escritos = record_backfill_many(
+        (link.source, link.article, link.book, link.provenance)
+        for link in links
+        if link.provenance != "unresolved" and link.source is not None
+    )
+    typer.echo(f"{escritos} entrada(s) materializada(s) no manifest")
+    if escritos and not no_commit:
+        from kb.git import commit
+
+        commit("chore(corpus): backfill de proveniência no manifest", [MANIFEST_PATH])
+
+
 def _noise_candidates():
     from kb.config import DATA_DIR, RAW_DIR, WIKI_DIR
     from kb.noise import scan_corpus
@@ -1215,6 +1439,8 @@ def noise_apply(
         paths += [Path(entry["backup"]) for entry in moved if "backup" in entry]
         paths.append(WIKI_DIR / "_index.md")
         commit("chore(corpus): archive noise chapters", paths)
+    if any(entry["action"] == "error" for entry in log):
+        raise typer.Exit(1)
 
 
 @index_app.command("build")
