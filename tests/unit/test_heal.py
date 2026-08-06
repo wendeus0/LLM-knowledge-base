@@ -287,13 +287,13 @@ Conteúdo substantivo sobre teste com informação suficiente para não ser stub
             assert len(backups) == 1
             assert backups[0].read_text() == original
 
-    def test_should_backup_before_stub_delete(self, tmp_raw_wiki):
-        """
-        Dado stub na wiki,
-        Quando heal deleta o stub,
-        Então deve criar backup em .heal_backup
+    def test_should_archive_stub_instead_of_deleting(self, tmp_raw_wiki, monkeypatch):
+        """029 C2 (V7 mínimo): stub vai para archive/ com hierarquia — nunca
+        unlink. O conteúdo sobrevive no vault, recuperável por git e por path.
         """
         raw, wiki = tmp_raw_wiki
+        archive_dir = wiki.parent / "archive"
+        monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
 
         stub_path = wiki / "ai" / "stub.md"
         original = """---
@@ -309,11 +309,76 @@ title: Stub
 
             result = heal(n=1)
 
-            assert result == [{"file": "stub.md", "action": "deleted_stub"}]
+            assert result == [{"file": "stub.md", "action": "archived_stub"}]
             assert not stub_path.exists()
-            backups = list((wiki / ".heal_backup").glob("*stub.*.md"))
-            assert len(backups) == 1
-            assert backups[0].read_text() == original
+            destino = archive_dir / "ai" / "stub.md"
+            assert destino.is_file()
+            assert destino.read_text() == original
+
+    def test_should_commit_archived_stub_and_manifest_when_commit_enabled(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        """Review PR #71 (3 bots): amostra só com stubs não populava `changed`
+        e o --commit não versionava nem o move nem o manifest."""
+        import subprocess
+
+        import kb.config
+        from kb.state import record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        vault = wiki.parent
+        archive_dir = vault / "archive"
+        state = vault / "kb_state"
+        monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
+        monkeypatch.setattr(kb.config, "DATA_DIR", vault)
+        monkeypatch.setattr("kb.config.MANIFEST_PATH", state / "manifest.json")
+        monkeypatch.setattr("kb.state.MANIFEST_PATH", state / "manifest.json")
+        monkeypatch.setattr("kb.state.STATE_DIR", state)
+        fonte = raw / "05-stub.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        stub_path = wiki / "ai" / "stub.md"
+        stub_path.write_text("---\ntitle: Stub\n---\n\n# Stub\n")
+        record_backfill(source_path=fonte, article_path=stub_path, book=None, provenance="backfill-basename")
+        for cmd in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.email", "kb@test"],
+            ["git", "config", "user.name", "kb"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-qm", "seed"],
+        ):
+            subprocess.run(cmd, cwd=vault, check=True)
+
+        with patch("random.sample") as mock_sample:
+            mock_sample.return_value = [stub_path]
+            heal(n=1, no_commit=False)
+
+        status = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=vault, check=True, capture_output=True, text=True
+        ).stdout
+        sujos = [linha for linha in status.splitlines() if "_index" not in linha]
+        assert sujos == [], f"move do stub e manifest devem estar commitados; sobrou: {sujos}"
+
+    def test_should_mark_manifest_when_archiving_stub(self, tmp_raw_wiki, monkeypatch):
+        """A entrada do stub no manifest vira archived — o guard de recompile
+        não pode apontar para path que o heal moveu."""
+        import kb.config
+        from kb.state import find_compiled_entry, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        archive_dir = wiki.parent / "archive"
+        monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
+        monkeypatch.setattr(kb.config, "DATA_DIR", wiki.parent)
+        fonte = raw / "05-stub.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        stub_path = wiki / "ai" / "stub.md"
+        stub_path.write_text("---\ntitle: Stub\n---\n\n# Stub\n")
+        record_backfill(source_path=fonte, article_path=stub_path, book=None, provenance="backfill-basename")
+
+        with patch("random.sample") as mock_sample:
+            mock_sample.return_value = [stub_path]
+            heal(n=1)
+
+        assert find_compiled_entry(fonte) is None
 
     def test_should_exclude_heal_backup_files_from_candidates(self, tmp_raw_wiki):
         """
@@ -378,14 +443,19 @@ class TestHealBackupAndKeyPreservation:
         stub_a.write_text("---\ntitle: A\n---\n\n# A\n")
         stub_b.write_text("---\ntitle: B\n---\n\n# B\n")
 
-        with patch("random.sample") as mock_sample:
-            mock_sample.return_value = [stub_a, stub_b]
+        import kb.config
 
-            result = heal(n=2)
+        archive_dir = wiki.parent / "archive"
+        with patch.object(kb.config, "ARCHIVE_DIR", archive_dir):
+            with patch("random.sample") as mock_sample:
+                mock_sample.return_value = [stub_a, stub_b]
 
-        assert [r["action"] for r in result] == ["deleted_stub", "deleted_stub"]
-        backups = list((wiki / ".heal_backup").glob("*x.*.md"))
-        assert len(backups) == 2
+                result = heal(n=2)
+
+        assert [r["action"] for r in result] == ["archived_stub", "archived_stub"]
+        # hierarquia preservada: mesmo stem em topics distintos não colide
+        assert (archive_dir / "a" / "x.md").is_file()
+        assert (archive_dir / "b" / "x.md").is_file()
 
     def test_should_skip_output_when_frontmatter_key_is_dropped(self, tmp_raw_wiki):
         """

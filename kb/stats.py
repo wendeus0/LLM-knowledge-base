@@ -3,9 +3,7 @@
 
 def _is_ignored_article(path, wiki_dir):
     rel = path.relative_to(wiki_dir)
-    if path.name == "_index.md":
-        return True
-    return "_summaries" in rel.parts or ".heal_backup" in rel.parts
+    return any(part.startswith(("_", ".")) for part in rel.parts)
 
 
 def _topic_for(path, wiki_dir):
@@ -23,11 +21,11 @@ def get_article_summary():
     if not wiki_dir.exists():
         return {"total": 0, "by_topic": {}}
 
+    from kb.fsutil import iter_articles
+
     by_topic = {}
     total = 0
-    for path in wiki_dir.rglob("*.md"):
-        if _is_ignored_article(path, wiki_dir):
-            continue
+    for path in iter_articles(wiki_dir):
         topic = _topic_for(path, wiki_dir)
         by_topic[topic] = by_topic.get(topic, 0) + 1
         total += 1

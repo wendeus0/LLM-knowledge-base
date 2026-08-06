@@ -1,0 +1,7 @@
+---
+feature: 029-chapters-regroup
+mode: act
+pipeline_state: READY_FOR_COMMIT
+branch: feat/029-chapters-regroup
+last_updated: 2026-08-06
+---

@@ -3,6 +3,7 @@
 import random
 import re
 import shutil
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -81,12 +82,9 @@ def heal(
     index_refresh_enabled: bool = True,
 ) -> list[dict]:
     """Processa N arquivos aleatórios da wiki. Retorna log de ações."""
-    backup_dir = WIKI_DIR / ".heal_backup"
-    candidates = [
-        p
-        for p in WIKI_DIR.rglob("*.md")
-        if p.name != "_index.md" and backup_dir not in p.parents
-    ]
+    from kb.fsutil import iter_articles
+
+    candidates = list(iter_articles(WIKI_DIR))
     if not candidates:
         return []
 
@@ -98,9 +96,31 @@ def heal(
         text = path.read_text(encoding="utf-8", errors="replace")
 
         if _is_stub(text):
-            _backup(path)
-            path.unlink()
-            log.append({"file": path.name, "action": "deleted_stub"})
+            # V7 mínimo (029 C2): stub vai para archive/ com backup versionado,
+            # nunca unlink — e o manifest deixa de apontar para o path movido.
+            from kb.archive import move_to_archive
+            from kb.config import ARCHIVE_DIR
+            from kb.state import mark_archived
+
+            dest = ARCHIVE_DIR / path.relative_to(WIKI_DIR)
+            resultado = move_to_archive([{"source": path, "dest": dest}], ARCHIVE_DIR)
+            if resultado and resultado[0]["action"] == "moved":
+                try:
+                    mark_archived(path)
+                except Exception as exc:  # arquivo já se moveu; avisar > abortar
+                    print(f"aviso: manifest não atualizado para {path.name} — {exc}", file=sys.stderr)
+                log.append({"file": path.name, "action": "archived_stub"})
+                # o --commit precisa versionar o move e o manifest, não só heals de texto
+                changed.append(path)
+                changed.append(dest)
+                if "backup" in resultado[0]:
+                    changed.append(Path(resultado[0]["backup"]))
+                from kb.config import MANIFEST_PATH
+
+                if MANIFEST_PATH.exists():
+                    changed.append(MANIFEST_PATH)
+            else:
+                log.append({"file": path.name, "action": "archive_error"})
             continue
 
         assert_safe_for_provider(

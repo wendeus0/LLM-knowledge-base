@@ -21,9 +21,9 @@ def _slugify_link(link: str) -> str:
 
 
 def _e_artigo(path: Path, wiki_dir: Path) -> bool:
-    """Derivados (`_summaries/`, `_sources/`, `_index.md`) não são artigos.
+    """Derivados (`_summaries/`, `_sources/`, `_chapters/`) não são artigos.
 
-    Mesma convenção que `kb.search` já aplica ao indexar.
+    Semântica centralizada em `kb.fsutil.iter_articles`; aqui só o predicado.
     """
     return not any(part.startswith(("_", ".")) for part in path.relative_to(wiki_dir).parts)
 

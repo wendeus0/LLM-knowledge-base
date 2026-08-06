@@ -43,8 +43,10 @@ def find_orphans(wiki_dir: Path) -> list[Path]:
 
     if not wiki_dir.exists():
         return []
-    backlink_sources = [p for p in wiki_dir.rglob("*.md") if not p.is_symlink()]
-    all_md = [p for p in backlink_sources if p.name != "_index.md"]
+    from kb.fsutil import iter_articles
+
+    backlink_sources = list(iter_articles(wiki_dir))
+    all_md = backlink_sources
 
     def identidade(path: Path) -> str:
         return path.relative_to(wiki_dir).with_suffix("").as_posix()
@@ -69,11 +71,11 @@ def find_by_age(wiki_dir: Path, days: int) -> list[Path]:
     """Retorna artigos com mtime anterior ao cutoff de dias."""
     if not wiki_dir.exists():
         return []
+    from kb.fsutil import iter_articles
+
     cutoff = time.time() - (days * 86400)
     result = []
-    for p in wiki_dir.rglob("*.md"):
-        if p.is_symlink():
-            continue
+    for p in iter_articles(wiki_dir):
         try:
             if p.stat().st_mtime < cutoff:
                 result.append(p)
