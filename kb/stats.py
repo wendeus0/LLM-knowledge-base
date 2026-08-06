@@ -3,9 +3,7 @@
 
 def _is_ignored_article(path, wiki_dir):
     rel = path.relative_to(wiki_dir)
-    if path.name == "_index.md":
-        return True
-    return "_summaries" in rel.parts or ".heal_backup" in rel.parts
+    return any(part.startswith(("_", ".")) for part in rel.parts)
 
 
 def _topic_for(path, wiki_dir):

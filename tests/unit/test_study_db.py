@@ -35,11 +35,14 @@ def test_should_ensure_the_schema_when_connections_race_over_a_legacy_database(
     legacy.commit()
     legacy.close()
 
+    # Barrier SEM timeout já pendurou a suíte inteira: worker que falha antes
+    # do wait deixa as outras esperando para sempre. Timeout converte deadlock
+    # em falha barulhenta.
     largada = threading.Barrier(8)
 
     def migrar():
         with _connect_db() as conn:
-            largada.wait()
+            largada.wait(timeout=30)
             _ensure_schema(conn)
             conn.commit()
         return True

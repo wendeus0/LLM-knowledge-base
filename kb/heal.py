@@ -81,12 +81,9 @@ def heal(
     index_refresh_enabled: bool = True,
 ) -> list[dict]:
     """Processa N arquivos aleatórios da wiki. Retorna log de ações."""
-    backup_dir = WIKI_DIR / ".heal_backup"
-    candidates = [
-        p
-        for p in WIKI_DIR.rglob("*.md")
-        if p.name != "_index.md" and backup_dir not in p.parents
-    ]
+    from kb.fsutil import iter_articles
+
+    candidates = list(iter_articles(WIKI_DIR))
     if not candidates:
         return []
 

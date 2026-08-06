@@ -26,13 +26,12 @@ def find_ambiguous_wikilinks(wiki_dir: Path) -> list[str]:
     duplicados. Qualificar por topic (`[[cybersecurity/honeycomb]]`) resolve, e
     é isso que este check pede ao autor.
     """
+    from kb.fsutil import iter_articles
     from kb.graph import build_link_index, resolve_wikilink_all
 
     index = build_link_index(wiki_dir)
     achados: list[str] = []
-    for md in sorted(wiki_dir.rglob("*.md"), key=lambda p: p.as_posix()):
-        if md.is_symlink():
-            continue
+    for md in sorted(iter_articles(wiki_dir), key=lambda p: p.as_posix()):
         text = md.read_text(encoding="utf-8", errors="replace")
         vistos: set[str] = set()
         for link in re.findall(r"\[\[([^\]]+)\]\]", text):
@@ -50,7 +49,9 @@ def find_ambiguous_wikilinks(wiki_dir: Path) -> list[str]:
 
 
 def lint_wiki(allow_sensitive: bool = False) -> str:
-    articles = list(WIKI_DIR.rglob("*.md"))
+    from kb.fsutil import iter_articles
+
+    articles = list(iter_articles(WIKI_DIR))
     if not articles:
         return "Wiki vazia. Use `kb compile` para adicionar artigos."
 
