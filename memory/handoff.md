@@ -1,29 +1,25 @@
-# Handoff — 2026-08-05
+# Handoff — 2026-08-06
 
-Sessão fechou a feature 026 em `main`. Nada pendente de commit.
+Sessão fechou o esforço **ADR-0018 etapas 1–3** inteiro: features 027 (noise retroativo), 028 (proveniência + dedup + topics) e 029 (`_*` + reagrupamento), PRs #69/#70/#71 mergeados, `main` @ `52d1006`. Working tree limpo; vault com 6 tags de rollback e todos os lotes commitados.
 
-## O que foi entregue
+## Estado do vault
 
-PR #67 mergeado (`858c888`), em cima do PR #66 que outra sessão mergeou às 10:51 do mesmo dia. Seis commits: correção dos ~85 apontamentos dos bots de review do PR #66, reconciliação dos documentos da feature, auditoria da ementa bibliográfica, a Direção de design B, e duas rodadas de resposta ao review do próprio PR #67 (CodeAnt, CodeRabbit e cubic).
+345 artigos vivos (207 transcripts + 14 harness + 124 unresolved) · 630 capítulos em `_chapters/` por 37 livros · manifest com 856 entradas de proveniência · 10 trilhas canônicas · plataforma funcionando (conferida em tela após cada lote).
 
-**Gate:** `968 passed`, cobertura 93%, `ruff check kb study tests` limpo, gate de test-appeasement exit 0 — verificado com `KB_DATA_DIR` apontando para o vault real e para um caminho inexistente. CI verde nos três Pythons e na `main` depois do merge.
+## Decisões do dono nesta sessão (não reabrir)
 
-## Decisões desta rodada que não estão óbvias no código
+- Executar o ADR-0018 (não higiene stopgap); dedup só de ingestão; topics só frontmatter; relatório→aprovação em todo lote; move para `_chapters/` gated.
+- Taxonomia: 10 canônicos (algorithms, ai, python, learning, cybersecurity, harness, software-architecture, data, testing, operations) + mapa de variantes.
+- No gate final: transcripts-youtube e harness FICAM na wiki (não são livros).
 
-- **Dois tokens de acento.** `#b4551f` (a cor que o usuário escolheu por imagem) é preenchimento; texto usa `--accent-ink`. Como texto, `#b4551f` dá 4,02:1 sobre o bege e 3,63:1 sobre o escuro — abaixo do AA, e a tela vai para escola. Registrado em `docs/research/2026-08-01-kb-para-estudo/DESIGN.md`.
-- **`study.db` fica em `DATA_DIR`, não em `kb_state/`.** Há teste explícito fixando isso (`test_study_annotations.py`); o `.gitignore` ganhou `/study.db*`.
-- **Guard de rating removido de `study/web.py`** — sobreviveu à mutação porque `study/review.py:14` já validava.
-- **Fase 4 (lote mecânico) foi delegada ao Codex** via MCP com `model: gpt-5.6-luna`; `gpt-5.6-sol` e `gpt-5.2-codex` são recusados pelo conector com conta ChatGPT. Revisei e ajustei dois pontos do que ele entregou.
+## Para a próxima sessão
 
-## Duas coisas para decidir na próxima sessão
-
-1. **Branches remotas mergeadas** — `feat/026-plataforma-estudos` e `fix/pr-66-review-followup`. Não apagadas por exigirem confirmação.
-2. **Marcar leitura de artigo** é o próximo passo com maior efeito na tela: destrava o progresso real e a subtração na trilha. Ver `memory/next_steps.md`.
+O próximo esforço é o **compile multi-fonte** (decisão 2 do ADR-0018) — abrir com wayfinder próprio. Insumos prontos: `MAPA-DE-TEMAS.md`, 55 gêmeos temáticos (`kb dedup scan`), 124 unresolved, proveniência completa. Pendências menores em `PENDING_LOG.md` (sessão 2026-08-05/06).
 
 ## Prompt de retomada
 
 ```
-Leia memory/project_state.md e memory/next_steps.md. A feature 026 está em main
-(858c888). Quero atacar a marcação de leitura de artigo — ela destrava o
-progresso real e a subtração na trilha, pendências P2 do PENDING_LOG.
+Leia memory/project_state.md e memory/next_steps.md. O ADR-0018 etapas 1-3
+está completo em main (52d1006). Quero abrir o esforço do compile
+multi-fonte — comece pelo wayfinder.
 ```

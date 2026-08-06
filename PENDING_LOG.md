@@ -296,3 +296,16 @@ Codex GPT 5.6 Terra revisou o diff em 2026-08-01. Oito achados foram corrigidos 
 | P2 | **Subtração visual na trilha depende de marcação de leitura** | A direção B pede que o concluído saia da tela (tachado e cinza), deixando em destaque o próximo passo. Implementado no painel de cards, onde há estado real (`curadoria`/`aceito`/`descartado`). Na trilha não há: o progresso mostra **posição** ("Artigo N de M"), não leitura. Fechar isto é o próximo passo 1 do `REPORT.md` da 026 | 2026-08-05 |
 | P3 | **Duas branches remotas mergeadas sem limpeza** | `feat/026-plataforma-estudos` (PR #66) e `fix/pr-66-review-followup` (PR #67). Não apagadas por exigir confirmação | 2026-08-05 |
 | P3 | **Nove títulos da Trilha A da ementa se perderam na montagem** | A tabela ia até 41 com 18 buracos; foi renumerada de 1 a 23. Nove dos ausentes sobrevivem como nome na antiga coluna `Pressupõe` (CS50 Scratch, Informática Básica, How It Works, Introdução a HTML/CSS, Web Lab, Introdução a SQL, Proteção de Dados, Fundamentos de TI, O*NET Interest Profiler) e estão listados em nota no próprio `EMENTA.md`; os outros nove sumiram sem referência. Recuperá-los é rodada de pesquisa nova | 2026-08-05 |
+
+## Sessão 2026-08-05/06 — esforço ADR-0018 etapas 1–3 (features 027/028/029, PRs #69/#70/#71)
+
+| Prioridade | Item | Contexto | Data |
+| --- | --- | --- | --- |
+| P1 | **Compile multi-fonte é o próximo esforço** | Todos os pré-requisitos do ADR-0018 agora existem: proveniência materializada (856 entradas), `library/` íntegra e versionada, `_chapters/` populado (630 capítulos em 37 livros), `_*` honrado por todo o engine. Abrir com wayfinder/spec próprio | 2026-08-06 |
+| P2 | **124 artigos `unresolved` sem proveniência** | Permanecem na wiki por decisão (nunca inferir); braço humano — resolver junto do compile multi-fonte ou por revisão manual | 2026-08-06 |
+| P2 | **55 gêmeos temáticos** (cosseno ≥0,95, prosa própria) | Insumo do artigo de tema; lista reproduzível via `kb dedup scan` | 2026-08-05 |
+| P3 | `transcripts-youtube` (207) e `harness` (14) seguem como artigos de capítulo | Decisão do dono no gate C4 — não são livros; reavaliar quando o compile multi-fonte definir o que é tema | 2026-08-06 |
+| P3 | 28 menções a paths `wiki/` em `claims.jsonl`/`knowledge.json` dangling pós-move | Aceito pelo ADR; jobs decay/contradiction não instalados | 2026-08-06 |
+| P3 | Golden set do bench sem objeto (851 slugs movidos) | Preservado em disco; bench volta a fazer sentido com os artigos de tema | 2026-08-06 |
+| P3 | `topics assign --apply` reclassifica em vez de consumir o relatório aprovado | Persistir propostas do scan e o apply consumi-las | 2026-08-05 |
+| P3 | `.heal_backup` legado com formato próprio (V7 completo) | O heal novo já não o usa para stubs; unificar formato é cosmético | 2026-08-06 |
