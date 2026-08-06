@@ -30,6 +30,7 @@ app = typer.Typer(
         "dedup scan  |  dedup apply [--no-commit|--commit]\n\n"
         "topics normalize [--apply] [--no-commit|--commit]  |  topics assign [--apply] [--limit INT] [--no-commit|--commit]\n\n"
         "archive [--stale] [--older-than INT] [--dry-run]\n\n"
+        "regroup scan  |  regroup apply --book <slug> [--no-commit|--commit]\n\n"
         "compile (alvo)  [--workers/-j INT] [--allow-sensitive] [--no-commit|--commit]"
         "  [--no-update-index]\n\n"
         "qa <pergunta>  [--file-back/-f] [--to-wiki] [--depth INT] [--no-traverse]"
@@ -53,6 +54,7 @@ index_app = typer.Typer(help="Índice de embeddings do vault (build/status)")
 manifest_app = typer.Typer(help="Proveniência artigo→fonte no manifest (backfill)")
 dedup_app = typer.Typer(help="Duplicatas de ingestão (scan/apply)")
 topics_app = typer.Typer(help="Topics do frontmatter (normalize/assign)")
+regroup_app = typer.Typer(help="Reagrupamento de capítulos por livro (scan/apply)")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(discovery_app, name="discovery")
 app.add_typer(handoff_app, name="handoff")
@@ -61,6 +63,67 @@ app.add_typer(index_app, name="index")
 app.add_typer(manifest_app, name="manifest")
 app.add_typer(dedup_app, name="dedup")
 app.add_typer(topics_app, name="topics")
+app.add_typer(regroup_app, name="regroup")
+
+
+def _regroup_plan():
+    from kb.config import WIKI_DIR
+    from kb.regroup import plan_regroup
+    from kb.state import load_manifest
+
+    return plan_regroup(WIKI_DIR, load_manifest())
+
+
+@regroup_app.command("scan")
+def regroup_scan():
+    """Plano de reagrupamento por livro (dry-run; não altera nada)."""
+    from kb.config import WIKI_DIR
+
+    plan = _regroup_plan()
+    for slug in sorted(plan.groups):
+        artigos = plan.groups[slug]
+        typer.echo(f"[{slug}]  {len(artigos)} artigo(s)  — {plan.book_names[slug][:60]}")
+        for origem, destino in artigos:
+            typer.echo(f"  {origem.relative_to(WIKI_DIR)} → {destino.relative_to(WIKI_DIR)}")
+    typer.echo(
+        f"{sum(len(v) for v in plan.groups.values())} artigo(s) em {len(plan.groups)} livro(s); "
+        f"{len(plan.unresolved)} unresolved (permanecem na wiki)"
+    )
+    for artigo in plan.unresolved:
+        typer.echo(f"unresolved	{artigo.relative_to(WIKI_DIR)}")
+
+
+@regroup_app.command("apply")
+def regroup_apply(
+    book: str = typer.Option(..., "--book", help="Slug do livro a mover (um por commit)"),
+    no_commit: bool = typer.Option(True, "--no-commit/--commit"),
+):
+    """Move os artigos de UM livro para _chapters/ (commit por livro)."""
+    from kb.config import MANIFEST_PATH, WIKI_DIR
+    from kb.regroup import apply_book
+
+    plan = _regroup_plan()
+    if book not in plan.groups:
+        typer.echo(f"livro desconhecido no plano: {book}", err=True)
+        raise typer.Exit(2)
+    log = apply_book(WIKI_DIR, plan, book)
+    moved = [entry for entry in log if entry["action"] == "moved"]
+    for entry in log:
+        if entry["action"] == "moved":
+            typer.echo(f"movido: {entry['dest']}")
+        else:
+            typer.echo(f"erro: {entry['source']} — {entry.get('detail', '')}", err=True)
+    typer.echo(f"{len(moved)} arquivo(s) movidos para _chapters/{book}/")
+    if moved and not no_commit:
+        from kb.git import commit
+
+        paths = [Path(entry["source"]) for entry in moved]
+        paths += [Path(entry["dest"]) for entry in moved]
+        paths += [Path(entry["backup"]) for entry in moved if "backup" in entry]
+        paths += [WIKI_DIR / "_index.md", MANIFEST_PATH]
+        commit(f"chore(corpus): reagrupa {book} em _chapters/", paths)
+    if any(entry["action"] == "error" for entry in log):
+        raise typer.Exit(1)
 
 
 @topics_app.command("normalize")

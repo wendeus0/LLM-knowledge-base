@@ -26,7 +26,7 @@
   vertical_slice: yes
   behavior: "Stub removido pelo heal vai para archive/ com backup versionado e manifest marcado archived — nunca unlink (V7 mínimo)."
   verify: "python -m pytest tests/unit/test_heal.py -q"
-  state: not_started
+  state: passing
 ```
 
 ```yaml
@@ -39,7 +39,7 @@
   vertical_slice: yes
   behavior: "kb regroup scan agrupa por manifest.book com unresolved como braço humano; apply --book move artigo+summary para _chapters/, atualiza manifest e índices, commita por livro."
   verify: "python -m pytest tests/unit/test_regroup.py tests/integration/test_regroup_cli.py -q"
-  state: not_started
+  state: passing
 ```
 
 ```yaml
