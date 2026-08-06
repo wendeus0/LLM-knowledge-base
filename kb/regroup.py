@@ -33,6 +33,7 @@ def plan_regroup(wiki_dir: Path, manifest_entries: list[dict]) -> RegroupPlan:
     wiki_dir = Path(wiki_dir)
     plan = RegroupPlan()
     por_artigo: dict[Path, str] = {}
+    conflitantes: set[Path] = set()
     for entry in manifest_entries:
         if entry.get("status") == "archived" or not entry.get("article"):
             continue
@@ -40,8 +41,15 @@ def plan_regroup(wiki_dir: Path, manifest_entries: list[dict]) -> RegroupPlan:
         if not book:
             continue
         artigo = wiki_dir / entry["article"]
-        if artigo.exists():
-            por_artigo.setdefault(artigo, book)
+        if not artigo.exists():
+            continue
+        if artigo in por_artigo and por_artigo[artigo] != book:
+            # Duas entradas, dois livros: inferir um é chute — braço humano.
+            conflitantes.add(artigo)
+            continue
+        por_artigo.setdefault(artigo, book)
+    for artigo in conflitantes:
+        por_artigo.pop(artigo, None)
 
     for artigo in iter_articles(wiki_dir):
         book = por_artigo.get(artigo)
@@ -51,6 +59,12 @@ def plan_regroup(wiki_dir: Path, manifest_entries: list[dict]) -> RegroupPlan:
         slug = _slug_book(book)
         plan.book_names.setdefault(slug, book)
         destino = wiki_dir / "_chapters" / slug / artigo.name
+        ocupados = {d for _, d in plan.groups.get(slug, [])}
+        if destino in ocupados:
+            # Basename colidiu dentro do livro: desambiguar pelo diretório de
+            # origem — mover por cima criaria backup silencioso do primeiro.
+            prefixo = "-".join(artigo.relative_to(wiki_dir).parts[:-1]) or "raiz"
+            destino = wiki_dir / "_chapters" / slug / f"{prefixo}-{artigo.name}"
         plan.groups.setdefault(slug, []).append((artigo, destino))
         summary = wiki_dir / "_summaries" / artigo.relative_to(wiki_dir)
         if summary.exists():
@@ -76,6 +90,19 @@ def apply_book(wiki_dir: Path, plan: RegroupPlan, book_slug: str) -> list[dict]:
         {"source": origem, "dest": destino}
         for origem, destino in plan.groups.get(book_slug, [])
     ]
+    # Preflight do lote inteiro antes de mover qualquer coisa: origem ausente
+    # ou destino ocupado abortam o livro por completo — falha parcial é o modo
+    # de erro caro (review PR #71).
+    problemas = [
+        m for m in moves
+        if not m["source"].exists() or m["dest"].exists()
+    ]
+    if problemas:
+        return [
+            {"source": str(m["source"]), "dest": str(m["dest"]), "action": "error",
+             "detail": "preflight: origem ausente ou destino ocupado"}
+            for m in problemas
+        ]
     log = move_to_archive(moves, wiki_dir / "_chapters")
     for entry in log:
         if entry["action"] == "moved":

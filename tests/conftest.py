@@ -47,9 +47,20 @@ def _state_dir_never_points_at_real_vault(tmp_path_factory, monkeypatch):
     monkeypatch.setattr(
         "kb.config.ARCHIVE_DIR", tmp_path_factory.mktemp("archive_piso"), raising=False
     )
-    monkeypatch.setattr(
-        "kb.compile.WIKI_DIR", tmp_path_factory.mktemp("wiki_piso"), raising=False
-    )
+    # O piso precisa cobrir TODOS os module-globals de WIKI_DIR — heal, lint,
+    # search e router fazem `from kb.config import WIKI_DIR` no import, então
+    # patchear só kb.config/kb.compile deixava o heal resolvendo a wiki REAL
+    # (review PR #71, cubic).
+    wiki_piso = tmp_path_factory.mktemp("wiki_piso")
+    for alvo in (
+        "kb.config.WIKI_DIR",
+        "kb.compile.WIKI_DIR",
+        "kb.heal.WIKI_DIR",
+        "kb.lint.WIKI_DIR",
+        "kb.search.WIKI_DIR",
+        "kb.router.WIKI_DIR",
+    ):
+        monkeypatch.setattr(alvo, wiki_piso, raising=False)
 
 
 @pytest.fixture

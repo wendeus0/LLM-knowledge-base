@@ -3,6 +3,7 @@
 import random
 import re
 import shutil
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -104,8 +105,20 @@ def heal(
             dest = ARCHIVE_DIR / path.relative_to(WIKI_DIR)
             resultado = move_to_archive([{"source": path, "dest": dest}], ARCHIVE_DIR)
             if resultado and resultado[0]["action"] == "moved":
-                mark_archived(path)
+                try:
+                    mark_archived(path)
+                except Exception as exc:  # arquivo já se moveu; avisar > abortar
+                    print(f"aviso: manifest não atualizado para {path.name} — {exc}", file=sys.stderr)
                 log.append({"file": path.name, "action": "archived_stub"})
+                # o --commit precisa versionar o move e o manifest, não só heals de texto
+                changed.append(path)
+                changed.append(dest)
+                if "backup" in resultado[0]:
+                    changed.append(Path(resultado[0]["backup"]))
+                from kb.config import MANIFEST_PATH
+
+                if MANIFEST_PATH.exists():
+                    changed.append(MANIFEST_PATH)
             else:
                 log.append({"file": path.name, "action": "archive_error"})
             continue

@@ -12,7 +12,7 @@
   tag: AFK
   vertical_slice: yes
   behavior: "iter_articles único honra _*/.*/symlink e é adotado por lint, heal, archive, update_index e stats; heal deixa de poder tocar _summaries hoje."
-  verify: "python -m pytest tests/unit/test_fsutil.py tests/unit/test_lint.py tests/unit/test_heal.py tests/unit/test_archive.py tests/unit/test_stats.py -q"
+  verify: "python -m pytest tests/unit/test_fsutil_articles.py tests/unit/test_lint.py tests/unit/test_heal.py tests/unit/test_archive.py tests/unit/test_stats.py -q"
   state: passing
 ```
 

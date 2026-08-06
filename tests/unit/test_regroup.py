@@ -96,3 +96,38 @@ def test_should_group_entries_without_book_under_fallback(tmp_path):
     plan = plan_regroup(wiki, entries)
 
     assert Path(wiki / "algorithms" / "sem-livro.md") in plan.unresolved
+
+
+def test_should_disambiguate_destinations_when_basenames_collide(tmp_path):
+    """Review PR #71 (cubic P1): dois artigos X.md do mesmo livro em dirs
+    distintos colidiam no destino — o segundo virava backup do primeiro."""
+    wiki = _wiki(tmp_path)
+    a = _artigo(wiki, "algorithms/intro.md")
+    b = _artigo(wiki, "intro.md")
+    entries = [
+        {"source": "s1", "article": "algorithms/intro.md", "status": "compiled", "book": "Livro A"},
+        {"source": "s2", "article": "intro.md", "status": "compiled", "book": "Livro A"},
+    ]
+
+    plan = plan_regroup(wiki, entries)
+
+    [(_, moves)] = plan.groups.items()
+    destinos = [d for _, d in moves]
+    assert len(destinos) == len(set(destinos)), "destinos devem ser únicos"
+    assert {a, b} == {origem for origem, _ in moves}
+
+
+def test_should_mark_unresolved_when_book_provenance_conflicts(tmp_path):
+    """Review PR #71 (CodeRabbit): duas entradas com livros diferentes para o
+    mesmo artigo — inferir um deles é chute; vira unresolved."""
+    wiki = _wiki(tmp_path)
+    artigo = _artigo(wiki, "algorithms/conflito.md")
+    entries = [
+        {"source": "s1", "article": "algorithms/conflito.md", "status": "compiled", "book": "Livro A"},
+        {"source": "s2", "article": "algorithms/conflito.md", "status": "compiled", "book": "Livro B"},
+    ]
+
+    plan = plan_regroup(wiki, entries)
+
+    assert artigo in plan.unresolved
+    assert all(artigo not in [o for o, _ in moves] for moves in plan.groups.values())

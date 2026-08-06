@@ -315,6 +315,49 @@ title: Stub
             assert destino.is_file()
             assert destino.read_text() == original
 
+    def test_should_commit_archived_stub_and_manifest_when_commit_enabled(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        """Review PR #71 (3 bots): amostra só com stubs não populava `changed`
+        e o --commit não versionava nem o move nem o manifest."""
+        import subprocess
+
+        import kb.config
+        from kb.state import record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        vault = wiki.parent
+        archive_dir = vault / "archive"
+        state = vault / "kb_state"
+        monkeypatch.setattr("kb.config.ARCHIVE_DIR", archive_dir)
+        monkeypatch.setattr(kb.config, "DATA_DIR", vault)
+        monkeypatch.setattr("kb.config.MANIFEST_PATH", state / "manifest.json")
+        monkeypatch.setattr("kb.state.MANIFEST_PATH", state / "manifest.json")
+        monkeypatch.setattr("kb.state.STATE_DIR", state)
+        fonte = raw / "05-stub.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        stub_path = wiki / "ai" / "stub.md"
+        stub_path.write_text("---\ntitle: Stub\n---\n\n# Stub\n")
+        record_backfill(source_path=fonte, article_path=stub_path, book=None, provenance="backfill-basename")
+        for cmd in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.email", "kb@test"],
+            ["git", "config", "user.name", "kb"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-qm", "seed"],
+        ):
+            subprocess.run(cmd, cwd=vault, check=True)
+
+        with patch("random.sample") as mock_sample:
+            mock_sample.return_value = [stub_path]
+            heal(n=1, no_commit=False)
+
+        status = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=vault, check=True, capture_output=True, text=True
+        ).stdout
+        sujos = [linha for linha in status.splitlines() if "_index" not in linha]
+        assert sujos == [], f"move do stub e manifest devem estar commitados; sobrou: {sujos}"
+
     def test_should_mark_manifest_when_archiving_stub(self, tmp_raw_wiki, monkeypatch):
         """A entrada do stub no manifest vira archived — o guard de recompile
         não pode apontar para path que o heal moveu."""
