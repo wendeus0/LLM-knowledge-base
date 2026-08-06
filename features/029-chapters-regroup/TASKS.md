@@ -52,7 +52,7 @@
   vertical_slice: yes
   behavior: "Gate final do dono: relatório de grupos → aprovação explícita (a wiki esvazia) → apply livro a livro com tag prévia → index build + smoke + tela."
   verify: "relatório aprovado + contagens + tela"
-  state: not_started
+  state: passing
 ```
 
 ## Definition of Done
