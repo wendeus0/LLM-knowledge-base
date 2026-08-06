@@ -138,39 +138,56 @@ def find_duplicates(
     data_dir: Path,
     raw_dir: Path,
     vectors: dict[Path, list[float]] | None = None,
+    manifest_entries: list[dict] | None = None,
 ) -> list[DuplicatePair]:
     """Pares de duplicata de ingestão entre artigos vivos, com o diff decidível.
 
-    `vectors` (artigo → vetor médio L2) habilita a chave `near-identical`;
-    sem ele, só a chave por fonte roda.
+    `vectors` (artigo → vetor médio L2) habilita a chave `near-identical`.
+    `manifest_entries` soma a proveniência já materializada aos grupos por
+    fonte — sem isso, ligação resolvida por cosseno no backfill voltaria a
+    `unresolved` no recompute e o par escaparia (review do PR #70).
     """
     from kb.backfill import backfill_links
 
     pares: list[DuplicatePair] = []
     emparelhados: set[Path] = set()
 
-    por_fonte: dict[Path, list] = {}
+    por_fonte: dict[str, set[Path]] = {}
     for link in backfill_links(wiki_dir, data_dir, raw_dir):
         if link.source is not None:
-            por_fonte.setdefault(link.source, []).append(link.article)
+            por_fonte.setdefault(str(link.source), set()).add(link.article)
+    for entry in manifest_entries or []:
+        if entry.get("status") == "archived" or not entry.get("article"):
+            continue
+        artigo = Path(wiki_dir) / entry["article"]
+        if not artigo.exists():
+            continue
+        chave = str(Path(data_dir) / entry.get("source", ""))
+        por_fonte.setdefault(chave, set()).add(artigo)
+
     for fonte, artigos in sorted(por_fonte.items()):
         if len(artigos) < 2:
             continue
         ordenados = sorted(artigos)
+        # Um único sobrevivente por grupo: encadear trocas fazia o mesmo
+        # artigo aparecer como "fica" numa linha e "sai" na outra.
         survivor = ordenados[0]
         for other in ordenados[1:]:
-            survivor, loser = _survivor_first(survivor, other, wiki_dir)
+            survivor, _ = _survivor_first(survivor, other, wiki_dir)
+        for other in ordenados:
+            if other == survivor:
+                continue
             pares.append(
                 DuplicatePair(
                     survivor=survivor,
-                    loser=loser,
+                    loser=other,
                     reason="same-source",
-                    source=fonte,
+                    source=Path(fonte),
                     cosine=None,
-                    text_ratio=_text_ratio(survivor, loser),
+                    text_ratio=_text_ratio(survivor, other),
                 )
             )
-            emparelhados.update({survivor, loser})
+            emparelhados.update({survivor, other})
 
     if vectors:
         artigos = sorted(vectors)

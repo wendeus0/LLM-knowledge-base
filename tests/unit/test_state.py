@@ -224,3 +224,45 @@ class TestManifestV2:
 
         assert alterados == 1
         assert load_manifest()[-1]["article"] == "_chapters/livro/antigo.md"
+
+
+class TestManifestV2Review:
+    """Review do PR #70: upsert por fonte não pode perder a relação
+    artigo→fonte, e entrada arquivada não pode guiar recompile."""
+
+    def test_should_keep_one_entry_per_article_when_two_articles_share_a_source(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        import kb.config
+        from kb.state import load_manifest, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        monkeypatch.setattr(kb.config, "DATA_DIR", raw.parent)
+        fonte = raw / "07-cap.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        for nome in ("gemeo-a.md", "gemeo-b.md"):
+            (wiki / nome).write_text("---\ntitle: G\n---\ncorpo", encoding="utf-8")
+            record_backfill(source_path=fonte, article_path=wiki / nome, book=None, provenance="backfill-basename")
+
+        artigos = {e["article"] for e in load_manifest() if e.get("source") == "07-cap.md"}
+
+        assert artigos == {"gemeo-a.md", "gemeo-b.md"}
+
+    def test_should_not_offer_archived_entry_to_the_recompile_guard(
+        self, tmp_raw_wiki, monkeypatch
+    ):
+        import kb.config
+        from kb.state import find_compiled_entry, mark_archived, record_backfill
+
+        raw, wiki = tmp_raw_wiki
+        monkeypatch.setattr(kb.config, "DATA_DIR", raw.parent)
+        fonte = raw / "08-cap.md"
+        fonte.write_text("capítulo", encoding="utf-8")
+        artigo = wiki / "arquivavel.md"
+        artigo.write_text("---\ntitle: A\n---\ncorpo", encoding="utf-8")
+        record_backfill(source_path=fonte, article_path=artigo, book=None, provenance="backfill-basename")
+        assert find_compiled_entry(fonte) is not None
+
+        mark_archived(artigo)
+
+        assert find_compiled_entry(fonte) is None

@@ -112,3 +112,41 @@ def test_should_prefer_longer_article_when_both_lack_topic_dir(tmp_path):
 
     assert par.survivor == longo
     assert par.loser == curto
+
+
+def test_should_keep_a_single_survivor_when_three_articles_share_a_source(tmp_path):
+    """Review PR #70 (CodeRabbit): com 3+ artigos, o sobrevivente encadeado
+    aparecia como 'fica' numa linha e 'sai' na outra."""
+    data, wiki, raw = _vault(tmp_path)
+    _fonte(data, "livro-a", "07-cap.md")
+    _artigo(wiki, "curto.md", "07-cap.md", "Pouco.")
+    b = _artigo(wiki, "algorithms/canonico.md", "07-cap.md", "Texto com topic. " * 5)
+    _artigo(wiki, "medio.md", "07-cap.md", "Texto médio aqui presente. " * 3)
+
+    pares = find_duplicates(wiki, data, raw)
+
+    assert len(pares) == 2
+    assert {p.survivor for p in pares} == {b}
+    assert b not in {p.loser for p in pares}
+
+
+def test_should_pair_articles_via_manifest_provenance_without_embeddings(tmp_path):
+    """Review PR #70 (cubic P1): proveniência resolvida por cosseno vive no
+    manifest; o recompute sem embed não pode rebaixá-la a unresolved."""
+    data, wiki, raw = _vault(tmp_path)
+    a = _artigo(wiki, "algorithms/via-cosseno.md", "01-ambiguo.md", "Corpo A.")
+    b = _artigo(wiki, "via-cosseno.md", "01-ambiguo.md", "Corpo B distinto.")
+    _fonte(data, "livro-a", "01-ambiguo.md")
+    _fonte(data, "livro-b", "01-ambiguo.md")  # ambíguo: sem embed, unresolved
+    entries = [
+        {"source": "library/area/livro-a/01-ambiguo.md", "status": "compiled",
+         "article": "algorithms/via-cosseno.md", "provenance": "backfill-cosine"},
+        {"source": "library/area/livro-a/01-ambiguo.md", "status": "compiled",
+         "article": "via-cosseno.md", "provenance": "backfill-cosine"},
+    ]
+
+    [par] = find_duplicates(wiki, data, raw, manifest_entries=entries)
+
+    assert par.survivor == a
+    assert par.loser == b
+    assert par.reason == "same-source"

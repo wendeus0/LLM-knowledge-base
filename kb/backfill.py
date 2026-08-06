@@ -68,20 +68,38 @@ def _body(article: Path) -> str:
     return body
 
 
-def _resolve_ambiguous(article: Path, candidates: list[Path], embed_fn) -> tuple[Path | None, str, float | None]:
+_EMBED_MAX_CHARS = 8000
+_TIE_EPSILON = 1e-9
+
+
+def _resolve_ambiguous(
+    article: Path,
+    candidates: list[Path],
+    embed_fn,
+    article_vec: list[float] | None = None,
+) -> tuple[Path | None, str, float | None]:
     hashes = {_normalized_hash(c) for c in candidates}
     if len(hashes) == 1:
         return sorted(candidates)[0], "backfill-content", None
     if embed_fn is None:
         return None, "unresolved", None
-    textos = [_body(article)] + [
-        c.read_text(encoding="utf-8", errors="replace") for c in candidates
+    # Truncamento no mesmo teto do índice: capítulo gigante não pode derrubar
+    # o lote por limite de entrada do servidor de embeddings.
+    candidatos_txt = [
+        c.read_text(encoding="utf-8", errors="replace")[:_EMBED_MAX_CHARS]
+        for c in candidates
     ]
     try:
-        vetores = embed_fn(textos)
+        if article_vec is not None:
+            # O vetor do artigo já existe no índice — só os candidatos embedam,
+            # e o score fica comparável ao resto do sistema.
+            candidato_vecs = embed_fn(candidatos_txt)
+            artigo_vec = article_vec
+        else:
+            vetores = embed_fn([_body(article)[:_EMBED_MAX_CHARS]] + candidatos_txt)
+            artigo_vec, candidato_vecs = vetores[0], vetores[1:]
     except Exception:
         return None, "unresolved", None
-    artigo_vec, candidato_vecs = vetores[0], vetores[1:]
     pontuados = sorted(
         zip(candidates, (_cosine(artigo_vec, v) for v in candidato_vecs), strict=True),
         key=lambda item: item[1],
@@ -89,6 +107,10 @@ def _resolve_ambiguous(article: Path, candidates: list[Path], embed_fn) -> tuple
     )
     melhor, score = pontuados[0]
     if score < COSINE_FLOOR:
+        return None, "unresolved", score
+    if len(pontuados) > 1 and abs(score - pontuados[1][1]) <= _TIE_EPSILON:
+        # Empate no topo: escolher por ordem de filesystem seria proveniência
+        # arbitrária apresentada como fato.
         return None, "unresolved", score
     return melhor, "backfill-cosine", score
 
@@ -98,6 +120,7 @@ def backfill_links(
     data_dir: Path,
     raw_dir: Path,
     embed_fn=None,
+    article_vectors: dict[Path, list[float]] | None = None,
 ) -> list[ProposedLink]:
     """Propõe a ligação artigo→fonte para cada artigo vivo da wiki."""
     from kb.frontmatter import parse
@@ -109,7 +132,7 @@ def backfill_links(
     links: list[ProposedLink] = []
     for article in sorted(Path(wiki_dir).rglob("*.md")):
         rel = article.relative_to(wiki_dir)
-        if any(part.startswith(("_", ".")) for part in rel.parts):
+        if article.is_symlink() or any(part.startswith(("_", ".")) for part in rel.parts):
             continue
         try:
             meta, _ = parse(article.read_text(encoding="utf-8", errors="replace"))
@@ -129,7 +152,12 @@ def backfill_links(
                 )
             )
             continue
-        fonte, provenance, score = _resolve_ambiguous(article, candidates, embed_fn)
+        fonte, provenance, score = _resolve_ambiguous(
+            article,
+            candidates,
+            embed_fn,
+            article_vec=(article_vectors or {}).get(article),
+        )
         book = _book_of(fonte, data_dir, wiki_dir) if fonte else None
         links.append(ProposedLink(article, fonte, book, provenance, score, len(candidates)))
     return links

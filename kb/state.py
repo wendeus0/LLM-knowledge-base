@@ -127,11 +127,51 @@ def record_backfill(
     entries = [
         item
         for item in entries
-        if normalize_source_path(item.get("source", "")) != entry["source"]
+        if not (
+            normalize_source_path(item.get("source", "")) == entry["source"]
+            and (
+                not item.get("article")
+                or _normalize_article_path(item["article"]) == entry["article"]
+            )
+        )
     ]
     entries.append(entry)
     save_manifest(entries)
     return entry
+
+
+def record_backfill_many(links) -> int:
+    """Versão em lote do `record_backfill` — uma leitura e uma escrita.
+
+    Upsert por (fonte, artigo): duas ligações vivas para a mesma fonte — o caso
+    que o dedup precisa enxergar — coexistem em vez de a última engolir a
+    anterior.
+    """
+    entries = load_manifest()
+    novos = []
+    chaves = set()
+    for source_path, article_path, book, provenance in links:
+        entry = {
+            "source": normalize_source_path(source_path),
+            "kind": "raw",
+            "status": "compiled",
+            "article": _normalize_article_path(article_path),
+            "book": book,
+            "provenance": provenance,
+        }
+        novos.append(entry)
+        chaves.add((entry["source"], entry["article"]))
+    mantidos = [
+        item
+        for item in entries
+        if (
+            normalize_source_path(item.get("source", "")),
+            _normalize_article_path(item.get("article", "")) if item.get("article") else "",
+        )
+        not in chaves
+    ]
+    save_manifest(mantidos + novos)
+    return len(novos)
 
 
 def _entries_for_article(entries: list[dict], article_path: Path | str) -> list[dict]:
@@ -172,6 +212,10 @@ def update_article_path(old_path: Path | str, new_path: Path | str) -> int:
 def find_compiled_entry(source_path: Path | str) -> dict | None:
     normalized_source = normalize_source_path(source_path)
     for entry in load_manifest():
+        if entry.get("status") == "archived":
+            # Entrada arquivada não pode guiar recompile: o path de artigo dela
+            # não existe mais, e reusá-lo recriaria o que o dedup removeu.
+            continue
         if normalize_source_path(entry.get("source", "")) == normalized_source:
             return entry
     return None

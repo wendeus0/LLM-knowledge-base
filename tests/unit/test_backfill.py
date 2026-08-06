@@ -132,3 +132,48 @@ def test_should_search_wiki_sources_and_skip_underscore_articles(tmp_path):
     assert [link.article for link in links] == [artigo]
     assert links[0].source == fonte
     assert links[0].book == "livro-c"
+
+
+def test_should_mark_unresolved_when_top_cosines_tie(tmp_path):
+    """Review PR #70 (cubic P2): empate no topo escolhia livro por ordem de
+    filesystem — proveniência arbitrária apresentada como fato."""
+    data, wiki, raw = _vault(tmp_path)
+    _book(data, "ai", "livro-a", {"05-cap.md": "conteúdo A"})
+    _book(data, "python", "livro-b", {"05-cap.md": "conteúdo B"})
+    _artigo(wiki, "cap.md", "05-cap.md", corpo="artigo")
+
+    def embed(textos):
+        return [[1.0, 0.0]] + [[1.0, 0.0] for _ in textos[1:]]  # todos iguais
+
+    [link] = backfill_links(wiki, data, raw, embed_fn=embed)
+
+    assert link.provenance == "unresolved"
+
+
+def test_should_skip_symlinked_articles(tmp_path):
+    data, wiki, raw = _vault(tmp_path)
+    real = tmp_path / "fora.md"
+    real.write_text("---\ntitle: X\nsource: 01-x.md\n---\ncorpo", encoding="utf-8")
+    (wiki / "link.md").symlink_to(real)
+
+    assert backfill_links(wiki, data, raw) == []
+
+
+def test_should_use_precomputed_article_vector_when_available(tmp_path):
+    """Review PR #70 (cubic P1): o vetor do artigo já existe no índice; só os
+    candidatos precisam de embedding."""
+    data, wiki, raw = _vault(tmp_path)
+    _book(data, "ai", "livro-a", {"06-cap.md": "texto sobre atenção"})
+    _book(data, "python", "livro-b", {"06-cap.md": "texto sobre loops"})
+    artigo = _artigo(wiki, "cap.md", "06-cap.md", corpo="qualquer corpo")
+
+    def embed(textos):
+        assert all("qualquer corpo" not in t for t in textos), "artigo não deve ser re-embedado"
+        return [[1.0, 0.0] if "atenção" in t else [0.0, 1.0] for t in textos]
+
+    [link] = backfill_links(
+        wiki, data, raw, embed_fn=embed, article_vectors={artigo: [1.0, 0.0]}
+    )
+
+    assert link.provenance == "backfill-cosine"
+    assert link.book == "livro-a"
