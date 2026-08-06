@@ -32,8 +32,8 @@ title: Empty Article
 
             result = heal(n=1)
 
-            # RED: falha se não remove stub
-            assert any(r["action"] == "deleted_stub" for r in result)
+            # 029 C2: stub é ARQUIVADO (move), nunca deletado
+            assert any(r["action"] == "archived_stub" for r in result)
 
     def test_should_fix_broken_wikilinks_in_articles(self, tmp_wiki):
         """

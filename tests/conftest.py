@@ -41,6 +41,15 @@ def _state_dir_never_points_at_real_vault(tmp_path_factory, monkeypatch):
     """
     piso = tmp_path_factory.mktemp("kb_state_piso")
     monkeypatch.setattr("kb.config.STATE_DIR", piso, raising=False)
+    # Mesma classe de incidente, terceiro alvo (2026-08-06): o heal passou a
+    # MOVER para ARCHIVE_DIR, e um teste sem isolamento moveu stubs de fixture
+    # para o archive do vault real. Piso estrutural, não só fixture.
+    monkeypatch.setattr(
+        "kb.config.ARCHIVE_DIR", tmp_path_factory.mktemp("archive_piso"), raising=False
+    )
+    monkeypatch.setattr(
+        "kb.compile.WIKI_DIR", tmp_path_factory.mktemp("wiki_piso"), raising=False
+    )
 
 
 @pytest.fixture

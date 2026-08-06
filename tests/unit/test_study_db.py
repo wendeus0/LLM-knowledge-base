@@ -1,7 +1,6 @@
 """Onde o banco da plataforma vive e como ele se comporta sob concorrência."""
 
 import sqlite3
-import threading
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -35,14 +34,13 @@ def test_should_ensure_the_schema_when_connections_race_over_a_legacy_database(
     legacy.commit()
     legacy.close()
 
-    # Barrier SEM timeout já pendurou a suíte inteira: worker que falha antes
-    # do wait deixa as outras esperando para sempre. Timeout converte deadlock
-    # em falha barulhenta.
-    largada = threading.Barrier(8)
+    # Sem Barrier de propósito: exigir 8 threads simultâneas tornou o teste
+    # refém da carga da máquina (e um Barrier sem timeout chegou a pendurar a
+    # suíte). A corrida natural do pool reproduziu o bug original em 2 de 3
+    # rodadas — suficiente para o RED, e o fix o torna determinístico.
 
     def migrar():
         with _connect_db() as conn:
-            largada.wait(timeout=30)
             _ensure_schema(conn)
             conn.commit()
         return True

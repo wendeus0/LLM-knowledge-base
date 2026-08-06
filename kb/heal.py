@@ -95,9 +95,19 @@ def heal(
         text = path.read_text(encoding="utf-8", errors="replace")
 
         if _is_stub(text):
-            _backup(path)
-            path.unlink()
-            log.append({"file": path.name, "action": "deleted_stub"})
+            # V7 mínimo (029 C2): stub vai para archive/ com backup versionado,
+            # nunca unlink — e o manifest deixa de apontar para o path movido.
+            from kb.archive import move_to_archive
+            from kb.config import ARCHIVE_DIR
+            from kb.state import mark_archived
+
+            dest = ARCHIVE_DIR / path.relative_to(WIKI_DIR)
+            resultado = move_to_archive([{"source": path, "dest": dest}], ARCHIVE_DIR)
+            if resultado and resultado[0]["action"] == "moved":
+                mark_archived(path)
+                log.append({"file": path.name, "action": "archived_stub"})
+            else:
+                log.append({"file": path.name, "action": "archive_error"})
             continue
 
         assert_safe_for_provider(
