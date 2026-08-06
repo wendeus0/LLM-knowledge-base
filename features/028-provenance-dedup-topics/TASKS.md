@@ -78,7 +78,7 @@
   vertical_slice: yes
   behavior: "KB_TOPICS no .env do engine (taxonomia proposta em relatório) + kb topics normalize com mapa fechado de variantes e edição in-place que preserva o resto do arquivo."
   verify: "python -m pytest tests/unit/test_topics.py -q"
-  state: not_started
+  state: passing
 ```
 
 ```yaml
@@ -91,7 +91,7 @@
   vertical_slice: yes
   behavior: "kb topics assign propõe topic via LLM restrito à taxonomia (fora da lista → rejeitado no parse), relatório sem --apply."
   verify: "python -m pytest tests/unit/test_topics.py tests/integration/test_topics_cli.py -q"
-  state: not_started
+  state: passing
 ```
 
 ```yaml
@@ -104,7 +104,7 @@
   vertical_slice: yes
   behavior: "Lotes reais: taxonomia fechada pelo dono → normalize → assign → apply --commit; trilhas da plataforma povoadas, conferidas em tela."
   verify: "relatórios aprovados + tela das trilhas"
-  state: not_started
+  state: passing
 ```
 
 ## Definition of Done
