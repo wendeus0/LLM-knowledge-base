@@ -4,7 +4,14 @@ description: Próximos passos priorizados
 type: project
 ---
 
-## Atualizado: 2026-08-05
+## Atualizado: 2026-08-06
+
+### O próximo esforço: compile multi-fonte (ADR-0018, decisão 2)
+
+1. **Abrir wayfinder/spec do compile multi-fonte.** O artigo de tema costura várias fontes sob demanda; pré-requisitos prontos (proveniência, library, _chapters). Insumos: `MAPA-DE-TEMAS.md`, os 55 gêmeos temáticos (`kb dedup scan`), os 124 unresolved.
+2. **Marcar leitura de artigo na plataforma** (pendência da 026) — progresso real e subtração na trilha; agora com 345 artigos visíveis, a trilha é navegável de ponta a ponta.
+
+### Anterior (2026-08-05)
 
 ### Da plataforma de estudos (026), agora que ela está em `main`
 

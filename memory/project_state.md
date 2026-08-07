@@ -6,7 +6,16 @@ type: project
 
 ## Estado global
 
-Atualizada: 2026-08-05
+Atualizada: 2026-08-06
+
+- **Branch:** `main` @ `52d1006` — PR #71 mergeado; CI verde em 3.11/3.12/3.13
+- **Esforço ADR-0018 etapas 1–3 COMPLETO** (features 027/028/029, PRs #69/#70/#71, todos com review de 3 bots atendido): noise retroativo, proveniência materializada, dedup de ingestão, topics canônicos, `_*` honrado em todo o engine, heal sem unlink, reagrupamento por livro
+- **Vault:** 345 artigos vivos (207 transcripts + 14 harness + 124 unresolved) · 630 capítulos em `wiki/_chapters/` (37 livros) · manifest com 856 entradas de proveniência · 10 topics canônicos (`KB_TOPICS` no .env do engine) · 62 paratextos/sumários + 5 duplicatas em `archive/` · 6 tags de rollback
+- **Engine:** +6 sub-apps (`noise` corrigido, `manifest`, `dedup`, `topics`, `regroup`), `fsutil.iter_articles` como semântica única de artigo vivo, zero `unlink` no código
+- **Tests:** `1045 passed`, cobertura 93%; piso autouse do conftest cobre STATE_DIR + ARCHIVE_DIR + todos os module-globals de WIKI_DIR
+- **Próximo esforço:** compile multi-fonte (pré-requisitos todos existem)
+
+### Estado anterior (2026-08-05)
 
 - **Branch:** `main` @ `858c888` — PR #67 (`fix/pr-66-review-followup`) mergeado; CI verde em 3.11/3.12/3.13
 - **Tests:** `968 passed`, cobertura 93%. Verificado nos dois ambientes: com `KB_DATA_DIR=~/vault` e com um caminho inexistente

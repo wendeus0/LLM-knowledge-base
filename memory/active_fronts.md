@@ -4,6 +4,12 @@ description: Frentes ativas + decisões abertas
 type: project
 ---
 
+## Frente fechada em 2026-08-06 — higiene do corpus / ADR-0018 etapas 1–3 (027/028/029)
+
+**Status:** COMPLETO. PRs #69, #70 e #71 mergeados; `main` @ `52d1006`. O gate final (mover 851 → decisão do dono: 630 em 37 livros; transcripts e harness ficam) executado com 37 commits e zero erros.
+
+O que destrava: **compile multi-fonte** — proveniência materializada, `library/` íntegra, `_chapters/` populado, `_*` blindado. Abrir com wayfinder próprio.
+
 ## Frente fechada em 2026-08-05 — plataforma de estudos (026)
 
 **Status:** entregue e mergeada. PR #66 (F1–F5) e PR #67 (correção do review + Direção B), `main` @ `858c888`.

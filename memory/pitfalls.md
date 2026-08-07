@@ -261,3 +261,17 @@ Simular a corrida onde ela acontece de verdade — fazer o `rglob` entregar um c
 Um bot pediu validação de rating 1–4 na rota; escrevi. Ao mutar (removendo o guard), o teste continuou verde: `study/review.py` já validava desde antes. O guard não mudava comportamento nenhum.
 
 **Regra:** guard novo pedido por review passa pela mesma prova que teste novo — mutou e o teste continuou verde, ou o guard é redundante ou o teste é decorativo. Nos dois casos há o que remover.
+
+### O piso de isolamento tem que cobrir os module-globals, não só o config
+
+Terceira ocorrência da classe (2026-07-29 escrita, 2026-08-05 leitura, 2026-08-06 move): patchear `kb.config.X` não alcança módulo que fez `from kb.config import X` no load. heal, lint, search e router fazem exatamente isso com `WIKI_DIR`.
+
+**Regra:** todo global novo que aponta para o vault entra no piso autouse do conftest — em `kb.config` E em cada módulo que o from-importa. O teste do piso é rodar a suíte e conferir `git status` no vault real: sujou, vazou.
+
+### Corrida em teste: determinismo > sincronização > sorte
+
+`Barrier(N)` sem timeout pendura a suíte quando um worker morre antes do wait; com timeout, dá falso vermelho quando a máquina não entrega N threads a tempo; sem sincronização nenhuma, dá falso verde em máquina rápida. Quando o bug é de interleaving, a saída é reproduzir o interleaving À MÃO — duas conexões, passos intercalados explicitamente — e aí o teste é determinístico nos dois sentidos.
+
+### Sintoma numérico anotado e não investigado é bug adiado
+
+859 escritas → 855 entradas: registrei a diferença como "sinal útil" e segui. Três bots de review acharam a causa (upsert engolindo o segundo artigo da mesma fonte) — que era exatamente o dado que o dedup precisava. Se a contagem não fecha e você sabe disso, a investigação é agora; anotar para depois só terceiriza o achado para o review.
