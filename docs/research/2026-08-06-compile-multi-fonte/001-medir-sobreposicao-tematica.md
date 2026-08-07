@@ -2,7 +2,7 @@
 
 Type: research
 Status: open
-Blocked by: [qualidade-da-proveniencia](008-qualidade-da-proveniencia.md)
+Blocked by: nada — desbloqueado em 2026-08-06 por [qualidade-da-proveniencia](008-qualidade-da-proveniencia.md), com quatro ressalvas herdadas (ver `## Answer` de lá)
 
 ## Question
 Quantos dos 630 capítulos de `wiki/_chapters/` alimentariam MAIS DE UM tema, e qual tema tem o conjunto de fontes mais limpo para ser o piloto? A pergunta tem duas metades inseparáveis: a distribuição de sobreposição (quantos capítulos caem em dois, três, N temas candidatos) e o ranking de temas por qualidade de fontes (tamanho do conjunto, proveniência confiável, ausência de binários e de `unresolved`).

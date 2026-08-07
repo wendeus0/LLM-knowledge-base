@@ -1,7 +1,7 @@
 # 008 — Qualidade da proveniência do manifest
 
 Type: research
-Status: open
+Status: resolved
 Blocked by: nada
 
 ## Question
@@ -21,3 +21,44 @@ Uma medição (AFK) das duas taxas de erro, separadas:
 2. **Falso negativo** — diagnóstico dos 120 `unresolved`, começando pelos 7 soltos na raiz da wiki, que têm fonte identificável a olho: por que a cadeia falhou em cada um (basename divergente, fonte só em binário, capítulo homônimo, ausência de `metadata.json`).
 
 E um veredito explícito: basename é confiável o suficiente para alimentar o agrupamento de temas, sim ou não — e, se não, qual o tamanho e a localização do estrago.
+
+## Answer
+
+**SIM — a proveniência por basename sustenta o agrupamento por tema.** O ticket
+[medir-sobreposicao-tematica](001-medir-sobreposicao-tematica.md) está destravado.
+
+Medição em 2026-08-06, vault @ `ec3fa16`. Artefatos: [veredito completo](008-VEREDITO.md)
+(julgamento par a par pelo Kimi K3), [dados](008-data.json), [script de extração](008-extract.py).
+
+**Falso positivo: 0 em 40 pares auditados**, do estrato que responde por 824 das 856
+entradas. Limite superior de 7,5% a 95% pela regra do três — a amostra sustenta "erro
+baixo", não "erro zero". Três pares conferidos de novo pelo orquestrador (*Naming* →
+nomenclatura em APIs, *The Testing Gap* → a lacuna de testes, *Slow Indexes Part II* →
+índices lentos): todos corretos.
+
+O que decide o ticket não é a taxa, é a **anatomia da falha**: 1.342 dos 1.416 basenames
+são únicos (94,8%), e as 74 colisões são paratexto padronizado de conversão de ebook —
+`03-preface.md` (6×), `01-cover.md` (6×), `20-index.md` (4×). Quando a cadeia não
+resolve, ela **omite** em vez de atribuir errado. Para agrupamento, errar por omissão é
+o lado seguro.
+
+**Os 120 `unresolved` têm três causas, e só seis são falha do algoritmo:**
+
+| Causa | Artigos | Natureza |
+|---|---:|---|
+| Fonte ausente do acervo | 112 | 88 transcrições de YouTube sem arquivo correspondente, 15 capítulos de *Building Applications with AI Agents* (livro fora do acervo), 9 outros |
+| Duplicata de livro no acervo | 2 | `02-honeycomb.md` em duas pastas do mesmo *Observability Engineering* |
+| Limitação da cadeia em paratexto ambíguo | 6 | `01-copyright.md`, `08-front-matter.md`, `06-introduction.md` colidindo entre livros; ~4 seriam desempatáveis pelo título do artigo, sinal que a cadeia não usa |
+
+**Ressalvas que o ticket 001 herda:**
+
+1. **Cobertura, não precisão, é o gargalo.** 120 de 345 vivos (35%) ficam fora do
+   agrupamento, e o viés é concentrado: quase todo `learning` e um livro inteiro de `ai`.
+2. **A amostra validou só `backfill-basename`.** As 32 entradas por conteúdo e cosseno
+   (3,7%) entram no agrupamento sem auditoria.
+3. **Proveniência agrupa por LIVRO, não por tema.** Event sourcing aparece em pelo menos
+   três livros distintos só na amostra. A medição de sobreposição precisa tratar isso, ou
+   medirá zero onde há sobreposição real.
+4. **O denominador precisa ser decidido.** 856 entradas de manifest contra 345 artigos
+   vivos — 631 apontam para `_chapters/`. Agrupar sobre vivos ou sobre o manifest inteiro
+   dá resultados diferentes.

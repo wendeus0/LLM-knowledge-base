@@ -1,0 +1,1200 @@
+{
+ "collisions": {
+  "total_sources": 1517,
+  "distinct_basenames": 1416,
+  "unique_basenames": 1342,
+  "colliding_basenames": 74,
+  "collision_histogram": {
+   "2": 61,
+   "3": 7,
+   "4": 1,
+   "5": 2,
+   "6": 3
+  },
+  "top_collisions": [
+   {
+    "basename": "03-preface.md",
+    "count": 6,
+    "paths": [
+     "library/software-engineering/get-your-hands-dirty-on-clean-architecture-second-edition/03-preface.md",
+     "library/software-engineering/domain-driven-design-tackling-complexity-in-the-heart-of/03-preface.md",
+     "library/software-engineering/implementing-domain-driven-design-vaughn-vernon-2013/03-preface.md",
+     "wiki/_sources/llm-engineer-s-handbook-paul-iusztin-maxime-labonne/03-preface.md",
+     "wiki/_sources/hands-on-large-language-models-language-understanding-and/03-preface.md",
+     "wiki/_sources/prompt-engineering-for-llms-the-art-and-science-of/03-preface.md"
+    ]
+   },
+   {
+    "basename": "04-preface.md",
+    "count": 6,
+    "paths": [
+     "library/software-engineering/designing-machine-learning-systems-an-iterative-process/04-preface.md",
+     "library/software-engineering/enterprise-integration-patterns-designing-building-and/04-preface.md",
+     "library/software-engineering/release-it-design-and-deploy-production-ready-software/04-preface.md",
+     "library/software-engineering/event-driven-architecture-in-golang-building-complex/04-preface.md",
+     "library/software-engineering/database-internals-a-deep-dive-into-how-distributed-data/04-preface.md",
+     "wiki/_sources/build-a-large-language-model-from-scratch-sebastian/04-preface.md"
+    ]
+   },
+   {
+    "basename": "01-cover.md",
+    "count": 6,
+    "paths": [
+     "library/software-engineering/designing-machine-learning-systems-an-iterative-process/01-cover.md",
+     "library/software-engineering/introduction-to-algorithms-and-data-structures-a-solid/01-cover.md",
+     "library/software-engineering/release-it-design-and-deploy-production-ready-software/01-cover.md",
+     "library/software-engineering/database-internals-a-deep-dive-into-how-distributed-data/01-cover.md",
+     "wiki/_sources/ai-engineering-building-applications-with-foundation-models/01-cover.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/01-cover.md"
+    ]
+   },
+   {
+    "basename": "01-contents.md",
+    "count": 5,
+    "paths": [
+     "library/software-engineering/domain-driven-design-tackling-complexity-in-the-heart-of/01-contents.md",
+     "library/software-engineering/algorithms-4th-edition-essential-information-about-robert/01-contents.md",
+     "library/software-engineering/enterprise-integration-patterns-designing-building-and/01-contents.md",
+     "library/software-engineering/introduction-to-algorithms-fourth-edition-cormen-thomas/01-contents.md",
+     "library/software-engineering/implementing-domain-driven-design-vaughn-vernon-2013/01-contents.md"
+    ]
+   },
+   {
+    "basename": "05-preface.md",
+    "count": 5,
+    "paths": [
+     "library/software-engineering/working-effectively-with-legacy-code/05-preface.md",
+     "library/software-engineering/fluent-python-2nd-edition-luciano-ramalho-2nd-edition/05-preface.md",
+     "library/software-engineering/designing-data-intensive-applications-the-big-ideas-behind/05-preface.md",
+     "library/software-engineering/software-architecture-the-hard-parts-modern-trade-off/05-preface.md",
+     "wiki/_sources/ai-engineering-building-applications-with-foundation-models/05-preface.md"
+    ]
+   },
+   {
+    "basename": "20-index.md",
+    "count": 4,
+    "paths": [
+     "library/software-engineering/mathematics-for-machine-learning-marc-peter-deisenroth-a/20-index.md",
+     "library/software-engineering/property-based-testing-with-proper-erlang-and-elixir/20-index.md",
+     "library/software-engineering/event-driven-architecture-in-golang-building-complex/20-index.md",
+     "wiki/_sources/mathematics-for-machine-learning-marc-peter-deisenroth-a/20-index.md"
+    ]
+   },
+   {
+    "basename": "02-table-of-contents.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/get-your-hands-dirty-on-clean-architecture-second-edition/02-table-of-contents.md",
+     "wiki/_sources/hands-on-large-language-models-language-understanding-and/02-table-of-contents.md",
+     "wiki/_sources/prompt-engineering-for-llms-the-art-and-science-of/02-table-of-contents.md"
+    ]
+   },
+   {
+    "basename": "03-table-of-contents.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/designing-machine-learning-systems-an-iterative-process/03-table-of-contents.md",
+     "library/software-engineering/event-driven-architecture-in-golang-building-complex/03-table-of-contents.md",
+     "library/software-engineering/database-internals-a-deep-dive-into-how-distributed-data/03-table-of-contents.md"
+    ]
+   },
+   {
+    "basename": "17-index.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/designing-machine-learning-systems-an-iterative-process/17-index.md",
+     "wiki/_sources/llm-engineer-s-handbook-paul-iusztin-maxime-labonne/17-index.md",
+     "wiki/_sources/ai-engineering-building-applications-with-foundation-models/17-index.md"
+    ]
+   },
+   {
+    "basename": "02-foreword.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/domain-driven-design-tackling-complexity-in-the-heart-of/02-foreword.md",
+     "library/software-engineering/enterprise-integration-patterns-designing-building-and/02-foreword.md",
+     "library/software-engineering/implementing-domain-driven-design-vaughn-vernon-2013/02-foreword.md"
+    ]
+   },
+   {
+    "basename": "07-preface.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/observability-engineering-achieving-production-excellence/07-preface.md",
+     "library/software-engineering/domain-driven-refactoring-a-hands-on-ddd-guide-to/07-preface.md",
+     "library/software-engineering/learning-domain-driven-design-aligning-software-vladik/07-preface.md"
+    ]
+   },
+   {
+    "basename": "24-index.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/domain-driven-refactoring-a-hands-on-ddd-guide-to/24-index.md",
+     "library/software-engineering/architecture-patterns-with-python-enabling-test-driven/24-index.md",
+     "library/software-engineering/property-based-testing-with-proper-erlang-and-elixir/24-index.md"
+    ]
+   },
+   {
+    "basename": "01-preface.md",
+    "count": 3,
+    "paths": [
+     "library/software-engineering/architecture-patterns-with-python-enabling-test-driven/01-preface.md",
+     "library/software-engineering/the-algorithm-design-manual-texts-in-computer-science/01-preface.md",
+     "library/software-engineering/hands-on-machine-learning-with-scikit-learn-keras-and/01-preface.md"
+    ]
+   },
+   {
+    "basename": "09-part0008.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/09-part0008.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/09-part0008.md"
+    ]
+   },
+   {
+    "basename": "10-part0009.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/10-part0009.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/10-part0009.md"
+    ]
+   },
+   {
+    "basename": "13-part0012.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/13-part0012.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/13-part0012.md"
+    ]
+   },
+   {
+    "basename": "11-part0010.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/11-part0010.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/11-part0010.md"
+    ]
+   },
+   {
+    "basename": "03-part0002.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/03-part0002.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/03-part0002.md"
+    ]
+   },
+   {
+    "basename": "12-part0011.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/12-part0011.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/12-part0011.md"
+    ]
+   },
+   {
+    "basename": "02-part0001.md",
+    "count": 2,
+    "paths": [
+     "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/02-part0001.md",
+     "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/02-part0001.md"
+    ]
+   }
+  ]
+ },
+ "counts": {
+  "manifest_entries": 856,
+  "live_articles": 345,
+  "unresolved": 120,
+  "by_provenance": {
+   "backfill-basename": 824,
+   "backfill-cosine": 13,
+   "backfill-content": 19
+  }
+ },
+ "unresolved": [
+  {
+   "article": "ai/building-applications-with-ai-agents---estrutura-do-conteúdo.md",
+   "title": "Building Applications with AI Agents - Estrutura do Conteúdo",
+   "topic": "ai",
+   "declared_source": "04-brief-table-of-contents-not-yet-final.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/building-applications-with-ai-agents---índice.md",
+   "title": "Building Applications with AI Agents - Índice",
+   "topic": "ai",
+   "declared_source": "04-brief-table-of-contents-not-yet-final.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/building-applications-with-ai-agents.md",
+   "title": "Building Applications with AI Agents",
+   "topic": "ai",
+   "declared_source": "03-building-applications-with-ai-agents.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/design-de-sistemas-baseados-em-agentes-de-ia.md",
+   "title": "Design de Sistemas Baseados em Agentes de IA",
+   "topic": "ai",
+   "declared_source": "06-chapter-2-overview-of-designing-agent-systems.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/designing-agent-systems.md",
+   "title": "Designing Agent Systems",
+   "topic": "ai",
+   "declared_source": "06-chapter-2-overview-of-designing-agent-systems.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/introduction-to-ai-agents.md",
+   "title": "Introduction to AI Agents",
+   "topic": "ai",
+   "declared_source": "05-chapter-1-introduction-to-agents.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/introdução-aos-agentes-autônomos.md",
+   "title": "Introdução aos Agentes Autônomos",
+   "topic": "ai",
+   "declared_source": "05-chapter-1-introduction-to-agents.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/knowledge-and-memory-in-ai-agents.md",
+   "title": "Knowledge and Memory in AI Agents",
+   "topic": "ai",
+   "declared_source": "10-chapter-6-knowledge-and-memory.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/learning-in-agentic-systems.md",
+   "title": "Learning in Agentic Systems",
+   "topic": "ai",
+   "declared_source": "11-chapter-7-learning-in-agentic-systems.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/modelos-locais-viaveis-e-upgrades.md",
+   "title": "Modelos Locais Viáveis — Máquina Atual e Upgrades",
+   "topic": "ai",
+   "declared_source": "pesquisa-x+web-2026-06-19",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/multi-agent-systems---from-one-agent-to-many.md",
+   "title": "Multi-Agent Systems - From One Agent to Many",
+   "topic": "ai",
+   "declared_source": "12-chapter-8-from-one-agent-to-many.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/orchestration-in-ai-agents.md",
+   "title": "Orchestration in AI Agents",
+   "topic": "ai",
+   "declared_source": "09-chapter-5-orchestration.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/prompt-engineering-for-llms-livro.md",
+   "title": "Prompt Engineering for LLMs (Livro)",
+   "topic": "ai",
+   "declared_source": "01-copyright.md",
+   "source_paths_found": [
+    "wiki/_sources/hands-on-large-language-models-language-understanding-and/01-copyright.md",
+    "wiki/_sources/prompt-engineering-for-llms-the-art-and-science-of/01-copyright.md"
+   ],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/redes-neurais-uma-visao-geral.md",
+   "title": "\"Redes Neurais: Uma Visão Geral\"",
+   "topic": "ai",
+   "declared_source": "08-part0007.md",
+   "source_paths_found": [
+    "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/08-part0007.md",
+    "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/08-part0007.md"
+   ],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/skills-em-agentes-de-ia.md",
+   "title": "Skills em Agentes de IA",
+   "topic": "ai",
+   "declared_source": "08-chapter-4-skills.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/skills-in-ai-agents.md",
+   "title": "Skills in AI Agents",
+   "topic": "ai",
+   "declared_source": "08-chapter-4-skills.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "ai/user-experience-design-for-agentic-systems.md",
+   "title": "User Experience Design for Agentic Systems",
+   "topic": "ai",
+   "declared_source": "07-chapter-3-user-experience-design-for-agentic-systems.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/ciclo-hamiltoniano-backtracking.md",
+   "title": "Ciclo Hamiltoniano - Backtracking",
+   "topic": "algorithms",
+   "declared_source": "PDLN4rrl48XKpZkf03iYFl-O29szjTrs_O_67_6.4_Hamiltonian_Cycle_-_Backtracking.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/comparacao-entre-classes-de-funcoes-em-notacao-assintotica.md",
+   "title": "Comparação entre Classes de Funções em Notação Assintótica",
+   "topic": "algorithms",
+   "declared_source": "Abdul_Bari__Algorithms_PLDN4rrl48XKpZkf03iYFl-O_10_1.7_Compare_Class_of_Functions.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/hash-table-com-double-hashing.md",
+   "title": "Hash Table com Double Hashing",
+   "topic": "algorithms",
+   "declared_source": "PLDV1Zeh2NRsB6SWUrDFW2RmDotAfPBeHu_35_Hash_table_double_hashing.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/problema-da-mochila-0-1-dois-metodos-de-programacao-dinamica.md",
+   "title": "\"Problema da Mochila 0/1 — Dois Métodos de Programação Dinâmica\"",
+   "topic": "algorithms",
+   "declared_source": "\"PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O_54_4.5_0/1_Knapsack_-_Two_Methods_-_Dynamic_Programming.md\"",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/resolvendo-a-recorrencia-t-n-2t-n-1-1.md",
+   "title": "Resolvendo a Recorrência T(n) = 2T(n-1) + 1",
+   "topic": "algorithms",
+   "declared_source": "Abdul_Bari__Algorithms_PLDN4rrl48XKpZkf03iYFl-O_22_2.1.4_Recurrence_Relation_T(n)=2_T(n-1)+1__#4.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/s-ntese-did-tica---big-o-e-busca-bin-ria.md",
+   "title": "Síntese Didática - Big O e Busca Binária",
+   "topic": "algorithms",
+   "declared_source": "qa",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "algorithms/tabela-esparsa-sparse-table.md",
+   "title": "Tabela Esparsa (Sparse Table)",
+   "topic": "algorithms",
+   "declared_source": "PLDV1Zeh2NRsB6SWUrDFW2RmDotAfPBeHu_54_Sparse_Table_Data_Structure.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "api-design-patterns-front-matter-e-visao-geral-da-obra.md",
+   "title": "API Design Patterns — Front Matter e Visão Geral da Obra",
+   "topic": "software-architecture",
+   "declared_source": "08-front-matter.md",
+   "source_paths_found": [
+    "library/software-engineering/api-design-patterns-john-j-jj-geewax-2021-anna-s-archive/08-front-matter.md",
+    "library/software-engineering/grokking-algorithms-second-edition-aditya-y-bhargava/08-front-matter.md"
+   ],
+   "at_wiki_root": true
+  },
+  {
+   "article": "cybersecurity/honeycomb.md",
+   "title": "Honeycomb",
+   "topic": "cybersecurity",
+   "declared_source": "02-honeycomb.md",
+   "source_paths_found": [
+    "library/software-engineering/observability-engineering-achieving-production-excellence/02-honeycomb.md",
+    "library/software-engineering/observability-engineering-for-true-epub-charity-majors/02-honeycomb.md"
+   ],
+   "at_wiki_root": false
+  },
+  {
+   "article": "dentro-da-capa-topicos-de-design-de-apis.md",
+   "title": "\"Dentro da Capa: Tópicos de Design de APIs\"",
+   "topic": "software-architecture",
+   "declared_source": "02-inside-front-cover.md",
+   "source_paths_found": [
+    "library/software-engineering/api-design-patterns-john-j-jj-geewax-2021-anna-s-archive/02-inside-front-cover.md",
+    "library/software-engineering/grokking-algorithms-second-edition-aditya-y-bhargava/02-inside-front-cover.md"
+   ],
+   "at_wiki_root": true
+  },
+  {
+   "article": "exercicios-de-algebra-linear-estruturas-matrizes-e-transform.md",
+   "title": "Exercícios de Álgebra Linear - Estruturas, Matrizes e Transformações",
+   "topic": "algorithms",
+   "declared_source": "03-exercises.md (Mathematics for Machine Learning)",
+   "source_paths_found": [],
+   "at_wiki_root": true
+  },
+  {
+   "article": "honeycomb.md",
+   "title": "Honeycomb",
+   "topic": "operations",
+   "declared_source": "02-honeycomb.md",
+   "source_paths_found": [
+    "library/software-engineering/observability-engineering-achieving-production-excellence/02-honeycomb.md",
+    "library/software-engineering/observability-engineering-for-true-epub-charity-majors/02-honeycomb.md"
+   ],
+   "at_wiki_root": true
+  },
+  {
+   "article": "introducao-a-integracao-de-aplicacoes-com-mensageria.md",
+   "title": "Introdução à Integração de Aplicações com Mensageria",
+   "topic": "software-architecture",
+   "declared_source": "06-introduction.md",
+   "source_paths_found": [
+    "library/software-engineering/working-effectively-with-legacy-code/06-introduction.md",
+    "library/software-engineering/enterprise-integration-patterns-designing-building-and/06-introduction.md"
+   ],
+   "at_wiki_root": true
+  },
+  {
+   "article": "learning/a-aprendizagem-e-mal-compreendida.md",
+   "title": "A Aprendizagem é Mal Compreendida",
+   "topic": "learning",
+   "declared_source": "12-1.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-licao-a-ciencia-da-aprendizagem-bem-sucedida.md",
+   "title": "A Lição - A Ciência da Aprendizagem Bem-Sucedida",
+   "topic": "learning",
+   "declared_source": "64-a-licao.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-licao-assumir-o-comando-da-aprendizagem.md",
+   "title": "A Lição - Assumir o Comando da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "56-a-licao.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-licao-ciencia-da-aprendizagem-bem-sucedida.md",
+   "title": "\"A Lição: Ciência da Aprendizagem Bem-Sucedida\"",
+   "topic": "learning",
+   "declared_source": "33-a-licao.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-mente-na-sociedade-fundamentos-da-psicologia-socio-cultura.md",
+   "title": "A Mente na Sociedade — Fundamentos da Psicologia Sócio-Cultural de Vygotsky",
+   "topic": "learning",
+   "declared_source": "11-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-mente-na-sociedade-inteligencia-pratica-ferramentas-e-fala.md",
+   "title": "A Mente na Sociedade - Inteligência Prática, Ferramentas e Fala no Desenvolvimento Infantil",
+   "topic": "learning",
+   "declared_source": "14-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-mente-na-sociedade-interacao-entre-aprendizado-e-desenvolv.md",
+   "title": "A Mente na Sociedade — Interação entre Aprendizado e Desenvolvimento",
+   "topic": "learning",
+   "declared_source": "20-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-mente-na-sociedade-mind-in-society.md",
+   "title": "A Mente na Sociedade (Mind in Society)",
+   "topic": "learning",
+   "declared_source": "12-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-mente-na-sociedade.md",
+   "title": "A Mente na Sociedade",
+   "topic": "learning",
+   "declared_source": "27-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-pre-historia-da-linguagem-escrita.md",
+   "title": "A Pré-História da Linguagem Escrita",
+   "topic": "learning",
+   "declared_source": "22-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/a-reflexao-como-forma-de-pratica.md",
+   "title": "A Reflexão como Forma de Prática",
+   "topic": "learning",
+   "declared_source": "19-a-reflexao-e-uma-forma-de-pratica.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/afirmacoes-sobre-aprendizagem-eficaz.md",
+   "title": "Afirmações sobre Aprendizagem Eficaz",
+   "topic": "learning",
+   "declared_source": "13-afirmacoes-que-fazemos-neste-livro.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/aprendizagem-ativa-desde-o-inicio.md",
+   "title": "Aprendizagem Ativa Desde o Início",
+   "topic": "learning",
+   "declared_source": "51-aprendizagem-ativa-desde-o-inicio.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/aprendizagem-geradora-o-caso-da-jardineira-desastrada.md",
+   "title": "Aprendizagem Geradora — O Caso da Jardineira Desastrada",
+   "topic": "learning",
+   "declared_source": "41-um-exemplo-de-aprendizagem-geradora.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/aprendizagem-por-regras-versus-aprendizagem-por-exemplos.md",
+   "title": "Aprendizagem por Regras versus Aprendizagem por Exemplos",
+   "topic": "learning",
+   "declared_source": "55-aprendizagem-por-meio-de-regras-versus-aprendizagem-por-meio-de-exemplos.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/apresentacao-a-edicao-brasileira-de-fixe-o-conhecimento.md",
+   "title": "Apresentação à Edição Brasileira de Fixe o Conhecimento",
+   "topic": "learning",
+   "declared_source": "09-apresentacao-a-edicao-brasileira.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/aumente-suas-habilidades-a-ciencia-da-expansao-cognitiva.md",
+   "title": "Aumente Suas Habilidades - A Ciência da Expansão Cognitiva",
+   "topic": "learning",
+   "declared_source": "57-7.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/autores-de-make-it-stick.md",
+   "title": "Autores de Make It Stick",
+   "topic": "learning",
+   "declared_source": "06-autores.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/aviso-editorial.md",
+   "title": "Aviso Editorial",
+   "topic": "learning",
+   "declared_source": "03-aviso.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/ciencia-da-aprendizagem-visao-geral-a-partir-do-indice.md",
+   "title": "Ciência da Aprendizagem — Visão Geral a partir do Índice",
+   "topic": "learning",
+   "declared_source": "13-index.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/como-o-esforco-ajuda-na-aprendizagem.md",
+   "title": "Como o Esforço Ajuda na Aprendizagem",
+   "topic": "learning",
+   "declared_source": "38-como-o-esforco-ajuda.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/como-ocorre-a-aprendizagem.md",
+   "title": "Como Ocorre a Aprendizagem",
+   "topic": "learning",
+   "declared_source": "35-como-ocorre-a-aprendizagem.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/conheca-tambem-a-ciencia-da-aprendizagem-bem-sucedida.md",
+   "title": "Conheça Também — A Ciência da Aprendizagem Bem-Sucedida",
+   "topic": "learning",
+   "declared_source": "72-conheca-tambem.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/conhecimentos-insuficientes-mas-necessarios.md",
+   "title": "Conhecimentos Insuficientes, Mas Necessários",
+   "topic": "learning",
+   "declared_source": "15-conhecimentos-insuficientes-mas-necessarios.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/construcao-de-estrutura.md",
+   "title": "Construção de Estrutura",
+   "topic": "learning",
+   "declared_source": "54-construcao-de-estrutura.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/desenvolvendo-habilidades-de-diferenciacao.md",
+   "title": "Desenvolvendo Habilidades de Diferenciação",
+   "topic": "learning",
+   "declared_source": "30-desenvolvendo-habilidades-de-diferenciacao.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/desenvolvimento-da-percepcao-e-da-atencao.md",
+   "title": "Desenvolvimento da Percepção e da Atenção",
+   "topic": "learning",
+   "declared_source": "15-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dicas-para-eternos-aprendizes-tecnicas-de-aprendizagem-efica.md",
+   "title": "\"Dicas para Eternos Aprendizes: Técnicas de Aprendizagem Eficazes\"",
+   "topic": "learning",
+   "declared_source": "67-dicas-para-eternos-aprendizes.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dicas-para-instrutores-aplicacao-da-ciencia-da-aprendizagem.md",
+   "title": "Dicas para Instrutores - Aplicação da Ciência da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "69-dicas-para-instrutores.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dicas-para-professores-baseadas-na-ciencia-da-aprendizagem.md",
+   "title": "Dicas para Professores Baseadas na Ciência da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "68-dicas-para-professores.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dicas-para-professores-estudantes-e-pais.md",
+   "title": "Dicas para Professores, Estudantes e Pais",
+   "topic": "learning",
+   "declared_source": "11-part-4-tips-for-teachers-students-and-parents.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dificuldades-desejaveis-e-estrategias-de-aprendizagem-ativa.md",
+   "title": "Dificuldades Desejáveis e Estratégias de Aprendizagem Ativa",
+   "topic": "learning",
+   "declared_source": "39-outras-estrategias-de-aprendizagem-que-incorporam-dificuldades-desejaveis.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dificuldades-indesejaveis.md",
+   "title": "Dificuldades Indesejáveis",
+   "topic": "learning",
+   "declared_source": "42-dificuldades-indesejaveis.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dois-sistemas-de-adquirir-conhecimento.md",
+   "title": "Dois Sistemas de Adquirir Conhecimento",
+   "topic": "learning",
+   "declared_source": "45-dois-sistemas-de-adquirir-conhecimento.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/dominio-da-memoria-e-do-pensamento.md",
+   "title": "Domínio da Memória e do Pensamento",
+   "topic": "learning",
+   "declared_source": "16-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/educacao-baseada-em-evidencias-e-ciencia-da-aprendizagem.md",
+   "title": "Educação Baseada em Evidências e Ciência da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "08-part-1-evidence-based-education-and-the-science-of-learning.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/efeito-do-teste-no-meio-natural.md",
+   "title": "Efeito do Teste no Meio Natural",
+   "topic": "learning",
+   "declared_source": "22-estudando-o-efeito-do-teste-no-meio-natural.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/enfrente-as-dificuldades-dificuldades-desejaveis-na-aprendiz.md",
+   "title": "Enfrente as Dificuldades — Dificuldades Desejáveis na Aprendizagem",
+   "topic": "learning",
+   "declared_source": "34-4.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/entendendo-como-aprendemos-um-guia-visual.md",
+   "title": "Entendendo Como Aprendemos — Um Guia Visual",
+   "topic": "learning",
+   "declared_source": "02-title.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/estrategias-de-aprendizagem-eficazes-para-alunos.md",
+   "title": "Estratégias de Aprendizagem Eficazes para Alunos",
+   "topic": "learning",
+   "declared_source": "66-dicas-de-aprendizagem-para-alunos.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/estrategias-para-aprendizagem-eficaz.md",
+   "title": "Estratégias para Aprendizagem Eficaz",
+   "topic": "learning",
+   "declared_source": "10-part-3-strategies-for-effective-learning.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/estrutura-de-educacao-baseada-em-evidencias-e-ciencia-da-apr.md",
+   "title": "Estrutura de Educação Baseada em Evidências e Ciência da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "04-contents.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/estudando-o-efeito-do-teste-no-laboratorio.md",
+   "title": "Estudando o Efeito do Teste no Laboratório",
+   "topic": "learning",
+   "declared_source": "21-estudando-o-efeito-do-teste-no-laboratorio.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/evidencias-empiricas-versus-teorias-crencas-e-intuicoes-na-a.md",
+   "title": "Evidências Empíricas versus Teorias, Crenças e Intuições na Aprendizagem",
+   "topic": "learning",
+   "declared_source": "14-evidencias-empiricas-versus-teorias-crencas-e-intuicoes.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/expandindo-a-aprendizagem-atualizando-as-pistas-de-recuperac.md",
+   "title": "Expandindo a Aprendizagem: Atualizando as Pistas de Recuperação",
+   "topic": "learning",
+   "declared_source": "36-expandindo-a-aprendizagem-atualizando-as-pistas-de-recuperacao.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/ferramentas-e-habitos-para-calibrar-sua-apreciacao.md",
+   "title": "Ferramentas e Hábitos para Calibrar sua Apreciação",
+   "topic": "learning",
+   "declared_source": "49-ferramentas-e-habitos-para-calibrar-sua-apreciacao.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/fixe-o-conhecimento-a-ciencia-da-aprendizagem-bem-sucedida.md",
+   "title": "Fixe o Conhecimento — A Ciência da Aprendizagem Bem-sucedida",
+   "topic": "learning",
+   "declared_source": "70-notas.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/fixe-o-conhecimento-make-it-stick.md",
+   "title": "Fixe o Conhecimento (Make It Stick)",
+   "topic": "learning",
+   "declared_source": "05-fixe-o-conhecimento-a-ciencia-da-aprendizagem-bem-sucedida.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/fracasso-e-o-mito-da-aprendizagem-sem-erros.md",
+   "title": "Fracasso e o Mito da Aprendizagem sem Erros",
+   "topic": "learning",
+   "declared_source": "40-fracasso-e-o-mito-da-aprendizagem-sem-erros.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/fundamentos-dos-processos-cognitivos-humanos.md",
+   "title": "Fundamentos dos Processos Cognitivos Humanos",
+   "topic": "learning",
+   "declared_source": "09-part-2-basics-of-human-cognitive-processes.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/glossario-de-psicologia-cognitiva-e-aprendizagem.md",
+   "title": "Glossário de Psicologia Cognitiva e Aprendizagem",
+   "topic": "learning",
+   "declared_source": "12-glossary.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/ilusao-de-conhecimento-e-metacognicao-na-aprendizagem.md",
+   "title": "Ilusão de Conhecimento e Metacognição na Aprendizagem",
+   "topic": "learning",
+   "declared_source": "44-5.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/ilusoes-e-distorcoes-de-memoria.md",
+   "title": "Ilusões e Distorções de Memória",
+   "topic": "learning",
+   "declared_source": "46-ilusoes-e-distorcoes-de-memoria.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/inteligencia-bem-sucedida.md",
+   "title": "Inteligência Bem-Sucedida",
+   "topic": "learning",
+   "declared_source": "52-inteligencia-bem-sucedida.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/internalizacao-das-funcoes-psicologicas-superiores.md",
+   "title": "Internalização das Funções Psicológicas Superiores",
+   "topic": "learning",
+   "declared_source": "17-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/leituras-fundamentais-sobre-a-ciencia-da-aprendizagem.md",
+   "title": "Leituras Fundamentais sobre a Ciência da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "71-leituras-sugeridas.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mais-facil-nao-e-melhor.md",
+   "title": "Mais Fácil Não É Melhor",
+   "topic": "learning",
+   "declared_source": "37-mais-facil-nao-e-melhor.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/melhorando-a-compreensao-de-problemas-complexos-em-alunos-de.md",
+   "title": "Melhorando a Compreensão de Problemas Complexos em Alunos de Medicina",
+   "topic": "learning",
+   "declared_source": "31-melhorando-a-compreensao-de-problemas-complexos-em-alunos-de-medicina.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mentalidade-voltada-ao-crescimento.md",
+   "title": "Mentalidade Voltada ao Crescimento",
+   "topic": "learning",
+   "declared_source": "61-mentalidade-voltada-ao-crescimento.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mente-na-sociedade-desenvolvimento-psicologico-e-aprendizage.md",
+   "title": "\"Mente na Sociedade: Desenvolvimento Psicológico e Aprendizagem segundo Vygotsky\"",
+   "topic": "learning",
+   "declared_source": "24-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mente-na-sociedade.md",
+   "title": "Mente na Sociedade",
+   "topic": "learning",
+   "declared_source": "19-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mind-in-society-a-mediacao-nos-processos-psicologicos-superi.md",
+   "title": "\"Mind in Society: A Mediação nos Processos Psicológicos Superiores\"",
+   "topic": "learning",
+   "declared_source": "04-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mind-in-society-a-mente-na-sociedade.md",
+   "title": "\"Mind in Society: A Mente na Sociedade\"",
+   "topic": "learning",
+   "declared_source": "07-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/mind-in-society-o-desenvolvimento-das-funcoes-psicologicas-s.md",
+   "title": "Mind in Society — O Desenvolvimento das Funções Psicológicas Superiores",
+   "topic": "learning",
+   "declared_source": "25-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/modelos-mentais.md",
+   "title": "Modelos Mentais",
+   "topic": "learning",
+   "declared_source": "47-modelos-mentais.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/neuroplasticidade.md",
+   "title": "Neuroplasticidade",
+   "topic": "learning",
+   "declared_source": "58-neuroplasticidade.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/nuances-da-pratica-de-recuperacao-e-do-efeito-do-teste.md",
+   "title": "Nuances da Prática de Recuperação e do Efeito do Teste",
+   "topic": "learning",
+   "declared_source": "23-explorando-as-nuances.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/o-efeito-do-teste.md",
+   "title": "O Efeito do Teste",
+   "topic": "learning",
+   "declared_source": "20-o-efeito-do-teste.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/o-mito-da-pratica-intensiva.md",
+   "title": "O Mito da Prática Intensiva",
+   "topic": "learning",
+   "declared_source": "26-o-mito-da-pratica-intensiva.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/o-qi-e-mutavel.md",
+   "title": "O QI é Mutável?",
+   "topic": "learning",
+   "declared_source": "59-o-qi-e-mutavel.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/obras-de-l-s-vygotsky-em-mente-na-sociedade.md",
+   "title": "Obras de L.S. Vygotsky em \"Mente na Sociedade\"",
+   "topic": "learning",
+   "declared_source": "26-mind-in-society.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/oliver-caviglioli-ilustracao-para-aprendizagem.md",
+   "title": "Oliver Caviglioli — Ilustração para Aprendizagem",
+   "topic": "learning",
+   "declared_source": "07-illustrator-profile.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/para-aprender-recupere-as-informacoes.md",
+   "title": "Para Aprender, Recupere as Informações",
+   "topic": "learning",
+   "declared_source": "18-2.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/pistas-para-a-memoria-tecnicas-mnemonicas-para-aprendizagem.md",
+   "title": "Pistas para a Memória - Técnicas Mnemônicas para Aprendizagem",
+   "topic": "learning",
+   "declared_source": "63-pistas-para-a-memoria.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/pratica-deliberada.md",
+   "title": "Prática Deliberada",
+   "topic": "learning",
+   "declared_source": "62-pratica-deliberada.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/pratica-espacada-e-intercalada.md",
+   "title": "Prática Espaçada e Intercalada",
+   "topic": "learning",
+   "declared_source": "25-3.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/pratica-espacada.md",
+   "title": "Prática Espaçada",
+   "topic": "learning",
+   "declared_source": "27-pratica-espacada.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/pratica-intercalada.md",
+   "title": "Prática Intercalada",
+   "topic": "learning",
+   "declared_source": "28-pratica-intercalada.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/pratica-variada.md",
+   "title": "Prática Variada",
+   "topic": "learning",
+   "declared_source": "29-pratica-variada.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/principios-amplamente-aplicaveis-de-aprendizagem.md",
+   "title": "Princípios Amplamente Aplicáveis de Aprendizagem",
+   "topic": "learning",
+   "declared_source": "32-esses-principios-sao-amplamente-aplicaveis.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/sem-habilidade-e-sem-saber-disso-o-efeito-dunning-kruger-na-.md",
+   "title": "Sem Habilidade e Sem Saber Disso — O Efeito Dunning-Kruger na Aprendizagem",
+   "topic": "learning",
+   "declared_source": "48-sem-habilidade-e-sem-saber-disso.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/sobre-o-grupo-a.md",
+   "title": "Sobre o Grupo A",
+   "topic": "learning",
+   "declared_source": "73-sobre-o-grupo-a.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/teste-dinamico.md",
+   "title": "Teste Dinâmico",
+   "topic": "learning",
+   "declared_source": "53-teste-dinamico.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/teste-vareta-de-oleo-ou-ferramenta-de-aprendizagem.md",
+   "title": "Teste: Vareta de Óleo ou Ferramenta de Aprendizagem?",
+   "topic": "learning",
+   "declared_source": "16-teste-vareta-de-oleo-ou-ferramenta-de-aprendizagem.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/treinamento-mental-e-ciencia-da-aprendizagem.md",
+   "title": "Treinamento Mental e Ciência da Aprendizagem",
+   "topic": "learning",
+   "declared_source": "60-treinamento-mental.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/understanding-how-we-learn-a-visual-guide.md",
+   "title": "Understanding How We Learn: A Visual Guide",
+   "topic": "learning",
+   "declared_source": "03-copyright.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/va-alem-dos-estilos-de-aprendizagem.md",
+   "title": "Vá Além dos Estilos de Aprendizagem",
+   "topic": "learning",
+   "declared_source": "50-6.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "learning/yana-weinstein-e-megan-sumeracki-perfil-dos-autores.md",
+   "title": "Yana Weinstein e Megan Sumeracki — Perfil dos Autores",
+   "topic": "learning",
+   "declared_source": "06-author-profile.md",
+   "source_paths_found": [],
+   "at_wiki_root": false
+  },
+  {
+   "article": "o-escopo-do-desafio.md",
+   "title": "O Escopo do Desafio",
+   "topic": "software-architecture",
+   "declared_source": "11-the-scope-of-theallenge.md",
+   "source_paths_found": [],
+   "at_wiki_root": true
+  },
+  {
+   "article": "recursos-de-referencia-para-ciencia-de-dados-machine-learnin.md",
+   "title": "Recursos de Referência para Ciência de Dados, Machine Learning e IA",
+   "topic": "learning",
+   "declared_source": "16-part0015.md",
+   "source_paths_found": [
+    "library/software-engineering/deep-learning-with-python-simple-and-effective-tips-and/16-part0015.md",
+    "wiki/_sources/deep-learning-adaptive-computation-and-machine-learning/16-part0015.md"
+   ],
+   "at_wiki_root": true
+  }
+ ]
+}

@@ -11,7 +11,9 @@ type: project
 **Destination:** o map fecha em **artigo**, não em SPEC nem ADR — um primeiro artigo de tema real no vault, costurado de várias fontes, conferido em tela renderizada.
 **Regra de casa:** o compile de tema entra como feature com pipeline completo desde o início (SPEC → PLAN → CONTRACT → RED → GREEN). Protótipo throwaway não é o caminho oficial. Toda afirmação estrutural carrega evidência `caminho:linha`.
 
-**Frontier (abertos, desbloqueados):** [o-que-e-um-tema](../docs/research/2026-08-06-compile-multi-fonte/002-o-que-e-um-tema.md), [de-onde-a-sintese-le](../docs/research/2026-08-06-compile-multi-fonte/003-de-onde-a-sintese-le.md), [qualidade-da-proveniencia](../docs/research/2026-08-06-compile-multi-fonte/008-qualidade-da-proveniencia.md).
+**Resolvido em 2026-08-06:** [qualidade-da-proveniencia](../docs/research/2026-08-06-compile-multi-fonte/008-qualidade-da-proveniencia.md) — a proveniência por basename **sustenta** o agrupamento por tema (0 falso positivo em 40 pares, teto de 7,5%; 94,8% dos basenames únicos; a cadeia omite em vez de errar). Destravou `medir-sobreposicao-tematica`. O gargalo real é cobertura: 120 de 345 vivos ficam fora, e o viés é concentrado em `learning` e num livro de `ai`.
+
+**Frontier (abertos, desbloqueados):** [medir-sobreposicao-tematica](../docs/research/2026-08-06-compile-multi-fonte/001-medir-sobreposicao-tematica.md), [o-que-e-um-tema](../docs/research/2026-08-06-compile-multi-fonte/002-o-que-e-um-tema.md), [de-onde-a-sintese-le](../docs/research/2026-08-06-compile-multi-fonte/003-de-onde-a-sintese-le.md).
 
 **Evidência medida no charting que muda o desenho:**
 - O manifest tem **zero** artigos com mais de uma fonte — 856 entradas, 856 artigos distintos. O 1:1 está escrito nas primitivas (`kb/state.py:88-108`, `kb/state.py:232-258`).
