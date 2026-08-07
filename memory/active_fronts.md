@@ -4,6 +4,23 @@ description: Frentes ativas + decisões abertas
 type: project
 ---
 
+## Frente ABERTA em 2026-08-06 — compile multi-fonte (ADR-0018, decisão 2)
+
+**Status:** `WAYFINDER_CHARTED` — map traçado, 8 tickets criados, nenhum resolvido.
+**Artefatos:** `docs/research/2026-08-06-compile-multi-fonte/{MAP.md, 001..008-*.md}`
+**Destination:** o map fecha em **artigo**, não em SPEC nem ADR — um primeiro artigo de tema real no vault, costurado de várias fontes, conferido em tela renderizada.
+**Regra de casa:** o compile de tema entra como feature com pipeline completo desde o início (SPEC → PLAN → CONTRACT → RED → GREEN). Protótipo throwaway não é o caminho oficial. Toda afirmação estrutural carrega evidência `caminho:linha`.
+
+**Frontier (abertos, desbloqueados):** [o-que-e-um-tema](../docs/research/2026-08-06-compile-multi-fonte/002-o-que-e-um-tema.md), [de-onde-a-sintese-le](../docs/research/2026-08-06-compile-multi-fonte/003-de-onde-a-sintese-le.md), [qualidade-da-proveniencia](../docs/research/2026-08-06-compile-multi-fonte/008-qualidade-da-proveniencia.md).
+
+**Evidência medida no charting que muda o desenho:**
+- O manifest tem **zero** artigos com mais de uma fonte — 856 entradas, 856 artigos distintos. O 1:1 está escrito nas primitivas (`kb/state.py:88-108`, `kb/state.py:232-258`).
+- **824 de 856 (96%)** da proveniência veio de `backfill-basename` — match de nome de arquivo. É o critério que o ADR elegeu como *o* agrupador.
+- `wiki/_chapters/` é **inalcançável** por todo retrieval (`kb/fsutil.py:21-22`, `kb/search.py:25-26`, `kb/embeddings.py:62-63`, `kb/lexical_index.py:44`, `kb/graph.py:28`). Única exceção: `kb/api/articles.py:39-49`.
+- `library/` tem **23 fontes ainda em PDF/EPUB não extraídos**; a categoria `llm/` tem 10 binários e zero markdown; só 34 dos 43 livros de `software-engineering/` têm `metadata.json`.
+- Dos 345 vivos, **120 sem proveniência** (os `unresolved`; o REPORT da 029 dizia 124). Sete deles estão soltos na raiz da wiki e são capítulos de livro que escaparam do reagrupamento.
+- Wiki viva concentrada: 214 `algorithms` + 89 `learning` = 303 de 345. Arquitetura, Python e testes foram todos para `_chapters/`.
+
 ## Frente fechada em 2026-08-06 — higiene do corpus / ADR-0018 etapas 1–3 (027/028/029)
 
 **Status:** COMPLETO. PRs #69, #70 e #71 mergeados; `main` @ `52d1006`. O gate final (mover 851 → decisão do dono: 630 em 37 livros; transcripts e harness ficam) executado com 37 commits e zero erros.
